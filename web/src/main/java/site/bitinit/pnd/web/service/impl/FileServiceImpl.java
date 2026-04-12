@@ -4,11 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import site.bitinit.pnd.web.config.FileType;
 import site.bitinit.pnd.web.config.PndProperties;
+import site.bitinit.pnd.web.controller.dto.FileCategorySummaryDto;
+import site.bitinit.pnd.web.controller.dto.FileDetailDto;
 import site.bitinit.pnd.web.controller.dto.FolderPathDto;
 import site.bitinit.pnd.web.controller.dto.ResponseDto;
 import site.bitinit.pnd.web.dao.FileMapper;
@@ -18,6 +19,7 @@ import site.bitinit.pnd.web.entity.Resource;
 import site.bitinit.pnd.web.exception.DataFormatException;
 import site.bitinit.pnd.web.exception.DataNotFoundException;
 import site.bitinit.pnd.web.exception.DatabaseException;
+import site.bitinit.pnd.web.exception.FileAlreadyExistsException;
 import site.bitinit.pnd.web.exception.FileOperationException;
 import site.bitinit.pnd.web.service.FileService;
 import site.bitinit.pnd.web.util.FileUtils;
@@ -43,6 +45,29 @@ import java.util.*;
 @Slf4j
 @Service
 public class FileServiceImpl implements FileService {
+
+    private static final int DEFAULT_RECENT_LIMIT = 20;
+    private static final int MAX_RECENT_LIMIT = 100;
+    private static final List<String> DOCUMENT_TYPES = List.of(
+            FileType.PDF.toString(),
+            FileType.DOC.toString(),
+            FileType.TXT.toString(),
+            FileType.PPT.toString(),
+            FileType.CODE.toString(),
+            FileType.WEB.toString());
+    private static final List<String> COMPRESS_TYPES = List.of(FileType.COMPRESS_FILE.toString());
+    private static final List<String> OTHER_EXCLUDED_TYPES = List.of(
+            FileType.FOLDER.toString(),
+            FileType.PICTURE.toString(),
+            FileType.VIDEO.toString(),
+            FileType.AUDIO.toString(),
+            FileType.PDF.toString(),
+            FileType.DOC.toString(),
+            FileType.TXT.toString(),
+            FileType.PPT.toString(),
+            FileType.CODE.toString(),
+            FileType.WEB.toString(),
+            FileType.COMPRESS_FILE.toString());
 
     private final FileMapper fileMapper;
     private final ResourceMapper resourceMapper;
@@ -76,9 +101,50 @@ public class FileServiceImpl implements FileService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ResponseDto findByParentId(Long parentId, String sortBy, String sortOrder) {
-        List<File> files = fileMapper.findByParentId(parentId, false, sortBy, sortOrder);
+        List<File> files = fileMapper.findByParentId(parentId, false,
+                normalizeSortBy(sortBy), normalizeSortOrder(sortOrder));
         List<FolderPathDto> folderPaths = getFolderTree(parentId);
         return ResponseDto.success(files, folderPaths);
+    }
+
+    @Override
+    public ResponseDto findRecentFiles(Integer limit) {
+        int safeLimit = normalizeLimit(limit);
+        return ResponseDto.success(fileMapper.findRecentFiles(safeLimit),
+                Map.of("limit", safeLimit));
+    }
+
+    @Override
+    public ResponseDto findFilesByCategory(String category, String sortBy, String sortOrder) {
+        String normalizedCategory = normalizeCategory(category);
+        List<File> files = fileMapper.findAll(normalizeSortBy(sortBy), normalizeSortOrder(sortOrder))
+                .stream()
+                .filter(file -> !FileType.FOLDER.toString().equals(file.getType()))
+                .filter(file -> matchesCategory(file, normalizedCategory))
+                .toList();
+        return ResponseDto.success(files, Map.of(
+                "category", normalizedCategory,
+                "count", files.size()));
+    }
+
+    @Override
+    public ResponseDto categorySummary() {
+        Map<String, Integer> categoryCountMap = initCategoryCounter();
+        for (File file : fileMapper.getAllFileType()) {
+            if (FileType.FOLDER.toString().equals(file.getType())) {
+                continue;
+            }
+            incrementCategoryCount(categoryCountMap, file.getType());
+        }
+
+        List<FileCategorySummaryDto> summaries = List.of(
+                new FileCategorySummaryDto("picture", "图片", categoryCountMap.get("picture")),
+                new FileCategorySummaryDto("video", "视频", categoryCountMap.get("video")),
+                new FileCategorySummaryDto("audio", "音频", categoryCountMap.get("audio")),
+                new FileCategorySummaryDto("document", "文档", categoryCountMap.get("document")),
+                new FileCategorySummaryDto("compress", "压缩包", categoryCountMap.get("compress")),
+                new FileCategorySummaryDto("other", "其他", categoryCountMap.get("other")));
+        return ResponseDto.success(summaries);
     }
 
     /**
@@ -90,11 +156,32 @@ public class FileServiceImpl implements FileService {
      */
     @Override
     public ResponseDto findByFileId(Long fileId) {
-        File file = fileMapper.findById(fileId);
+        File file = findById(fileId);
         if (Objects.isNull(file)) {
             throw new DataNotFoundException(String.format("文件不存在 [fileId=%d]", fileId));
         }
-        return ResponseDto.success(file);
+
+        List<FolderPathDto> navigation = FileType.FOLDER.toString().equals(file.getType())
+                ? getFolderTree(file.getId())
+                : getFolderTree(file.getParentId());
+
+        FileDetailDto detail = FileDetailDto.builder()
+                .id(file.getId())
+                .parentId(file.getParentId())
+                .resourceId(file.getResourceId())
+                .size(file.getSize())
+                .fileName(file.getFileName())
+                .type(file.getType())
+                .extension(FileUtils.extractFileExtensionName(file.getFileName()))
+                .folderPath(buildFolderPath(navigation))
+                .downloadable(!FileType.FOLDER.toString().equals(file.getType()))
+                .playable(FileType.VIDEO.toString().equals(file.getType()))
+                .createTime(file.getCreateTime())
+                .updateTime(file.getUpdateTime())
+                .navigation(navigation)
+                .build();
+
+        return ResponseDto.success(detail);
     }
 
     /**
@@ -119,6 +206,7 @@ public class FileServiceImpl implements FileService {
                     String.format("父文件夹不存在或不是文件夹类型 [parentId=%d, fileName=%s]",
                             file.getParentId(), file.getFileName()));
         }
+        ensureUniqueFileName(file.getParentId(), file.getFileName(), null);
         fileMapper.save(file);
 
         log.info("文件创建成功 [fileId={}, fileName={}, parentId={}]",
@@ -145,9 +233,14 @@ public class FileServiceImpl implements FileService {
         }
 
         FileUtils.checkFileName(fileName);
+        File existingFile = findById(id);
+        if (Objects.isNull(existingFile)) {
+            throw new DataNotFoundException(String.format("文件不存在 [fileId=%d]", id));
+        }
+        ensureUniqueFileName(existingFile.getParentId(), fileName, id);
 
         File updateFile = File.builder()
-                .id(id).fileName(fileName)
+                .id(id).fileName(fileName).updateTime(new Date())
                 .build();
         fileMapper.update(updateFile);
 
@@ -226,6 +319,12 @@ public class FileServiceImpl implements FileService {
                     String.format("部分要移动的文件不存在 [missingFileIds=%s, targetId=%d]", missingIds, targetId));
         }
 
+        Set<Long> movingIds = new HashSet<>(ids);
+        Set<String> targetNames = fileMapper.findByParentId(targetId, true, null, null).stream()
+                .filter(existing -> !movingIds.contains(existing.getId()))
+                .map(File::getFileName)
+                .collect(java.util.stream.Collectors.toCollection(HashSet::new));
+
         // 3. 检查是否尝试将文件移动到自身或移动到其子文件夹
         long checkStartTime = System.currentTimeMillis();
         for (File file : filesToMove) {
@@ -245,6 +344,12 @@ public class FileServiceImpl implements FileService {
                             String.format("不能将文件夹移动到其子文件夹中 [sourceFolderId=%d, sourceFolderName=%s, targetFolderId=%d]",
                                     file.getId(), file.getFileName(), targetFolder.getId()));
                 }
+            }
+
+            if (!targetNames.add(file.getFileName())) {
+                throw new FileAlreadyExistsException(
+                        String.format("目标目录已存在同名文件 [targetId=%d, fileName=%s]",
+                                targetId, file.getFileName()));
             }
         }
         long checkEndTime = System.currentTimeMillis();
@@ -422,21 +527,43 @@ public class FileServiceImpl implements FileService {
     private void batchCopyCommonFiles(List<File> files, File parentFile) {
         log.debug("开始批量复制普通文件 [文件数量={}, 目标父文件夹ID={}]", files.size(), parentFile.getId());
 
-        // 1. 收集所有资源ID
-        List<Long> resourceIds = files.stream()
+        Set<String> targetNames = fileMapper.findByParentId(parentFile.getId(), true, null, null).stream()
+                .map(File::getFileName)
+                .collect(java.util.stream.Collectors.toCollection(HashSet::new));
+        for (File file : files) {
+            if (!targetNames.add(file.getFileName())) {
+                throw new FileAlreadyExistsException(
+                        String.format("目标目录已存在同名文件 [targetId=%d, fileName=%s]",
+                                parentFile.getId(), file.getFileName()));
+            }
+        }
+
+        // 1. 收集所有资源ID及本次需要增加的引用次数
+        Map<Long, Long> copyCountByResourceId = files.stream()
                 .map(File::getResourceId)
                 .filter(Objects::nonNull)
-                .distinct()
-                .collect(java.util.stream.Collectors.toList());
+                .collect(java.util.stream.Collectors.groupingBy(resourceId -> resourceId, LinkedHashMap::new,
+                        java.util.stream.Collectors.counting()));
+        List<Long> resourceIds = new ArrayList<>(copyCountByResourceId.keySet());
 
         if (resourceIds.isEmpty()) {
             log.warn("没有找到有效的资源ID [文件数量={}]", files.size());
             return;
         }
 
-        // 2. 批量更新资源引用计数（性能优化：一次性更新所有资源的引用计数）
-        resourceMapper.batchUpdateLink(resourceIds, 1);
-        log.debug("批量更新资源引用计数完成 [资源数量={}]", resourceIds.size());
+        // 2. 按资源实际复制次数更新引用计数，避免同一资源被多次复制时计数偏差
+        List<Resource> resources = resourceMapper.findByIds(resourceIds);
+        Map<Long, Resource> resourceMap = resources.stream()
+                .collect(java.util.stream.Collectors.toMap(Resource::getId, resource -> resource));
+        for (Map.Entry<Long, Long> entry : copyCountByResourceId.entrySet()) {
+            Resource resource = resourceMap.get(entry.getKey());
+            if (Objects.isNull(resource)) {
+                throw new DatabaseException(
+                        String.format("资源记录不存在，数据库数据异常 [resourceId=%d]", entry.getKey()));
+            }
+            resourceMapper.updateLink(resource.getId(), resource.getLink() + entry.getValue().intValue());
+        }
+        log.debug("资源引用计数更新完成 [资源数量={}]", resourceIds.size());
 
         // 3. 批量创建文件记录（性能优化：一次性插入所有文件记录）
         Date createTime = new Date();
@@ -690,13 +817,18 @@ public class FileServiceImpl implements FileService {
         List<Resource> resources = resourceMapper.findByIds(resourceIds);
         Map<Long, Resource> resourceMap = resources.stream()
                 .collect(java.util.stream.Collectors.toMap(Resource::getId, r -> r));
+        Map<Long, Long> deleteCountByResourceId = files.stream()
+                .map(File::getResourceId)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.groupingBy(resourceId -> resourceId, LinkedHashMap::new,
+                        java.util.stream.Collectors.counting()));
 
         log.debug("批量查询资源完成 [资源数量={}]", resources.size());
 
         // 3. 分类处理资源：需要删除物理文件的资源和只需要减少引用计数的资源
         List<Long> fileIdsToDelete = new ArrayList<>();
-        List<Long> resourceIdsToDelete = new ArrayList<>();
-        List<Long> resourceIdsToDecrease = new ArrayList<>();
+        Set<Long> resourceIdsToDelete = new LinkedHashSet<>();
+        Map<Long, Integer> resourceLinkTargetMap = new LinkedHashMap<>();
 
         for (File file : files) {
             if (file.getResourceId() == null) {
@@ -712,20 +844,18 @@ public class FileServiceImpl implements FileService {
                 continue;
             }
 
-            // 判断引用计数
-            if (resource.getLink() <= 1) {
-                // 引用计数<=1，需要删除物理文件和资源记录
+            int remainingLink = resource.getLink() - deleteCountByResourceId.getOrDefault(resource.getId(), 0L).intValue();
+            if (remainingLink <= 0) {
                 resourceIdsToDelete.add(resource.getId());
-                fileIdsToDelete.add(file.getId());
             } else {
-                // 引用计数>1，只需要减少引用计数
-                resourceIdsToDecrease.add(resource.getId());
-                fileIdsToDelete.add(file.getId());
+                resourceLinkTargetMap.put(resource.getId(), remainingLink);
             }
+
+            fileIdsToDelete.add(file.getId());
         }
 
         log.debug("资源分类完成 [需要删除物理文件的数量={}, 需要减少引用计数的数量={}]",
-                resourceIdsToDelete.size(), resourceIdsToDecrease.size());
+                resourceIdsToDelete.size(), resourceLinkTargetMap.size());
 
         // 4. 删除物理文件（性能优化：批量删除）
         if (!resourceIdsToDelete.isEmpty()) {
@@ -748,14 +878,16 @@ public class FileServiceImpl implements FileService {
             log.info("批量删除物理文件完成 [成功删除数量={}, 总数量={}]", deletedCount, resourcesToDelete.size());
 
             // 批量删除资源记录
-            resourceMapper.batchDelete(resourceIdsToDelete);
+            resourceMapper.batchDelete(new ArrayList<>(resourceIdsToDelete));
             log.debug("批量删除资源记录完成 [资源数量={}]", resourceIdsToDelete.size());
         }
 
         // 5. 批量减少资源引用计数（性能优化：批量更新）
-        if (!resourceIdsToDecrease.isEmpty()) {
-            resourceMapper.batchUpdateLink(resourceIdsToDecrease, -1);
-            log.debug("批量减少资源引用计数完成 [资源数量={}]", resourceIdsToDecrease.size());
+        if (!resourceLinkTargetMap.isEmpty()) {
+            for (Map.Entry<Long, Integer> entry : resourceLinkTargetMap.entrySet()) {
+                resourceMapper.updateLink(entry.getKey(), entry.getValue());
+            }
+            log.debug("批量减少资源引用计数完成 [资源数量={}]", resourceLinkTargetMap.size());
         }
 
         // 6. 批量删除文件记录（性能优化：批量删除）
@@ -981,6 +1113,7 @@ public class FileServiceImpl implements FileService {
                 .type(FileType.FOLDER.toString()).parentId(parentFile.getId())
                 .fileName(file.getFileName())
                 .build();
+        ensureUniqueFileName(parentFile.getId(), file.getFileName(), null);
         fileMapper.save(newFile);
 
         // 查询原文件夹的所有子文件（不使用锁，因为只是读取）
@@ -1043,6 +1176,7 @@ public class FileServiceImpl implements FileService {
 
         // 创建新的文件记录，指向同一个资源ID
         // 这样多个文件记录可以共享同一个物理文件，节省存储空间
+        ensureUniqueFileName(parentFile.getId(), file.getFileName(), null);
         File newFile = File.builder()
                 .fileName(file.getFileName()).parentId(parentFile.getId())
                 .type(file.getType()).resourceId(file.getResourceId())
@@ -1066,6 +1200,101 @@ public class FileServiceImpl implements FileService {
         } else {
             return fileMapper.findById(id);
         }
+    }
+
+    private void ensureUniqueFileName(Long parentId, String fileName, Long excludeId) {
+        Integer count = fileMapper.countByParentIdAndFileName(parentId, fileName, excludeId);
+        if (count != null && count > 0) {
+            throw new FileAlreadyExistsException(
+                    String.format("当前目录下已存在同名文件 [parentId=%d, fileName=%s]",
+                            parentId, fileName));
+        }
+    }
+
+    private int normalizeLimit(Integer limit) {
+        if (limit == null || limit <= 0) {
+            return DEFAULT_RECENT_LIMIT;
+        }
+        return Math.min(limit, MAX_RECENT_LIMIT);
+    }
+
+    private String normalizeSortBy(String sortBy) {
+        if (Objects.isNull(sortBy) || sortBy.isBlank()) {
+            return "fileName";
+        }
+        return switch (sortBy) {
+            case "size", "createTime", "updateTime", "fileName" -> sortBy;
+            default -> "fileName";
+        };
+    }
+
+    private String normalizeSortOrder(String sortOrder) {
+        return "desc".equalsIgnoreCase(sortOrder) ? "desc" : "asc";
+    }
+
+    private String normalizeCategory(String category) {
+        if (Objects.isNull(category) || category.isBlank()) {
+            throw new DataFormatException("分类不能为空");
+        }
+        String normalized = category.trim().toLowerCase();
+        if (!List.of("picture", "video", "audio", "document", "compress", "other").contains(normalized)) {
+            throw new DataFormatException(String.format("不支持的分类 [category=%s]", category));
+        }
+        return normalized;
+    }
+
+    private boolean matchesCategory(File file, String category) {
+        return switch (category) {
+            case "picture" -> FileType.PICTURE.toString().equals(file.getType());
+            case "video" -> FileType.VIDEO.toString().equals(file.getType());
+            case "audio" -> FileType.AUDIO.toString().equals(file.getType());
+            case "document" -> DOCUMENT_TYPES.contains(file.getType());
+            case "compress" -> COMPRESS_TYPES.contains(file.getType());
+            case "other" -> !OTHER_EXCLUDED_TYPES.contains(file.getType());
+            default -> false;
+        };
+    }
+
+    private Map<String, Integer> initCategoryCounter() {
+        Map<String, Integer> categoryCountMap = new LinkedHashMap<>();
+        categoryCountMap.put("picture", 0);
+        categoryCountMap.put("video", 0);
+        categoryCountMap.put("audio", 0);
+        categoryCountMap.put("document", 0);
+        categoryCountMap.put("compress", 0);
+        categoryCountMap.put("other", 0);
+        return categoryCountMap;
+    }
+
+    private void incrementCategoryCount(Map<String, Integer> categoryCountMap, String type) {
+        if (FileType.PICTURE.toString().equals(type)) {
+            categoryCountMap.computeIfPresent("picture", (key, count) -> count + 1);
+            return;
+        }
+        if (FileType.VIDEO.toString().equals(type)) {
+            categoryCountMap.computeIfPresent("video", (key, count) -> count + 1);
+            return;
+        }
+        if (FileType.AUDIO.toString().equals(type)) {
+            categoryCountMap.computeIfPresent("audio", (key, count) -> count + 1);
+            return;
+        }
+        if (DOCUMENT_TYPES.contains(type)) {
+            categoryCountMap.computeIfPresent("document", (key, count) -> count + 1);
+            return;
+        }
+        if (COMPRESS_TYPES.contains(type)) {
+            categoryCountMap.computeIfPresent("compress", (key, count) -> count + 1);
+            return;
+        }
+        categoryCountMap.computeIfPresent("other", (key, count) -> count + 1);
+    }
+
+    private String buildFolderPath(List<FolderPathDto> navigation) {
+        return navigation.stream()
+                .map(FolderPathDto::getFileName)
+                .reduce((left, right) -> left + " / " + right)
+                .orElse(File.ROOT_FILE.getFileName());
     }
 
     // ==================== MD5校验与秒传功能实现 ====================
@@ -1117,6 +1346,7 @@ public class FileServiceImpl implements FileService {
             if (Objects.isNull(parentFile) || !FileType.FOLDER.toString().equals(parentFile.getType())) {
                 throw new DataFormatException("父文件夹不存在或不是文件夹类型");
             }
+            ensureUniqueFileName(parentId, fileName, null);
 
             // 2. 计算上传文件的MD5值
             log.debug("开始计算上传文件MD5 [fileName={}]", fileName);
@@ -1408,6 +1638,7 @@ public class FileServiceImpl implements FileService {
         if (Objects.isNull(parentFile) || !FileType.FOLDER.toString().equals(parentFile.getType())) {
             throw new DataFormatException("父文件夹不存在或不是文件夹类型");
         }
+        ensureUniqueFileName(parentId, fileName, null);
 
         // 查找已有资源
         Resource existingResource = resourceMapper.findByMd5(md5);
@@ -1488,10 +1719,9 @@ public class FileServiceImpl implements FileService {
                 .path(relativePath)
                 .link(1)
                 .build();
-        Long resourceId = resourceMapper.save(resource);
-        resource.setId(resourceId);
+        resourceMapper.save(resource);
 
-        log.debug("资源记录创建成功 [resourceId={}, path={}]", resourceId, relativePath);
+        log.debug("资源记录创建成功 [resourceId={}, path={}]", resource.getId(), relativePath);
 
         return resource;
     }

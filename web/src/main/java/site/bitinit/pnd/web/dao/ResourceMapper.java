@@ -70,7 +70,7 @@ public interface ResourceMapper {
      * @param id  资源ID
      * @param md5 MD5值
      */
-    @org.apache.ibatis.annotations.Update("UPDATE pnd_resource SET md5 = #{md5}, update_time = NOW() WHERE id = #{id}")
+    @org.apache.ibatis.annotations.Update("UPDATE resource SET md5 = #{md5}, update_time = NOW() WHERE id = #{id}")
     void updateResourceMD5(@Param("id") Long id, @Param("md5") String md5);
 
     /**
@@ -86,7 +86,7 @@ public interface ResourceMapper {
      */
     @org.apache.ibatis.annotations.Update({
             "<script>",
-            "UPDATE pnd_resource SET link = link + #{increment} WHERE id IN",
+            "UPDATE resource SET link = link + #{increment} WHERE id IN",
             "<foreach collection='resourceIdList' item='id' open='(' separator=',' close=')'>",
             "#{id}",
             "</foreach>",
@@ -108,7 +108,7 @@ public interface ResourceMapper {
      */
     @org.apache.ibatis.annotations.Select({
             "<script>",
-            "SELECT * FROM pnd_resource WHERE id IN",
+            "SELECT * FROM resource WHERE id IN",
             "<foreach collection='ids' item='id' open='(' separator=',' close=')'>",
             "#{id}",
             "</foreach>",
@@ -128,7 +128,7 @@ public interface ResourceMapper {
      */
     @org.apache.ibatis.annotations.Delete({
             "<script>",
-            "DELETE FROM pnd_resource WHERE id IN",
+            "DELETE FROM resource WHERE id IN",
             "<foreach collection='ids' item='id' open='(' separator=',' close=')'>",
             "#{id}",
             "</foreach>",

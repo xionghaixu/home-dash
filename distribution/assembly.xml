@@ -58,7 +58,7 @@
         </file>
         <file>
             <!--打好的jar包名称和放置目录-->
-            <source>../web/target/pnd-web.jar</source>
+            <source>../web/target/home-dash-web.jar</source>
             <outputDirectory>/lib/</outputDirectory>
         </file>
         <file>

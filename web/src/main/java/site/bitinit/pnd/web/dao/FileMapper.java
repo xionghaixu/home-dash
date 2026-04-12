@@ -35,6 +35,23 @@ public interface FileMapper {
     List<File> findByIds(@Param("ids") List<Long> ids);
 
     /**
+     * 获取所有文件（不含目录筛选）。
+     *
+     * @param sortBy    排序字段
+     * @param sortOrder 排序方式
+     * @return 文件列表
+     */
+    List<File> findAll(@Param("sortBy") String sortBy, @Param("sortOrder") String sortOrder);
+
+    /**
+     * 获取最近上传文件列表。
+     *
+     * @param limit 数量限制
+     * @return 最近上传文件
+     */
+    List<File> findRecentFiles(@Param("limit") Integer limit);
+
+    /**
      * 通过parentId获取所有子文件
      *
      * @param parentId  parentId
@@ -53,6 +70,18 @@ public interface FileMapper {
      * @return list
      */
     List<File> findByParentIdForUpdate(@Param("parentId") Long parentId);
+
+    /**
+     * 检查同目录下是否已存在同名文件。
+     *
+     * @param parentId  父目录ID
+     * @param fileName  文件名
+     * @param excludeId 排除的文件ID
+     * @return 数量
+     */
+    Integer countByParentIdAndFileName(@Param("parentId") Long parentId,
+                                       @Param("fileName") String fileName,
+                                       @Param("excludeId") Long excludeId);
 
     /**
      * 保存文件
@@ -105,7 +134,7 @@ public interface FileMapper {
      */
     @org.apache.ibatis.annotations.Insert({
             "<script>",
-            "INSERT INTO pnd_file (parent_id, file_name, type, resource_id, create_time, update_time)",
+            "INSERT INTO file (parent_id, file_name, type, resource_id, create_time, update_time)",
             "VALUES",
             "<foreach collection='files' item='file' separator=','>",
             "(#{file.parentId}, #{file.fileName}, #{file.type}, #{file.resourceId}, #{file.createTime}, #{file.updateTime})",

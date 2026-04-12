@@ -2,6 +2,7 @@ package site.bitinit.pnd.web.service;
 
 import org.springframework.core.io.Resource;
 import site.bitinit.pnd.web.controller.dto.MergeFileDto;
+import site.bitinit.pnd.web.controller.dto.ResponseDto;
 import site.bitinit.pnd.web.entity.File;
 import site.bitinit.pnd.web.entity.ResourceChunk;
 
@@ -74,4 +75,20 @@ public interface ResourceService {
      * @return 清理的任务数量
      */
     int cleanupTimeoutUploads(int timeoutMinutes);
+
+    /**
+     * 获取传输任务列表和摘要。
+     *
+     * @return 传输任务响应
+     */
+    ResponseDto transferTasks();
+
+    /**
+     * 清理指定状态的传输任务记录。
+     * 阶段一默认用于清空已完成记录，也支持清理失败/取消记录。
+     *
+     * @param status 状态，支持completed/failed/cancelled/all/finished，多个状态可逗号分隔
+     * @return 清理数量
+     */
+    int clearTransferTasks(String status);
 }

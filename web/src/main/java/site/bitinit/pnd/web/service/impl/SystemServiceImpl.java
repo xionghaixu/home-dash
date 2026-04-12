@@ -83,7 +83,13 @@ public class SystemServiceImpl implements SystemService {
         List<site.bitinit.pnd.web.entity.File> files = fileMapper.getAllFileType();
 
         // 统计各类文件数量
-        int totalFileNum = 0, folderNum = 0, videoNum = 0, audioNum = 0;
+        int totalFileNum = 0;
+        int folderNum = 0;
+        int videoNum = 0;
+        int audioNum = 0;
+        int pictureNum = 0;
+        int docNum = 0;
+        int compressNum = 0;
         for (site.bitinit.pnd.web.entity.File file : files) {
             totalFileNum++;
             // 统计文件夹数量
@@ -98,15 +104,39 @@ public class SystemServiceImpl implements SystemService {
             if (FileType.AUDIO.toString().equals(file.getType())) {
                 audioNum++;
             }
+            if (FileType.PICTURE.toString().equals(file.getType())) {
+                pictureNum++;
+            }
+            if (FileType.DOC.toString().equals(file.getType())
+                    || FileType.PDF.toString().equals(file.getType())
+                    || FileType.TXT.toString().equals(file.getType())
+                    || FileType.PPT.toString().equals(file.getType())
+                    || FileType.CODE.toString().equals(file.getType())
+                    || FileType.WEB.toString().equals(file.getType())) {
+                docNum++;
+            }
+            if (FileType.COMPRESS_FILE.toString().equals(file.getType())) {
+                compressNum++;
+            }
         }
 
         // 构建并返回系统信息DTO
+        int normalFileNum = totalFileNum - folderNum;
+        int otherNum = normalFileNum - videoNum - audioNum - pictureNum - docNum - compressNum;
+        int recentUploadNum = fileMapper.findRecentFiles(20).size();
         builder.totalNum(totalFileNum).fileNum(totalFileNum - folderNum)
-                .folderNum(folderNum).videoNum(videoNum).audioNum(audioNum);
+                .folderNum(folderNum)
+                .videoNum(videoNum)
+                .audioNum(audioNum)
+                .pictureNum(pictureNum)
+                .docNum(docNum)
+                .compressNum(compressNum)
+                .otherNum(Math.max(otherNum, 0))
+                .recentUploadNum(recentUploadNum);
 
         SystemInfoDto result = builder.build();
-        log.info("系统信息获取完成 [totalFiles={}, folders={}, videos={}, audios={}]",
-                totalFileNum, folderNum, videoNum, audioNum);
+        log.info("系统信息获取完成 [totalFiles={}, folders={}, videos={}, audios={}, pictures={}, docs={}, compress={}, recent={}]",
+                totalFileNum, folderNum, videoNum, audioNum, pictureNum, docNum, compressNum, recentUploadNum);
 
         return result;
     }

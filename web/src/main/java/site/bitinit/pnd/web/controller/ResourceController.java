@@ -249,6 +249,36 @@ public class ResourceController {
     }
 
     /**
+     * 获取传输任务列表。
+     *
+     * @return 传输任务及摘要
+     */
+    @GetMapping("/resource/transfers")
+    public ResponseEntity<ResponseDto> getTransferTasks() {
+        log.info("获取传输任务列表请求");
+        return ResponseEntity.ok(resourceService.transferTasks());
+    }
+
+    /**
+     * 清理传输任务记录。
+     *
+     * @param status 需要清理的状态，默认completed
+     * @return 清理结果
+     */
+    @DeleteMapping("/resource/transfers")
+    public ResponseEntity<ResponseDto> clearTransferTasks(
+            @RequestParam(required = false, defaultValue = "completed") String status) {
+        log.info("清理传输任务记录请求 [status={}]", status);
+
+        int clearedCount = resourceService.clearTransferTasks(status);
+        Map<String, Object> resultData = new HashMap<>();
+        resultData.put("status", status);
+        resultData.put("clearedCount", clearedCount);
+
+        return ResponseEntity.ok(ResponseDto.success(resultData));
+    }
+
+    /**
      * 合并文件分块。
      * 将所有分块合并成完整文件，并创建文件记录。
      *

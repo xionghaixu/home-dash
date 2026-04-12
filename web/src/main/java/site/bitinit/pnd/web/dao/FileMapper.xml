@@ -13,19 +13,59 @@
 
     <select id="findById" resultType="file">
         SELECT
-          <include refid="fileFields"><property name="alias" value="f" /></include>
+          <include refid="fileFields"><property name="alias" value="f" /></include>,
+          <include refid="sizeField"><property name="alias" value="r" /></include>
         FROM file f
+        LEFT JOIN resource r ON f.resource_id = r.id
         WHERE f.id = #{id}
     </select>
 
     <select id="findByIds" resultType="file">
         SELECT
-          <include refid="fileFields"><property name="alias" value="f" /></include>
+          <include refid="fileFields"><property name="alias" value="f" /></include>,
+          <include refid="sizeField"><property name="alias" value="r" /></include>
         FROM file f
+        LEFT JOIN resource r ON f.resource_id = r.id
         WHERE f.id IN
         <foreach collection="ids" item="item" open="(" separator="," close=")">
             #{item}
         </foreach>
+    </select>
+
+    <select id="findAll" resultType="file">
+        SELECT
+          <include refid="fileFields"><property name="alias" value="f" /></include>,
+          <include refid="sizeField"><property name="alias" value="r" /></include>
+        FROM file f
+        LEFT JOIN resource r ON f.resource_id = r.id
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'size'">
+                r.size
+            </when>
+            <when test="sortBy == 'createTime'">
+                f.create_time
+            </when>
+            <when test="sortBy == 'updateTime'">
+                f.update_time
+            </when>
+            <otherwise>
+                f.file_name
+            </otherwise>
+        </choose>
+        <if test="sortOrder == 'desc'"> DESC</if>
+        <if test="sortOrder != 'desc'"> ASC</if>
+    </select>
+
+    <select id="findRecentFiles" resultType="file">
+        SELECT
+          <include refid="fileFields"><property name="alias" value="f" /></include>,
+          <include refid="sizeField"><property name="alias" value="r" /></include>
+        FROM file f
+        LEFT JOIN resource r ON f.resource_id = r.id
+        WHERE f.type != 'folder'
+        ORDER BY f.create_time DESC, f.id DESC
+        LIMIT #{limit}
     </select>
 
     <select id="findByParentId" resultType="file">
@@ -66,6 +106,16 @@
         FOR UPDATE
     </select>
 
+    <select id="countByParentIdAndFileName" resultType="int">
+        SELECT COUNT(1)
+        FROM file
+        WHERE parent_id = #{parentId}
+          AND file_name = #{fileName}
+        <if test="excludeId != null">
+          AND id != #{excludeId}
+        </if>
+    </select>
+
     <insert id="save" useGeneratedKeys="true" keyProperty="id" parameterType="file">
         INSERT INTO
           file (file_name, parent_id, type, resource_id, create_time, update_time)
@@ -76,7 +126,7 @@
         UPDATE file
         SET
         <if test="parentId != null">
-            parentId = #{parentId},
+            parent_id = #{parentId},
         </if>
         <if test="fileName != null">
             file_name = #{fileName},

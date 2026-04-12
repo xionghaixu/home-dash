@@ -2,6 +2,7 @@ package site.bitinit.pnd.web.service;
 
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
+import site.bitinit.pnd.web.controller.dto.InstantUploadDto;
 import site.bitinit.pnd.web.controller.dto.ResponseDto;
 import site.bitinit.pnd.web.entity.File;
 
@@ -26,6 +27,31 @@ public interface FileService {
      * @return list
      */
     ResponseDto findByParentId(Long parentId, String sortBy, String sortOrder);
+
+    /**
+     * 获取最近上传文件列表。
+     *
+     * @param limit 返回数量上限
+     * @return 最近上传文件列表
+     */
+    ResponseDto findRecentFiles(Integer limit);
+
+    /**
+     * 根据阶段一分类获取文件列表。
+     *
+     * @param category  分类名称
+     * @param sortBy    排序字段
+     * @param sortOrder 排序方式
+     * @return 分类文件列表
+     */
+    ResponseDto findFilesByCategory(String category, String sortBy, String sortOrder);
+
+    /**
+     * 获取分类汇总信息。
+     *
+     * @return 分类数量摘要
+     */
+    ResponseDto categorySummary();
 
     /**
      * 根据id返回文件

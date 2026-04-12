@@ -53,11 +53,11 @@ public class PndProperties {
     /** 嵌入式数据库连接URL，在初始化时自动生成。使用H2数据库。 */
     private String embedDbUrl;
 
-    /** 嵌入式数据库用户名，默认为"pnd"。 */
-    private String embedDbUsername = "pnd";
+    /** 嵌入式数据库用户名，默认为"home_dash"。 */
+    private String embedDbUsername = "home_dash";
 
-    /** 嵌入式数据库密码，默认为"pnd"。 */
-    private String embedDbPassword = "pnd";
+    /** 嵌入式数据库密码，默认为"home_dash"。 */
+    private String embedDbPassword = "home_dash";
 
     // ==================== 文件存储路径配置 ====================
 
@@ -110,7 +110,7 @@ public class PndProperties {
         setPndHome(getEnvProperty(Constants.PND_HOME,
                 System.getProperty("user.dir") + File.separator + "data"));
         setPndDataDir(getPndHome() + File.separator + "data");
-        setEmbedDbUrl("jdbc:h2:file:" + getPndDataDir() + File.separator + "pnd;MODE=MySQL;DATABASE_TO_UPPER=FALSE;DB_CLOSE_DELAY=-1");
+        setEmbedDbUrl("jdbc:h2:file:" + getPndDataDir() + File.separator + "home_dash;MODE=MySQL;DATABASE_TO_UPPER=FALSE;DB_CLOSE_DELAY=-1");
 
         setUseMysql(Boolean.valueOf(getEnvProperty(Constants.USE_MYSQL, "false")));
         setMysqlUrl(getEnvProperty(Constants.MYSQL_URL, StringUtils.EMPTY));

@@ -11,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import site.bitinit.pnd.web.Constants;
+import site.bitinit.pnd.web.controller.dto.InstantUploadDto;
 import site.bitinit.pnd.web.controller.dto.MoveAndCopyFileDto;
 import site.bitinit.pnd.web.controller.dto.ResponseDto;
 import site.bitinit.pnd.web.dao.FileMapper;
@@ -74,6 +76,46 @@ public class FileController {
     }
 
     /**
+     * 获取最近上传文件列表。
+     *
+     * @param limit 返回数量上限
+     * @return 最近上传文件列表
+     */
+    @GetMapping("/file/recent")
+    public ResponseEntity<ResponseDto> getRecentFiles(@RequestParam(required = false) Integer limit) {
+        log.info("获取最近上传文件列表请求 [limit={}]", limit);
+        return ResponseEntity.ok(fileService.findRecentFiles(limit));
+    }
+
+    /**
+     * 获取基础分类文件列表。
+     *
+     * @param category  分类名称
+     * @param sortBy    排序字段
+     * @param sortOrder 排序方向
+     * @return 分类文件列表
+     */
+    @GetMapping("/file/category/{category}")
+    public ResponseEntity<ResponseDto> getFilesByCategory(@PathVariable String category,
+            @RequestParam(defaultValue = "updateTime") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortOrder) {
+        log.info("获取分类文件列表请求 [category={}, sortBy={}, sortOrder={}]",
+                category, sortBy, sortOrder);
+        return ResponseEntity.ok(fileService.findFilesByCategory(category, sortBy, sortOrder));
+    }
+
+    /**
+     * 获取分类数量摘要。
+     *
+     * @return 分类数量摘要
+     */
+    @GetMapping("/file/category-summary")
+    public ResponseEntity<ResponseDto> getCategorySummary() {
+        log.info("获取分类摘要请求");
+        return ResponseEntity.ok(fileService.categorySummary());
+    }
+
+    /**
      * 根据文件ID获取文件详情。
      *
      * @param fileId 文件ID
@@ -116,6 +158,65 @@ public class FileController {
         log.info("文件创建成功 [fileId={}, fileName={}]", file.getId(), file.getFileName());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ResponseDto.success());
+    }
+
+    /**
+     * 单文件上传，支持 MD5 预检后的秒传兜底。
+     *
+     * @param file     上传文件
+     * @param parentId 父目录ID
+     * @return 上传结果
+     */
+    @PostMapping("/file/upload")
+    public ResponseEntity<ResponseDto> uploadFile(@RequestParam("file") MultipartFile file,
+            @RequestParam("parentId") Long parentId) {
+        log.info("单文件上传请求 [fileName={}, parentId={}, size={}]",
+                file != null ? file.getOriginalFilename() : null,
+                parentId,
+                file != null ? file.getSize() : 0);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(fileService.uploadWithMD5(file, parentId));
+    }
+
+    /**
+     * MD5 预检。
+     *
+     * @param md5 MD5值
+     * @return 是否可秒传
+     */
+    @GetMapping("/file/md5/check")
+    public ResponseEntity<ResponseDto> checkFileByMd5(@RequestParam("md5") String md5) {
+        log.info("MD5预检请求 [md5={}]", md5);
+        return ResponseEntity.ok(fileService.checkFileByMD5(md5));
+    }
+
+    /**
+     * 秒传接口。
+     *
+     * @param dto 秒传请求参数
+     * @return 秒传结果
+     */
+    @PostMapping("/file/instant-upload")
+    public ResponseEntity<ResponseDto> instantUpload(@RequestBody InstantUploadDto dto) {
+        if (Objects.isNull(dto)) {
+            throw new DataFormatException("秒传参数不能为空");
+        }
+        log.info("秒传请求 [md5={}, fileName={}, parentId={}]",
+                dto.getMd5(), dto.getFileName(), dto.getParentId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(fileService.instantUpload(dto.getMd5(), dto.getFileName(), dto.getParentId()));
+    }
+
+    /**
+     * 校验文件完整性。
+     *
+     * @param fileId 文件ID
+     * @return 完整性校验结果
+     */
+    @GetMapping("/file/{fileId}/verify-md5")
+    public ResponseEntity<ResponseDto> verifyFileMd5(@PathVariable Long fileId) {
+        log.info("文件MD5校验请求 [fileId={}]", fileId);
+        return ResponseEntity.ok(fileService.verifyFileMD5(fileId));
     }
 
     /**

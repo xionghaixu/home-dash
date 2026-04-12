@@ -25,5 +25,10 @@ public class SystemInfoDto {
 
     private Integer videoNum;
     private Integer audioNum;
+    private Integer pictureNum;
+    private Integer docNum;
+    private Integer compressNum;
+    private Integer otherNum;
+    private Integer recentUploadNum;
 
 }

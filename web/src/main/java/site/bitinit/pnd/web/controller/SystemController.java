@@ -41,7 +41,7 @@ public class SystemController {
      *
      * @return 包含系统信息的响应对象
      */
-    @GetMapping("/system")
+    @GetMapping({"/system", "/system/info"})
     public ResponseEntity<ResponseDto> getSystemInfo() {
         log.info("收到获取系统信息请求");
         SystemInfoDto systemInfo = systemService.systemInfo();

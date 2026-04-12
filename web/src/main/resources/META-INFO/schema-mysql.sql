@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.7.17, for macos10.12 (x86_64)
 --
--- Host: localhost    Database: pnd
+-- Host: localhost    Database: home_dash
 -- ------------------------------------------------------
 -- Server version	5.7.25
 

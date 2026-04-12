@@ -1,10 +1,10 @@
 FROM openjdk:8-jre-alpine
 
-WORKDIR /pnd
-COPY . /pnd
+WORKDIR /home-dash
+COPY . /home-dash
 
 RUN echo "Asia/Shanghai" > /etc/timezone
 
 EXPOSE 8989
-VOLUME /pnd/data
+VOLUME /home-dash/data
 ENTRYPOINT ["bin/docker-startup.sh"]

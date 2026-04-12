@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.bitinit.pnd.web.config.PndProperties;
 import site.bitinit.pnd.web.controller.dto.MergeFileDto;
+import site.bitinit.pnd.web.controller.dto.ResponseDto;
+import site.bitinit.pnd.web.controller.dto.TransferTaskDto;
 import site.bitinit.pnd.web.dao.ResourceChunkMapper;
 import site.bitinit.pnd.web.dao.ResourceMapper;
 import site.bitinit.pnd.web.entity.Resource;
@@ -54,6 +56,23 @@ import java.util.stream.Collectors;
 public class ResourceServiceImpl implements ResourceService {
 
     /**
+     * 轻量传输任务状态。
+     */
+    private static class TransferTaskState {
+        private String identifier;
+        private String fileName;
+        private String status;
+        private String errorMessage;
+        private Long totalSize;
+        private Long parentId;
+        private Long fileId;
+        private Integer totalChunks;
+        private Integer uploadedChunks;
+        private Date createTime;
+        private Date updateTime;
+    }
+
+    /**
      * 文件合并结果内部类。
      * 用于封装合并后的文件信息，包括MD5值和相对存储路径。
      */
@@ -89,6 +108,8 @@ public class ResourceServiceImpl implements ResourceService {
 
     /** 上传任务最后活动时间缓存（用于超时检测） */
     private final Map<String, Long> uploadActivityCache = new ConcurrentHashMap<>();
+    /** 轻量传输任务缓存（用于阶段一传输列表页）。 */
+    private final Map<String, TransferTaskState> transferTaskCache = new ConcurrentHashMap<>();
 
     private final PndProperties pndProperties;
     private final ResourceChunkMapper chunkMapper;
@@ -324,6 +345,7 @@ public class ResourceServiceImpl implements ResourceService {
 
                 // 更新上传任务的活动时间，用于超时检测
                 uploadActivityCache.put(chunk.getIdentifier(), System.currentTimeMillis());
+                markUploading(chunk);
 
                 long elapsedTime = System.currentTimeMillis() - startTime;
                 log.info("文件分块保存成功 [identifier={}, chunkNumber={}, chunkPath={}, md5={}, 耗时={}ms, retryCount={}]",
@@ -350,6 +372,8 @@ public class ResourceServiceImpl implements ResourceService {
                 if (retryCount > MAX_RETRY_COUNT) {
                     log.error("分块上传失败，已达最大重试次数 [identifier={}, chunkNumber={}, maxRetries={}]",
                             chunk.getIdentifier(), chunk.getChunkNumber(), MAX_RETRY_COUNT);
+                    markFailed(chunk.getIdentifier(), chunk.getFilename(),
+                            String.format("分块上传失败：%s", e.getMessage()));
                     break;
                 }
             }
@@ -390,36 +414,36 @@ public class ResourceServiceImpl implements ResourceService {
             throw new UploadException("文件名不能为空");
         }
 
-        // 先合并文件并计算MD5
-        MergeResult mergeResult = mergeChunksAndCalculateMD5(mergeFileDto);
-        String md5 = mergeResult.getMd5();
-        String relativePath = mergeResult.getRelativePath();
+        try {
+            // 先合并文件并计算MD5
+            MergeResult mergeResult = mergeChunksAndCalculateMD5(mergeFileDto);
+            String md5 = mergeResult.getMd5();
+            String relativePath = mergeResult.getRelativePath();
 
-        // 检查是否存在相同MD5的资源（秒传功能）
-        Resource existingResource = resourceMapper.findByMd5(md5);
-        if (Objects.nonNull(existingResource)) {
-            log.info("发现相同MD5的资源，启用秒传功能 [identifier={}, fileName={}, md5={}, existingResourceId={}]",
-                    mergeFileDto.getIdentifier(), mergeFileDto.getFileName(), md5, existingResource.getId());
+            // 检查是否存在相同MD5的资源（秒传功能）
+            Resource existingResource = resourceMapper.findByMd5(md5);
+            if (Objects.nonNull(existingResource)) {
+                log.info("发现相同MD5的资源，启用秒传功能 [identifier={}, fileName={}, md5={}, existingResourceId={}]",
+                        mergeFileDto.getIdentifier(), mergeFileDto.getFileName(), md5, existingResource.getId());
 
-            // 删除临时文件和分块记录
-            deleteTempFiles(mergeFileDto);
+                deleteTempFiles(mergeFileDto);
+                deleteMergedFile(relativePath);
+                createFileWithExistingResource(mergeFileDto, existingResource);
+            } else {
+                log.info("未发现相同MD5的资源，创建新资源 [identifier={}, fileName={}, md5={}]",
+                        mergeFileDto.getIdentifier(), mergeFileDto.getFileName(), md5);
+                generateRecord(mergeFileDto, md5, relativePath);
+            }
 
-            // 删除刚合并的文件（因为秒传不需要保存新文件）
-            deleteMergedFile(relativePath);
-
-            // 使用现有资源创建文件记录
-            createFileWithExistingResource(mergeFileDto, existingResource);
-        } else {
-            log.info("未发现相同MD5的资源，创建新资源 [identifier={}, fileName={}, md5={}]",
-                    mergeFileDto.getIdentifier(), mergeFileDto.getFileName(), md5);
-
-            // 创建新的Resource记录和File记录
-            generateRecord(mergeFileDto, md5, relativePath);
+            markCompleted(mergeFileDto);
+            long elapsedTime = System.currentTimeMillis() - startTime;
+            log.info("文件分块合并成功 [identifier={}, fileName={}, resourceId={}, 总耗时={}ms]",
+                    mergeFileDto.getIdentifier(), mergeFileDto.getFileName(), mergeFileDto.getResourceId(), elapsedTime);
+        } catch (RuntimeException e) {
+            markFailed(mergeFileDto.getIdentifier(), mergeFileDto.getFileName(),
+                    String.format("分块合并失败：%s", e.getMessage()));
+            throw e;
         }
-
-        long elapsedTime = System.currentTimeMillis() - startTime;
-        log.info("文件分块合并成功 [identifier={}, fileName={}, resourceId={}, 总耗时={}ms]",
-                mergeFileDto.getIdentifier(), mergeFileDto.getFileName(), mergeFileDto.getResourceId(), elapsedTime);
     }
 
     /**
@@ -947,6 +971,7 @@ public class ResourceServiceImpl implements ResourceService {
             // 从活动缓存中移除该上传任务
             uploadActivityCache.remove(identifier);
             log.debug("已从活动缓存中移除 [identifier={}]", identifier);
+            markCancelled(identifier, "上传已取消");
 
             log.info("文件上传取消完成 [identifier={}, deletedChunks={}]",
                     identifier, chunksCount);
@@ -1026,6 +1051,155 @@ public class ResourceServiceImpl implements ResourceService {
         }
 
         return cleanedCount;
+    }
+
+    @Override
+    public ResponseDto transferTasks() {
+        List<TransferTaskDto> tasks = transferTaskCache.values().stream()
+                .map(this::toTransferTaskDto)
+                .sorted(Comparator.comparing(TransferTaskDto::getUpdateTime,
+                        Comparator.nullsLast(Date::compareTo)).reversed())
+                .toList();
+
+        Map<String, Long> summary = tasks.stream().collect(Collectors.groupingBy(
+                task -> task.getStatus() == null ? "unknown" : task.getStatus(),
+                LinkedHashMap::new,
+                Collectors.counting()));
+        summary.putIfAbsent("uploading", 0L);
+        summary.putIfAbsent("completed", 0L);
+        summary.putIfAbsent("failed", 0L);
+        summary.putIfAbsent("cancelled", 0L);
+        summary.put("total", (long) tasks.size());
+
+        return ResponseDto.success(tasks, summary);
+    }
+
+    @Override
+    public int clearTransferTasks(String status) {
+        Set<String> clearableStatuses = normalizeTransferStatuses(status);
+        List<String> identifiers = transferTaskCache.entrySet().stream()
+                .filter(entry -> clearableStatuses.contains(normalizeTransferStatus(entry.getValue().status)))
+                .map(Map.Entry::getKey)
+                .toList();
+
+        identifiers.forEach(transferTaskCache::remove);
+        return identifiers.size();
+    }
+
+    private void markUploading(ResourceChunk chunk) {
+        TransferTaskState state = transferTaskCache.computeIfAbsent(chunk.getIdentifier(), this::newTransferTaskState);
+        state.fileName = chunk.getFilename();
+        state.status = "uploading";
+        state.errorMessage = null;
+        state.totalSize = chunk.getTotalSize();
+        state.totalChunks = chunk.getTotalChunks();
+        state.uploadedChunks = chunkMapper.findByIdentifier(chunk.getIdentifier()).size();
+        state.updateTime = new Date();
+        if (state.createTime == null) {
+            state.createTime = new Date();
+        }
+    }
+
+    private void markCompleted(MergeFileDto fileDto) {
+        TransferTaskState state = transferTaskCache.computeIfAbsent(fileDto.getIdentifier(), this::newTransferTaskState);
+        state.fileName = fileDto.getFileName();
+        state.status = "completed";
+        state.errorMessage = null;
+        state.totalSize = fileDto.getSize();
+        state.parentId = fileDto.getParentId();
+        state.fileId = fileDto.getId();
+        state.uploadedChunks = state.totalChunks;
+        state.updateTime = new Date();
+        if (state.createTime == null) {
+            state.createTime = new Date();
+        }
+        uploadActivityCache.remove(fileDto.getIdentifier());
+    }
+
+    private void markFailed(String identifier, String fileName, String errorMessage) {
+        TransferTaskState state = transferTaskCache.computeIfAbsent(identifier, this::newTransferTaskState);
+        state.fileName = fileName;
+        state.status = "failed";
+        state.errorMessage = errorMessage;
+        state.updateTime = new Date();
+        if (state.createTime == null) {
+            state.createTime = new Date();
+        }
+    }
+
+    private void markCancelled(String identifier, String message) {
+        TransferTaskState state = transferTaskCache.computeIfAbsent(identifier, this::newTransferTaskState);
+        state.status = "cancelled";
+        state.errorMessage = message;
+        state.updateTime = new Date();
+        if (state.createTime == null) {
+            state.createTime = new Date();
+        }
+    }
+
+    private TransferTaskState newTransferTaskState(String identifier) {
+        TransferTaskState state = new TransferTaskState();
+        state.identifier = identifier;
+        state.createTime = new Date();
+        state.updateTime = new Date();
+        state.uploadedChunks = 0;
+        state.totalChunks = 0;
+        return state;
+    }
+
+    private TransferTaskDto toTransferTaskDto(TransferTaskState state) {
+        int progress = 0;
+        if (state.totalChunks != null && state.totalChunks > 0 && state.uploadedChunks != null) {
+            progress = Math.min(100, (int) Math.round(state.uploadedChunks * 100.0 / state.totalChunks));
+        }
+        if ("completed".equals(state.status)) {
+            progress = 100;
+        }
+        return TransferTaskDto.builder()
+                .identifier(state.identifier)
+                .fileName(state.fileName)
+                .status(state.status)
+                .errorMessage(state.errorMessage)
+                .totalSize(state.totalSize)
+                .parentId(state.parentId)
+                .fileId(state.fileId)
+                .totalChunks(state.totalChunks)
+                .uploadedChunks(state.uploadedChunks)
+                .progress(progress)
+                .createTime(state.createTime)
+                .updateTime(state.updateTime)
+                .build();
+    }
+
+    private Set<String> normalizeTransferStatuses(String status) {
+        Set<String> statuses = new LinkedHashSet<>();
+        String normalizedInput = status == null ? "completed" : status.trim().toLowerCase();
+        if (normalizedInput.isEmpty()) {
+            normalizedInput = "completed";
+        }
+
+        for (String item : normalizedInput.split(",")) {
+            String normalized = item.trim();
+            if (normalized.isEmpty()) {
+                continue;
+            }
+            switch (normalized) {
+                case "completed", "failed", "cancelled" -> statuses.add(normalized);
+                case "finished" -> statuses.addAll(List.of("completed", "failed", "cancelled"));
+                case "all" -> statuses.addAll(List.of("completed", "failed", "cancelled"));
+                default -> throw new site.bitinit.pnd.web.exception.DataFormatException(
+                        String.format("不支持的传输状态清理类型 [status=%s]", status));
+            }
+        }
+
+        if (statuses.isEmpty()) {
+            statuses.add("completed");
+        }
+        return statuses;
+    }
+
+    private String normalizeTransferStatus(String status) {
+        return status == null ? "" : status.trim().toLowerCase();
     }
 
     /**
