@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="PND PMD Ruleset"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+
+    <description>
+        PND项目代码质量检查规则集
+        遵循轻量化原则，只检查关键代码质量问题
+    </description>
+
+    <!-- 最佳实践规则 -->
+    <rule ref="category/java/bestpractices.xml">
+        <!-- 排除一些不适用于项目的规则 -->
+        <exclude name="GuardLogStatement"/>
+        <exclude name="JUnitTestContainsTooManyAsserts"/>
+        <exclude name="JUnitAssertionsShouldIncludeMessage"/>
+    </rule>
+
+    <!-- 代码风格规则 -->
+    <rule ref="category/java/codestyle.xml">
+        <!-- 排除一些过于严格的规则 -->
+        <exclude name="AtLeastOneConstructor"/>
+        <exclude name="CallSuperInConstructor"/>
+        <exclude name="CommentDefaultAccessModifier"/>
+        <exclude name="ConfusingTernary"/>
+        <exclude name="LongVariable"/>
+        <exclude name="OnlyOneReturn"/>
+        <exclude name="ShortClassName"/>
+        <exclude name="ShortMethodName"/>
+        <exclude name="ShortVariable"/>
+        <exclude name="TooManyStaticImports"/>
+    </rule>
+
+    <!-- 设计规则 -->
+    <rule ref="category/java/design.xml">
+        <!-- 排除一些不适用于项目的规则 -->
+        <exclude name="AvoidCatchingGenericException"/>
+        <exclude name="CouplingBetweenObjects"/>
+        <exclude name="DataClass"/>
+        <exclude name="ExcessiveImports"/>
+        <exclude name="LawOfDemeter"/>
+        <exclude name="LoosePackageCoupling"/>
+        <exclude name="TooManyFields"/>
+        <exclude name="TooManyMethods"/>
+    </rule>
+
+    <!-- 文档规则 -->
+    <rule ref="category/java/documentation.xml">
+        <!-- 排除注释要求规则，保持轻量化 -->
+        <exclude name="CommentRequired"/>
+        <exclude name="CommentSize"/>
+    </rule>
+
+    <!-- 错误处理规则 -->
+    <rule ref="category/java/errorprone.xml">
+        <!-- 排除一些不适用于项目的规则 -->
+        <exclude name="AvoidDuplicateLiterals"/>
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
+        <exclude name="AvoidFieldNameMatchingTypeName"/>
+        <exclude name="AvoidLiteralsInIfCondition"/>
+        <exclude name="MissingSerialVersionUID"/>
+        <exclude name="NullAssignment"/>
+    </rule>
+
+    <!-- 多线程规则 -->
+    <rule ref="category/java/multithreading.xml">
+        <!-- 排除一些不适用于项目的规则 -->
+        <exclude name="DoNotUseThreads"/>
+        <exclude name="UseConcurrentHashMap"/>
+    </rule>
+
+    <!-- 性能规则 -->
+    <rule ref="category/java/performance.xml">
+        <!-- 排除一些不适用于项目的规则 -->
+        <exclude name="AvoidInstantiatingObjectsInLoops"/>
+    </rule>
+
+    <!-- 安全规则 -->
+    <rule ref="category/java/security.xml"/>
+
+</ruleset>
