@@ -1,8 +1,8 @@
-# PND 后端项目 Skills 规范
+﻿# home-dash 后端项目 Skills 规范
 
 ## 1. 项目概述
 
-PND 后端项目是基于 Spring Boot 的个人网络存储解决方案后端，提供文件管理、大文件上传/下载、视频播放等服务端支持。
+`home-dash` 是当前后端项目目录名，对应原 PND（Personal Network Disk）后端工程，基于 Spring Boot 构建，提供文件管理、大文件上传/下载、视频播放等服务端支持。
 
 ## 2. 技术栈
 
@@ -16,7 +16,7 @@ PND 后端项目是基于 Spring Boot 的个人网络存储解决方案后端，
 ## 3. 项目结构
 
 ```
-pnd/
+home-dash/
 ├── .mvn/                  # Maven wrapper 配置
 ├── distribution/          # 部署文件
 │   ├── bin/               # 启动/停止脚本
