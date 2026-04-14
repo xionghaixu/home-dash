@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.bitinit.pnd.web.config.PndProperties;
+import site.bitinit.pnd.web.Constants;
 import site.bitinit.pnd.web.controller.dto.MergeFileDto;
 import site.bitinit.pnd.web.controller.dto.ResponseDto;
 import site.bitinit.pnd.web.controller.dto.TransferTaskDto;
@@ -57,10 +58,13 @@ public class ResourceServiceImpl implements ResourceService {
 
     /**
      * 轻量传输任务状态。
+     * 用于在内存中追踪上传任务，不持久化到数据库。
      */
     private static class TransferTaskState {
         private String identifier;
         private String fileName;
+        private String fileType;
+        private String operationType;
         private String status;
         private String errorMessage;
         private Long totalSize;
@@ -412,6 +416,11 @@ public class ResourceServiceImpl implements ResourceService {
         }
         if (Objects.isNull(mergeFileDto.getFileName()) || mergeFileDto.getFileName().trim().isEmpty()) {
             throw new UploadException("文件名不能为空");
+        }
+        // 如果创建时间为空，默认使用当前时间
+        if (Objects.isNull(mergeFileDto.getCreateTime())) {
+            mergeFileDto.setCreateTime(new Date());
+            log.debug("合并文件创建时间为空，使用当前时间 [identifier={}]", mergeFileDto.getIdentifier());
         }
 
         try {
@@ -1086,10 +1095,25 @@ public class ResourceServiceImpl implements ResourceService {
         return identifiers.size();
     }
 
+    @Override
+    public boolean clearTransferTask(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return false;
+        }
+        TransferTaskState removed = transferTaskCache.remove(identifier);
+        if (removed != null) {
+            log.info("传输任务记录已清除 [identifier={}, fileName={}]", identifier, removed.fileName);
+            return true;
+        }
+        log.debug("传输任务记录不存在 [identifier={}]", identifier);
+        return false;
+    }
+
     private void markUploading(ResourceChunk chunk) {
         TransferTaskState state = transferTaskCache.computeIfAbsent(chunk.getIdentifier(), this::newTransferTaskState);
         state.fileName = chunk.getFilename();
-        state.status = "uploading";
+        state.operationType = "upload";
+        state.status = Constants.TransferStatus.UPLOADING;
         state.errorMessage = null;
         state.totalSize = chunk.getTotalSize();
         state.totalChunks = chunk.getTotalChunks();
@@ -1103,7 +1127,7 @@ public class ResourceServiceImpl implements ResourceService {
     private void markCompleted(MergeFileDto fileDto) {
         TransferTaskState state = transferTaskCache.computeIfAbsent(fileDto.getIdentifier(), this::newTransferTaskState);
         state.fileName = fileDto.getFileName();
-        state.status = "completed";
+        state.status = Constants.TransferStatus.COMPLETED;
         state.errorMessage = null;
         state.totalSize = fileDto.getSize();
         state.parentId = fileDto.getParentId();
@@ -1119,7 +1143,7 @@ public class ResourceServiceImpl implements ResourceService {
     private void markFailed(String identifier, String fileName, String errorMessage) {
         TransferTaskState state = transferTaskCache.computeIfAbsent(identifier, this::newTransferTaskState);
         state.fileName = fileName;
-        state.status = "failed";
+        state.status = Constants.TransferStatus.FAILED;
         state.errorMessage = errorMessage;
         state.updateTime = new Date();
         if (state.createTime == null) {
@@ -1129,7 +1153,7 @@ public class ResourceServiceImpl implements ResourceService {
 
     private void markCancelled(String identifier, String message) {
         TransferTaskState state = transferTaskCache.computeIfAbsent(identifier, this::newTransferTaskState);
-        state.status = "cancelled";
+        state.status = Constants.TransferStatus.CANCELLED;
         state.errorMessage = message;
         state.updateTime = new Date();
         if (state.createTime == null) {
@@ -1152,12 +1176,14 @@ public class ResourceServiceImpl implements ResourceService {
         if (state.totalChunks != null && state.totalChunks > 0 && state.uploadedChunks != null) {
             progress = Math.min(100, (int) Math.round(state.uploadedChunks * 100.0 / state.totalChunks));
         }
-        if ("completed".equals(state.status)) {
+        if (Constants.TransferStatus.COMPLETED.equals(state.status)) {
             progress = 100;
         }
         return TransferTaskDto.builder()
                 .identifier(state.identifier)
                 .fileName(state.fileName)
+                .fileType(state.fileType)
+                .operationType(state.operationType)
                 .status(state.status)
                 .errorMessage(state.errorMessage)
                 .totalSize(state.totalSize)
@@ -1173,9 +1199,9 @@ public class ResourceServiceImpl implements ResourceService {
 
     private Set<String> normalizeTransferStatuses(String status) {
         Set<String> statuses = new LinkedHashSet<>();
-        String normalizedInput = status == null ? "completed" : status.trim().toLowerCase();
+        String normalizedInput = status == null ? Constants.TransferStatus.COMPLETED : status.trim().toLowerCase();
         if (normalizedInput.isEmpty()) {
-            normalizedInput = "completed";
+            normalizedInput = Constants.TransferStatus.COMPLETED;
         }
 
         for (String item : normalizedInput.split(",")) {
@@ -1185,15 +1211,21 @@ public class ResourceServiceImpl implements ResourceService {
             }
             switch (normalized) {
                 case "completed", "failed", "cancelled" -> statuses.add(normalized);
-                case "finished" -> statuses.addAll(List.of("completed", "failed", "cancelled"));
-                case "all" -> statuses.addAll(List.of("completed", "failed", "cancelled"));
+                case "finished" -> statuses.addAll(List.of(
+                        Constants.TransferStatus.COMPLETED,
+                        Constants.TransferStatus.FAILED,
+                        Constants.TransferStatus.CANCELLED));
+                case "all" -> statuses.addAll(List.of(
+                        Constants.TransferStatus.COMPLETED,
+                        Constants.TransferStatus.FAILED,
+                        Constants.TransferStatus.CANCELLED));
                 default -> throw new site.bitinit.pnd.web.exception.DataFormatException(
                         String.format("不支持的传输状态清理类型 [status=%s]", status));
             }
         }
 
         if (statuses.isEmpty()) {
-            statuses.add("completed");
+            statuses.add(Constants.TransferStatus.COMPLETED);
         }
         return statuses;
     }

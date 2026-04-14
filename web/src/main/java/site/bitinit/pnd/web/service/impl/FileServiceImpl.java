@@ -11,6 +11,7 @@ import site.bitinit.pnd.web.config.PndProperties;
 import site.bitinit.pnd.web.controller.dto.FileCategorySummaryDto;
 import site.bitinit.pnd.web.controller.dto.FileDetailDto;
 import site.bitinit.pnd.web.controller.dto.FolderPathDto;
+import site.bitinit.pnd.web.controller.dto.RecentUploadSummaryDto;
 import site.bitinit.pnd.web.controller.dto.ResponseDto;
 import site.bitinit.pnd.web.dao.FileMapper;
 import site.bitinit.pnd.web.dao.ResourceMapper;
@@ -112,6 +113,79 @@ public class FileServiceImpl implements FileService {
         int safeLimit = normalizeLimit(limit);
         return ResponseDto.success(fileMapper.findRecentFiles(safeLimit),
                 Map.of("limit", safeLimit));
+    }
+
+    @Override
+    public ResponseDto getRecentUploadSummary(Integer limit) {
+        int safeLimit = normalizeLimit(limit);
+
+        // 获取当前时间的起始点
+        Calendar now = Calendar.getInstance();
+
+        // 今日起始时间
+        Calendar todayStart = (Calendar) now.clone();
+        todayStart.set(Calendar.HOUR_OF_DAY, 0);
+        todayStart.set(Calendar.MINUTE, 0);
+        todayStart.set(Calendar.SECOND, 0);
+        todayStart.set(Calendar.MILLISECOND, 0);
+
+        // 本周起始时间（周一）
+        Calendar weekStart = (Calendar) now.clone();
+        weekStart.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+        weekStart.set(Calendar.HOUR_OF_DAY, 0);
+        weekStart.set(Calendar.MINUTE, 0);
+        weekStart.set(Calendar.SECOND, 0);
+        weekStart.set(Calendar.MILLISECOND, 0);
+
+        // 本月起始时间
+        Calendar monthStart = (Calendar) now.clone();
+        monthStart.set(Calendar.DAY_OF_MONTH, 1);
+        monthStart.set(Calendar.HOUR_OF_DAY, 0);
+        monthStart.set(Calendar.MINUTE, 0);
+        monthStart.set(Calendar.SECOND, 0);
+        monthStart.set(Calendar.MILLISECOND, 0);
+
+        // 查询各时间范围的文件
+        List<File> todayFiles = fileMapper.findByCreateTimeBetween(
+                todayStart.getTime(), now.getTime(), "createTime", "desc");
+        List<File> weekFiles = fileMapper.findByCreateTimeBetween(
+                weekStart.getTime(), now.getTime(), "createTime", "desc");
+        List<File> monthFiles = fileMapper.findByCreateTimeBetween(
+                monthStart.getTime(), now.getTime(), "createTime", "desc");
+
+        // 计算统计数据
+        long todaySize = todayFiles.stream().mapToLong(f -> f.getSize() != null ? f.getSize() : 0).sum();
+        long weekSize = weekFiles.stream().mapToLong(f -> f.getSize() != null ? f.getSize() : 0).sum();
+        long monthSize = monthFiles.stream().mapToLong(f -> f.getSize() != null ? f.getSize() : 0).sum();
+
+        // 获取最近文件列表
+        List<File> recentFiles = fileMapper.findRecentFiles(safeLimit);
+
+        // 构建摘要DTO
+        List<RecentUploadSummaryDto.File> recentFileList = recentFiles.stream()
+                .map(f -> RecentUploadSummaryDto.File.builder()
+                        .id(f.getId())
+                        .fileName(f.getFileName())
+                        .type(f.getType())
+                        .size(f.getSize())
+                        .createTime(f.getCreateTime())
+                        .parentId(f.getParentId())
+                        .build())
+                .toList();
+
+        RecentUploadSummaryDto summary = RecentUploadSummaryDto.builder()
+                .recentFiles(recentFileList)
+                .todayCount(todayFiles.size())
+                .weekCount(weekFiles.size())
+                .monthCount(monthFiles.size())
+                .totalCount(recentFiles.size())
+                .todaySize(todaySize)
+                .weekSize(weekSize)
+                .monthSize(monthSize)
+                .querySummary(Map.of("limit", safeLimit))
+                .build();
+
+        return ResponseDto.success(summary);
     }
 
     @Override
@@ -1205,10 +1279,54 @@ public class FileServiceImpl implements FileService {
     private void ensureUniqueFileName(Long parentId, String fileName, Long excludeId) {
         Integer count = fileMapper.countByParentIdAndFileName(parentId, fileName, excludeId);
         if (count != null && count > 0) {
-            throw new FileAlreadyExistsException(
-                    String.format("当前目录下已存在同名文件 [parentId=%d, fileName=%s]",
-                            parentId, fileName));
+            File existingFile = fileMapper.findByParentIdAndFileName(parentId, fileName);
+            Long existingFileId = existingFile != null ? existingFile.getId() : null;
+            String suggestedName = generateUniqueFileName(parentId, fileName, excludeId);
+            throw FileAlreadyExistsException.withSuggestion(parentId, fileName, suggestedName);
         }
+    }
+
+    /**
+     * 生成唯一的文件名。
+     * 当目标文件名已存在时，生成一个带序号的新文件名。
+     *
+     * <p>生成规则：
+     * <ul>
+     *   <li>原文件名：example.txt</li>
+     *   <li>冲突后：example (1).txt</li>
+     *   <li>再次冲突：example (2).txt</li>
+     *   <li>以此类推...</li>
+     * </ul>
+     *
+     * @param parentId  父目录ID
+     * @param fileName  原文件名
+     * @param excludeId 排除的文件ID
+     * @return 建议的唯一文件名
+     */
+    private String generateUniqueFileName(Long parentId, String fileName, Long excludeId) {
+        // 分离文件名和扩展名
+        String baseName;
+        String extension;
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex > 0) {
+            baseName = fileName.substring(0, dotIndex);
+            extension = fileName.substring(dotIndex);
+        } else {
+            baseName = fileName;
+            extension = "";
+        }
+
+        // 尝试生成带序号的新文件名
+        for (int i = 1; i <= 1000; i++) {
+            String newName = baseName + " (" + i + ")" + extension;
+            Integer count = fileMapper.countByParentIdAndFileName(parentId, newName, excludeId);
+            if (count == null || count == 0) {
+                return newName;
+            }
+        }
+
+        // 如果尝试1000次都失败，使用UUID作为最后方案
+        return baseName + "_" + UUID.randomUUID().toString().substring(0, 8) + extension;
     }
 
     private int normalizeLimit(Integer limit) {

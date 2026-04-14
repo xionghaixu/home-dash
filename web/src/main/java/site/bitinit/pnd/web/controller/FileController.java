@@ -88,6 +88,20 @@ public class FileController {
     }
 
     /**
+     * 获取最近上传摘要统计。
+     * 包含今日、本周、本月的上传数量和大小统计，以及最近上传文件列表。
+     *
+     * @param limit 最近文件列表数量上限，默认20
+     * @return 最近上传摘要统计
+     */
+    @GetMapping("/file/recent-summary")
+    public ResponseEntity<ResponseDto> getRecentUploadSummary(
+            @RequestParam(required = false, defaultValue = "20") Integer limit) {
+        log.info("获取最近上传摘要统计请求 [limit={}]", limit);
+        return ResponseEntity.ok(fileService.getRecentUploadSummary(limit));
+    }
+
+    /**
      * 获取基础分类文件列表。
      *
      * @param category  分类名称
@@ -250,49 +264,50 @@ public class FileController {
      * 移动或复制文件。
      * 根据dto中的type字段判断操作类型：move表示移动，copy表示复制。
      *
-     * 实现原理：
-     * 1. 检查dto中的type字段，判断操作类型
-     * 2. 如果是移动操作（move）：
-     * - 验证targetIds必须只有一个值（只能移动到一个目标文件夹）
-     * - 调用fileService.moveFiles执行移动操作
-     * 3. 如果是复制操作（copy）：
-     * - 允许复制到多个目标文件夹
-     * - 调用fileService.copyFiles执行复制操作
-     * 4. 如果type既不是move也不是copy，抛出异常
+     * <p><b>实现原理：</b>
+     * <ol>
+     *   <li>检查dto中的type字段，判断操作类型</li>
+     *   <li>如果是移动操作（move）：targetIds必须只有一个值（只能移动到一个目标文件夹）</li>
+     *   <li>如果是复制操作（copy）：允许复制到多个目标文件夹</li>
+     *   <li>如果type既不是move也不是copy，抛出异常</li>
+     * </ol>
      *
-     * 业务规则：
-     * - 移动操作：只能移动到一个目标文件夹
-     * - 复制操作：可以复制到多个目标文件夹
+     * <p><b>业务规则：</b>
+     * <ul>
+     *   <li>移动操作：只能移动到一个目标文件夹</li>
+     *   <li>复制操作：可以复制到多个目标文件夹</li>
+     *   <li>不能将文件夹移动到自身或其子文件夹中</li>
+     *   <li>目标目录存在同名文件时返回错误</li>
+     * </ul>
+     *
+     * <p><b>错误码：</b>
+     * <ul>
+     *   <li>1101: 文件不存在</li>
+     *   <li>1102: 目标目录已存在同名文件</li>
+     *   <li>1201: 不能将文件夹移动到自身或子文件夹</li>
+     *   <li>1202: 目标文件夹不存在</li>
+     * </ul>
      *
      * @param dto 包含文件ID列表、目标文件夹ID列表和操作类型的数据传输对象
-     * @return 操作成功的响应对象
+     * @return 操作结果响应
      * @throws DataFormatException 当操作类型不正确或参数无效时抛出
      */
     @PutMapping("/file")
-    public ResponseEntity<ResponseDto> copyOrMoveFiles(@RequestBody MoveAndCopyFileDto dto) {
+    public ResponseEntity<ResponseDto> copyOrMoveFiles(@Valid @RequestBody MoveAndCopyFileDto dto) {
         log.info("文件操作请求 [fileIds={}, targetIds={}, type={}]",
                 dto != null ? dto.getFileIds() : null,
                 dto != null ? dto.getTargetIds() : null,
                 dto != null ? dto.getType() : null);
 
-        // 参数校验
+        // 参数校验（由 @Valid 自动完成）
         if (Objects.isNull(dto)) {
             throw new DataFormatException("操作参数不能为空");
-        }
-        if (Objects.isNull(dto.getFileIds()) || dto.getFileIds().isEmpty()) {
-            throw new DataFormatException("文件ID列表不能为空");
-        }
-        if (Objects.isNull(dto.getTargetIds()) || dto.getTargetIds().isEmpty()) {
-            throw new DataFormatException("目标文件夹ID列表不能为空");
-        }
-        if (Objects.isNull(dto.getType()) || dto.getType().trim().isEmpty()) {
-            throw new DataFormatException("操作类型不能为空");
         }
 
         // 判断操作类型
         if (MoveAndCopyFileDto.MOVE_TYPE.equals(dto.getType())) {
             // 移动操作：验证targetIds必须只有一个值
-            if (Objects.isNull(dto.getTargetIds()) || dto.getTargetIds().size() != 1) {
+            if (dto.getTargetIds().size() != 1) {
                 log.warn("移动操作参数错误 [fileIds={}, targetIds={}, type={}]",
                         dto.getFileIds(), dto.getTargetIds(), dto.getType());
                 throw new DataFormatException(

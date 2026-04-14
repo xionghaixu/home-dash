@@ -41,26 +41,25 @@ public class SystemServiceImpl implements SystemService {
     /**
      * 获取系统信息。
      * 统计存储容量、文件数量、文件夹数量、视频数量、音频数量等信息。
+     * 包含容量预警功能。
      *
      * 实现原理：
      * 1. 获取存储设备的总容量和可用空间
-     * 2. 查询所有文件记录
-     * 3. 遍历文件记录，统计各类文件数量：
-     * - 总文件数：所有文件记录的数量
-     * - 文件夹数：类型为FOLDER的文件数量
-     * - 普通文件数：总文件数减去文件夹数
-     * - 视频数：类型为VIDEO的文件数量
-     * - 音频数：类型为AUDIO的文件数量
-     * 4. 构建并返回系统信息DTO
+     * 2. 计算已使用容量和使用百分比
+     * 3. 判断容量预警级别
+     * 4. 查询所有文件记录
+     * 5. 遍历文件记录，统计各类文件数量
      *
      * 存储容量统计：
-     * - totalSpace: 存储设备的总容量（字节）
-     * - usableSpace: 存储设备的可用空间（字节）
-     * - 通过File.getTotalSpace()和File.getUsableSpace()获取
+     * - totalCap: 存储设备的总容量（字节）
+     * - usableCap: 存储设备的可用空间（字节）
+     * - usedCap: 已使用容量（字节）
+     * - usagePercent: 使用百分比（0-100）
      *
-     * 性能考虑：
-     * - 需要查询所有文件记录，对于大量文件可能影响性能
-     * - 可以考虑使用SQL聚合查询优化性能
+     * 容量预警级别：
+     * - normal: 使用率 < 80%
+     * - warning: 使用率 80%-90%
+     * - critical: 使用率 > 90%
      *
      * @return 包含系统统计信息的数据传输对象
      */
@@ -74,10 +73,32 @@ public class SystemServiceImpl implements SystemService {
         File systemFile = new File(pndProperties.getPndDataDir());
         long totalSpace = systemFile.getTotalSpace();
         long usableSpace = systemFile.getUsableSpace();
-        builder.totalCap(totalSpace)
-                .usableCap(usableSpace);
+        long usedSpace = totalSpace - usableSpace;
+        int usagePercent = totalSpace > 0 ? (int) ((usedSpace * 100) / totalSpace) : 0;
 
-        log.debug("存储容量统计完成 [totalSpace={}, usableSpace={}]", totalSpace, usableSpace);
+        builder.totalCap(totalSpace)
+                .usableCap(usableSpace)
+                .usedCap(usedSpace)
+                .usagePercent(usagePercent);
+
+        // 计算容量预警
+        String warningLevel;
+        String warningMessage;
+        if (usagePercent >= 90) {
+            warningLevel = "critical";
+            warningMessage = "存储空间即将用尽，请及时清理";
+        } else if (usagePercent >= 80) {
+            warningLevel = "warning";
+            warningMessage = "存储空间使用率较高，建议清理";
+        } else {
+            warningLevel = "normal";
+            warningMessage = null;
+        }
+        builder.warningLevel(warningLevel)
+                .warningMessage(warningMessage);
+
+        log.debug("存储容量统计完成 [totalSpace={}, usableSpace={}, usedSpace={}, usagePercent={}%, warningLevel={}]",
+                totalSpace, usableSpace, usedSpace, usagePercent, warningLevel);
 
         // 查询所有文件记录
         List<site.bitinit.pnd.web.entity.File> files = fileMapper.getAllFileType();

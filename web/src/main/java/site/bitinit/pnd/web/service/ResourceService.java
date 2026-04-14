@@ -91,4 +91,12 @@ public interface ResourceService {
      * @return 清理数量
      */
     int clearTransferTasks(String status);
+
+    /**
+     * 清除单条传输任务记录。
+     *
+     * @param identifier 文件唯一标识符
+     * @return true表示清除成功，false表示记录不存在
+     */
+    boolean clearTransferTask(String identifier);
 }

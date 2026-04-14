@@ -279,6 +279,33 @@ public class ResourceController {
     }
 
     /**
+     * 清除单条传输任务记录。
+     *
+     * @param identifier 文件唯一标识符
+     * @return 清除结果
+     */
+    @DeleteMapping("/resource/transfer/{identifier}")
+    public ResponseEntity<ResponseDto> clearTransferTask(@PathVariable String identifier) {
+        log.info("清除单条传输任务记录请求 [identifier={}]", identifier);
+
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ResponseDto.fail("文件标识符不能为空"));
+        }
+
+        boolean success = resourceService.clearTransferTask(identifier);
+        Map<String, Object> resultData = new HashMap<>();
+        resultData.put("identifier", identifier);
+        resultData.put("cleared", success);
+
+        if (success) {
+            return ResponseEntity.ok(ResponseDto.success(resultData, "传输任务记录已清除"));
+        } else {
+            return ResponseEntity.ok(ResponseDto.success(resultData, "传输任务记录不存在"));
+        }
+    }
+
+    /**
      * 合并文件分块。
      * 将所有分块合并成完整文件，并创建文件记录。
      *

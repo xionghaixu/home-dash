@@ -116,6 +116,47 @@
         </if>
     </select>
 
+    <select id="findByParentIdAndFileName" resultType="file">
+        SELECT
+          <include refid="fileFields"><property name="alias" value="f" /></include>,
+          <include refid="sizeField"><property name="alias" value="r" /></include>
+        FROM file f
+        LEFT JOIN resource r ON f.resource_id = r.id
+        WHERE f.parent_id = #{parentId}
+          AND f.file_name = #{fileName}
+    </select>
+
+    <select id="findByCreateTimeBetween" resultType="file">
+        SELECT
+          <include refid="fileFields"><property name="alias" value="f" /></include>,
+          <include refid="sizeField"><property name="alias" value="r" /></include>
+        FROM file f
+        LEFT JOIN resource r ON f.resource_id = r.id
+        WHERE f.type != 'folder'
+          AND f.create_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'size'">
+                r.size
+            </when>
+            <when test="sortBy == 'createTime'">
+                f.create_time
+            </when>
+            <otherwise>
+                f.create_time
+            </otherwise>
+        </choose>
+        <if test="sortOrder == 'desc'"> DESC</if>
+        <if test="sortOrder != 'desc'"> ASC</if>
+    </select>
+
+    <select id="countByCreateTimeBetween" resultType="int">
+        SELECT COUNT(1)
+        FROM file
+        WHERE type != 'folder'
+          AND create_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
     <insert id="save" useGeneratedKeys="true" keyProperty="id" parameterType="file">
         INSERT INTO
           file (file_name, parent_id, type, resource_id, create_time, update_time)

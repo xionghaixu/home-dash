@@ -37,6 +37,15 @@ public interface FileService {
     ResponseDto findRecentFiles(Integer limit);
 
     /**
+     * 获取最近上传摘要统计。
+     * 包含今日、本周、本月的上传数量和大小统计，以及最近上传文件列表。
+     *
+     * @param limit 最近文件列表数量上限
+     * @return 最近上传摘要统计
+     */
+    ResponseDto getRecentUploadSummary(Integer limit);
+
+    /**
      * 根据阶段一分类获取文件列表。
      *
      * @param category  分类名称

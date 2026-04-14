@@ -84,8 +84,44 @@ public interface FileMapper {
                                        @Param("excludeId") Long excludeId);
 
     /**
+     * 根据父目录ID和文件名查找文件。
+     * 用于获取冲突文件详情。
+     *
+     * @param parentId 父目录ID
+     * @param fileName 文件名
+     * @return 文件对象，如果不存在则返回null
+     */
+    File findByParentIdAndFileName(@Param("parentId") Long parentId,
+                                   @Param("fileName") String fileName);
+
+    /**
+     * 根据创建时间范围查询文件。
+     * 用于统计最近上传文件。
+     *
+     * @param startTime 开始时间
+     * @param endTime   结束时间
+     * @param sortBy    排序字段
+     * @param sortOrder 排序方式
+     * @return 文件列表
+     */
+    List<File> findByCreateTimeBetween(@Param("startTime") java.util.Date startTime,
+                                       @Param("endTime") java.util.Date endTime,
+                                       @Param("sortBy") String sortBy,
+                                       @Param("sortOrder") String sortOrder);
+
+    /**
+     * 根据创建时间范围统计文件数量。
+     *
+     * @param startTime 开始时间
+     * @param endTime   结束时间
+     * @return 文件数量
+     */
+    Integer countByCreateTimeBetween(@Param("startTime") java.util.Date startTime,
+                                    @Param("endTime") java.util.Date endTime);
+
+    /**
      * 保存文件
-     * 
+     *
      * @param file file
      */
     void save(File file);
