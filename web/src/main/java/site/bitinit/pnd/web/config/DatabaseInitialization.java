@@ -1,8 +1,6 @@
 package site.bitinit.pnd.web.config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import site.bitinit.pnd.web.exception.DatabaseException;
@@ -10,7 +8,6 @@ import site.bitinit.pnd.web.util.StringUtils;
 
 import jakarta.annotation.PostConstruct;
 import javax.sql.DataSource;
-import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
