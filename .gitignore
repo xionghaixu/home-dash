@@ -6,6 +6,7 @@ derby.log
 !**/src/main/**
 !**/src/test/**
 .mvn/
+/logs/
 
 ### STS ###
 .apt_generated
@@ -29,10 +30,6 @@ derby.log
 /nbdist/
 /.nb-gradle/
 build/
-web/data
-web/target
-web/logs
-web/derby.log
 
 ### VS Code ###
 .vscode/
