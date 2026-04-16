@@ -5,6 +5,6 @@ COPY . /home-dash
 
 RUN echo "Asia/Shanghai" > /etc/timezone
 
-EXPOSE 8989
+EXPOSE 8190
 VOLUME /home-dash/data
 ENTRYPOINT ["bin/docker-startup.sh"]
