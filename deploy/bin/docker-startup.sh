@@ -14,8 +14,8 @@ if [[ $USE_MYSQL == true ]]; then
     JAVA_OPTS="${JAVA_OPTS} -Dpnd.mysql.password=${MYSQL_PASSWORD}"
 fi
 
-JAVA_OPTS="${JAVA_OPTS} -jar "${PND_HOME}/lib/home-dash-web.jar""
-JAVA_OPTS="${JAVA_OPTS} --spring.config.location=${PND_HOME}/conf/application.properties"
+JAVA_OPTS="${JAVA_OPTS} -jar ${PND_HOME}/lib/home-dash.jar"
+JAVA_OPTS="${JAVA_OPTS} --spring.config.location=${PND_HOME}/conf/application.yml"
 
 if [ ! -d "${PND_HOME}/data/logs" ]; then
     mkdir -p ${PND_HOME}/data/logs

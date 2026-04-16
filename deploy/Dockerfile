@@ -1,4 +1,4 @@
-FROM openjdk:8-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /home-dash
 COPY . /home-dash

@@ -50,13 +50,13 @@
 ### Docker 部署
 
 ```bash
-docker run -d -p 8989:8989 -v [YourOwnPath]:/pnd/data bitinit/pnd
+docker run -d -p 8989:8989 -v [YourOwnPath]:/pnd/data xionghaixu/home-dash
 ```
 
 ### 源码构建
 
 ```bash
-git clone git@github.com:BitInit/pnd.git
+git clone git@github.com:xionghaixu/home-dash.git
 cd pnd
 mvn clean package
 bin/startup.sh
