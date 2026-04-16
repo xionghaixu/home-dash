@@ -1,4 +1,4 @@
-![logo](doc/image/pic.png)
+![logo](deploy/image/pic.png)
 
 # home-dash
 
