@@ -12,21 +12,20 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import com.hd.Constants;
-import com.hd.controller.dto.InstantUploadDto;
-import com.hd.controller.dto.MoveAndCopyFileDto;
-import com.hd.controller.dto.ResponseDto;
-import com.hd.dao.FileMapper;
-import com.hd.entity.File;
-import com.hd.exception.DataFormatException;
-import com.hd.service.FileService;
-import com.hd.service.ResourceService;
+import com.hd.biz.file.FileBiz;
+import com.hd.common.HomeDashConstants;
+import com.hd.model.dto.InstantUploadDto;
+import com.hd.model.dto.MoveAndCopyFileDto;
+import com.hd.model.dto.ResponseDto;
+import com.hd.dao.entity.File;
+import com.hd.common.exception.DataFormatException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
@@ -36,23 +35,23 @@ import java.util.Objects;
  * 所有接口均遵循RESTful规范，返回统一的响应格式。
  *
  * @author john
- * @date 2020-01-05
+ * @since 2020-01-05
  */
 @Slf4j
 @RestController
-@RequestMapping(Constants.API_VERSION)
+@RequestMapping(HomeDashConstants.API_VERSION)
 public class FileController {
 
-    private final FileService fileService;
+    private final FileBiz fileBiz;
 
     /**
-     * 构造函数，注入FileService依赖。
+     * 构造函数，注入FileBiz依赖。
      *
-     * @param fileService 文件服务接口
+     * @param fileBiz 文件业务接口
      */
     @Autowired
-    public FileController(FileService fileService) {
-        this.fileService = fileService;
+    public FileController(FileBiz fileBiz) {
+        this.fileBiz = fileBiz;
     }
 
     /**
@@ -70,7 +69,7 @@ public class FileController {
             @RequestParam(defaultValue = "name") String sortBy,
             @RequestParam(defaultValue = "asc") String sortOrder) {
         log.info("获取文件列表请求 [parentId={}, sortBy={}, sortOrder={}]", parentId, sortBy, sortOrder);
-        ResponseEntity<ResponseDto> response = ResponseEntity.ok(fileService.findByParentId(parentId, sortBy, sortOrder));
+        ResponseEntity<ResponseDto> response = ResponseEntity.ok(fileBiz.findByParentId(parentId, sortBy, sortOrder));
         log.debug("获取文件列表成功 [parentId={}, sortBy={}, sortOrder={}]", parentId, sortBy, sortOrder);
         return response;
     }
@@ -84,7 +83,7 @@ public class FileController {
     @GetMapping("/file/recent")
     public ResponseEntity<ResponseDto> getRecentFiles(@RequestParam(required = false) Integer limit) {
         log.info("获取最近上传文件列表请求 [limit={}]", limit);
-        return ResponseEntity.ok(fileService.findRecentFiles(limit));
+        return ResponseEntity.ok(fileBiz.findRecentFiles(limit));
     }
 
     /**
@@ -98,7 +97,7 @@ public class FileController {
     public ResponseEntity<ResponseDto> getRecentUploadSummary(
             @RequestParam(required = false, defaultValue = "20") Integer limit) {
         log.info("获取最近上传摘要统计请求 [limit={}]", limit);
-        return ResponseEntity.ok(fileService.getRecentUploadSummary(limit));
+        return ResponseEntity.ok(fileBiz.getRecentUploadSummary(limit));
     }
 
     /**
@@ -115,7 +114,7 @@ public class FileController {
             @RequestParam(defaultValue = "desc") String sortOrder) {
         log.info("获取分类文件列表请求 [category={}, sortBy={}, sortOrder={}]",
                 category, sortBy, sortOrder);
-        return ResponseEntity.ok(fileService.findFilesByCategory(category, sortBy, sortOrder));
+        return ResponseEntity.ok(fileBiz.findFilesByCategory(category, sortBy, sortOrder));
     }
 
     /**
@@ -126,7 +125,7 @@ public class FileController {
     @GetMapping("/file/category-summary")
     public ResponseEntity<ResponseDto> getCategorySummary() {
         log.info("获取分类摘要请求");
-        return ResponseEntity.ok(fileService.categorySummary());
+        return ResponseEntity.ok(fileBiz.categorySummary());
     }
 
     /**
@@ -138,7 +137,7 @@ public class FileController {
     @GetMapping("/file/{fileId}")
     public ResponseEntity<ResponseDto> getFile(@PathVariable(name = "fileId") Long fileId) {
         log.info("获取文件详情请求 [fileId={}]", fileId);
-        ResponseEntity<ResponseDto> response = ResponseEntity.ok(fileService.findByFileId(fileId));
+        ResponseEntity<ResponseDto> response = ResponseEntity.ok(fileBiz.findByFileId(fileId));
         log.debug("获取文件详情成功 [fileId={}]", fileId);
         return response;
     }
@@ -162,13 +161,13 @@ public class FileController {
                 errors.append(fe.getDefaultMessage()).append("; ");
             }
             log.warn("文件创建参数验证失败 [fileName={}, parentId={}, errors={}]",
-                    file.getFileName(), file.getParentId(), errors.toString());
+                    file.getFileName(), file.getParentId(), errors);
             throw new DataFormatException(
                     String.format("文件创建参数验证失败 [fileName=%s, parentId=%d, errors=%s]",
-                            file.getFileName(), file.getParentId(), errors.toString()));
+                            file.getFileName(), file.getParentId(), errors));
         }
 
-        fileService.createFile(file);
+        fileBiz.createFile(file);
         log.info("文件创建成功 [fileId={}, fileName={}]", file.getId(), file.getFileName());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ResponseDto.success());
@@ -189,7 +188,7 @@ public class FileController {
                 parentId,
                 file != null ? file.getSize() : 0);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(fileService.uploadWithMD5(file, parentId));
+                .body(fileBiz.uploadWithMD5(file, parentId));
     }
 
     /**
@@ -201,7 +200,7 @@ public class FileController {
     @GetMapping("/file/md5/check")
     public ResponseEntity<ResponseDto> checkFileByMd5(@RequestParam("md5") String md5) {
         log.info("MD5预检请求 [md5={}]", md5);
-        return ResponseEntity.ok(fileService.checkFileByMD5(md5));
+        return ResponseEntity.ok(fileBiz.checkFileByMD5(md5));
     }
 
     /**
@@ -218,7 +217,7 @@ public class FileController {
         log.info("秒传请求 [md5={}, fileName={}, parentId={}]",
                 dto.getMd5(), dto.getFileName(), dto.getParentId());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(fileService.instantUpload(dto.getMd5(), dto.getFileName(), dto.getParentId()));
+                .body(fileBiz.instantUpload(dto.getMd5(), dto.getFileName(), dto.getParentId()));
     }
 
     /**
@@ -230,7 +229,7 @@ public class FileController {
     @GetMapping("/file/{fileId}/verify-md5")
     public ResponseEntity<ResponseDto> verifyFileMd5(@PathVariable Long fileId) {
         log.info("文件MD5校验请求 [fileId={}]", fileId);
-        return ResponseEntity.ok(fileService.verifyFileMD5(fileId));
+        return ResponseEntity.ok(fileBiz.verifyFileMD5(fileId));
     }
 
     /**
@@ -254,7 +253,7 @@ public class FileController {
             throw new DataFormatException("新文件名不能为空");
         }
 
-        fileService.renameFile(file.getFileName(), fileId);
+        fileBiz.renameFile(file.getFileName(), fileId);
         log.info("文件重命名成功 [fileId={}, newFileName={}]", fileId, file.getFileName());
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ResponseDto.success());
@@ -315,11 +314,11 @@ public class FileController {
                                 dto.getFileIds(), dto.getTargetIds(), dto.getType()));
             }
             // 执行移动操作
-            fileService.moveFiles(dto.getFileIds(), dto.getTargetIds().get(0));
-            log.info("文件移动成功 [fileIds={}, targetId={}]", dto.getFileIds(), dto.getTargetIds().get(0));
+            fileBiz.moveFiles(dto.getFileIds(), dto.getTargetIds().getFirst());
+            log.info("文件移动成功 [fileIds={}, targetId={}]", dto.getFileIds(), dto.getTargetIds().getFirst());
         } else if (MoveAndCopyFileDto.COPY_TYPE.equals(dto.getType())) {
             // 复制操作：允许复制到多个目标文件夹
-            fileService.copyFiles(dto.getFileIds(), dto.getTargetIds());
+            fileBiz.copyFiles(dto.getFileIds(), dto.getTargetIds());
             log.info("文件复制成功 [fileIds={}, targetIds={}]", dto.getFileIds(), dto.getTargetIds());
         } else {
             // 操作类型不正确
@@ -348,7 +347,7 @@ public class FileController {
             throw new DataFormatException("要删除的文件ID列表不能为空");
         }
 
-        fileService.deleteFiles(fileIds);
+        fileBiz.deleteFiles(fileIds);
         log.info("文件删除成功 [fileIds={}]", fileIds);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ResponseDto.success());
@@ -357,23 +356,9 @@ public class FileController {
     /**
      * 下载文件。
      * 根据文件ID加载文件资源并提供下载。
-     *
-     * 实现原理：
-     * 1. 根据文件ID加载文件资源和文件信息
-     * 2. 尝试获取文件的MIME类型：
-     * - 通过ServletContext根据文件扩展名推断MIME类型
-     * - 如果无法推断，使用默认类型"application/octet-stream"
-     * 3. 构建HTTP响应头：
-     * - Content-Type: 文件的MIME类型
-     * - Content-Disposition: 附件下载，文件名使用UTF-8编码
-     * 4. 返回文件资源响应实体
-     *
-     * 文件名编码说明：
-     * - 使用UTF-8编码文件名，支持中文文件名
-     * - 格式：attachment; filename*=UTF-8''编码后的文件名
-     * - 符合RFC 5987规范，确保浏览器正确解析文件名
-     *
-     * @param fileId  文件ID
+     * 实现原理：1) 根据文件ID加载文件资源和文件信息；2) 通过ServletContext推断文件MIME类型，无法推断则使用默认类型 `application/octet-stream`；3) 构建 `Content-Type` 和 `Content-Disposition` 响应头；4) 返回文件资源响应实体。
+     * 文件名编码说明：使用UTF-8编码文件名，格式为 `attachment; filename*=UTF-8''编码后的文件名`，以兼容中文文件名并符合 RFC 5987。
+     * @param fileId 文件ID
      * @param request HTTP请求对象，用于获取文件MIME类型
      * @return 文件资源响应实体
      * @throws UnsupportedEncodingException 当文件名编码失败时抛出
@@ -384,7 +369,7 @@ public class FileController {
         log.info("下载文件请求 [fileId={}]", fileId);
 
         // 加载文件资源和文件信息
-        FileService.ResourceWrapper resourceWrapper = fileService.loadResource(fileId);
+        FileBiz.ResourceWrapper resourceWrapper = fileBiz.loadResource(fileId);
 
         // 尝试获取文件的MIME类型
         String contentType = null;
@@ -411,7 +396,7 @@ public class FileController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         // 使用UTF-8编码文件名，支持中文文件名
                         "attachment; filename*=UTF-8''"
-                                + URLEncoder.encode(resourceWrapper.file.getFileName(), "UTF-8"))
+                                + URLEncoder.encode(resourceWrapper.file.getFileName(), StandardCharsets.UTF_8))
                 .body(resourceWrapper.resource);
     }
 

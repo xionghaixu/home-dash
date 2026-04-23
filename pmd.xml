@@ -1,25 +1,25 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ruleset name="PND PMD Ruleset"
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="HomeDash PMD Ruleset"
          xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
 
     <description>
-        PND项目代码质量检查规则集
-        遵循轻量化原则，只检查关键代码质量问题
+        HomeDash椤圭洰浠ｇ爜璐ㄩ噺妫€鏌ヨ鍒欓泦
+        閬靛惊杞婚噺鍖栧師鍒欙紝鍙鏌ュ叧閿唬鐮佽川閲忛棶棰?
     </description>
 
-    <!-- 最佳实践规则 -->
+    <!-- 鏈€浣冲疄璺佃鍒?-->
     <rule ref="category/java/bestpractices.xml">
-        <!-- 排除一些不适用于项目的规则 -->
+        <!-- 鎺掗櫎涓€浜涗笉閫傜敤浜庨」鐩殑瑙勫垯 -->
         <exclude name="GuardLogStatement"/>
         <exclude name="JUnitTestContainsTooManyAsserts"/>
         <exclude name="JUnitAssertionsShouldIncludeMessage"/>
     </rule>
 
-    <!-- 代码风格规则 -->
+    <!-- 浠ｇ爜椋庢牸瑙勫垯 -->
     <rule ref="category/java/codestyle.xml">
-        <!-- 排除一些过于严格的规则 -->
+        <!-- 鎺掗櫎涓€浜涜繃浜庝弗鏍肩殑瑙勫垯 -->
         <exclude name="AtLeastOneConstructor"/>
         <exclude name="CallSuperInConstructor"/>
         <exclude name="CommentDefaultAccessModifier"/>
@@ -32,9 +32,9 @@
         <exclude name="TooManyStaticImports"/>
     </rule>
 
-    <!-- 设计规则 -->
+    <!-- 璁捐瑙勫垯 -->
     <rule ref="category/java/design.xml">
-        <!-- 排除一些不适用于项目的规则 -->
+        <!-- 鎺掗櫎涓€浜涗笉閫傜敤浜庨」鐩殑瑙勫垯 -->
         <exclude name="AvoidCatchingGenericException"/>
         <exclude name="CouplingBetweenObjects"/>
         <exclude name="DataClass"/>
@@ -45,16 +45,16 @@
         <exclude name="TooManyMethods"/>
     </rule>
 
-    <!-- 文档规则 -->
+    <!-- 鏂囨。瑙勫垯 -->
     <rule ref="category/java/documentation.xml">
-        <!-- 排除注释要求规则，保持轻量化 -->
+        <!-- 鎺掗櫎娉ㄩ噴瑕佹眰瑙勫垯锛屼繚鎸佽交閲忓寲 -->
         <exclude name="CommentRequired"/>
         <exclude name="CommentSize"/>
     </rule>
 
-    <!-- 错误处理规则 -->
+    <!-- 閿欒澶勭悊瑙勫垯 -->
     <rule ref="category/java/errorprone.xml">
-        <!-- 排除一些不适用于项目的规则 -->
+        <!-- 鎺掗櫎涓€浜涗笉閫傜敤浜庨」鐩殑瑙勫垯 -->
         <exclude name="AvoidDuplicateLiterals"/>
         <exclude name="AvoidFieldNameMatchingMethodName"/>
         <exclude name="AvoidFieldNameMatchingTypeName"/>
@@ -63,20 +63,21 @@
         <exclude name="NullAssignment"/>
     </rule>
 
-    <!-- 多线程规则 -->
+    <!-- 澶氱嚎绋嬭鍒?-->
     <rule ref="category/java/multithreading.xml">
-        <!-- 排除一些不适用于项目的规则 -->
+        <!-- 鎺掗櫎涓€浜涗笉閫傜敤浜庨」鐩殑瑙勫垯 -->
         <exclude name="DoNotUseThreads"/>
         <exclude name="UseConcurrentHashMap"/>
     </rule>
 
-    <!-- 性能规则 -->
+    <!-- 鎬ц兘瑙勫垯 -->
     <rule ref="category/java/performance.xml">
-        <!-- 排除一些不适用于项目的规则 -->
+        <!-- 鎺掗櫎涓€浜涗笉閫傜敤浜庨」鐩殑瑙勫垯 -->
         <exclude name="AvoidInstantiatingObjectsInLoops"/>
     </rule>
 
-    <!-- 安全规则 -->
+    <!-- 瀹夊叏瑙勫垯 -->
     <rule ref="category/java/security.xml"/>
 
 </ruleset>
+

@@ -1,9 +1,16 @@
-server:
+﻿server:
   port: 8190
   servlet:
     context-path: /
 
-pnd:
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+HomeDash:
+  homeDir: ${user.dir}/data
   useMysql: false
   mysql:
     url: jdbc:mysql://localhost:3306/home_dash

@@ -67,6 +67,13 @@
       <version>${mybatis-spring-boot.version}</version>
     </dependency>
 
+    <!-- MyBatis-Plus -->
+    <dependency>
+      <groupId>com.baomidou</groupId>
+      <artifactId>mybatis-plus-boot-starter</artifactId>
+      <version>3.5.7</version>
+    </dependency>
+
     <!-- Lombok -->
     <dependency>
       <groupId>org.projectlombok</groupId>

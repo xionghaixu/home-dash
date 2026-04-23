@@ -24,6 +24,7 @@ CREATE TABLE `file` (
   `file_name` varchar(100) NOT NULL,
   `parent_id` int(11) NOT NULL DEFAULT '0',
   `type` varchar(45) NOT NULL,
+  `size` bigint DEFAULT NULL,
   `resource_id` int(11) DEFAULT NULL,
   `create_time` datetime NOT NULL,
   `update_time` datetime NOT NULL,

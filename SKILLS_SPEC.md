@@ -2,12 +2,12 @@
 
 ## 1. 项目概述
 
-`home-dash` 是当前后端项目目录名，对应原 PND（Personal Network Disk）后端工程，基于 Spring Boot 构建，提供文件管理、大文件上传/下载、视频播放等服务端支持。
+`home-dash` 是当前后端项目目录名，对应原 HomeDash（Personal Network Disk）后端工程，基于 Spring Boot 构建，提供文件管理、大文件上传/下载、视频播放等服务端支持。
 
 ## 2. 技术栈
 
 - **框架**: Spring Boot 3.3.4
-- **数据访问**: MyBatis
+- **数据访问**: MyBatis-Plus
 - **嵌入式数据库**: H2 2.2.224 (默认启用)
 - **生产数据库**: MySQL (可选，通过配置切换)
 - **构建工具**: Maven
@@ -40,7 +40,7 @@ home-dash/
 ### 3.1 Web 模块结构
 
 ```
-web/src/main/java/site/bitinit/pnd/web/
+web/src/main/java/site/bitinit/HomeDash/web/
 ├── config/                # 配置类
 ├── controller/            # 控制器
 ├── dao/                   # 数据访问对象
@@ -49,7 +49,7 @@ web/src/main/java/site/bitinit/pnd/web/
 ├── service/               # 服务层
 ├── util/                  # 工具类
 ├── Constants.java         # 常量定义
-└── PndWebApplication.java # 应用入口
+└── HomeDashApplication.java # 应用入口
 ```
 
 ## 4. 开发规范
@@ -71,8 +71,8 @@ web/src/main/java/site/bitinit/pnd/web/
 
 - **统一异常处理**: 实现全局异常处理器，统一处理系统和业务异常
 - **异常层次结构**:
-  - 定义基础异常类 `PndException`
-  - 业务异常继承 `PndException`，如 `FileNotFoundException`
+  - 定义基础异常类 `HomeDashException`
+  - 业务异常继承 `HomeDashException`，如 `FileNotFoundException`
   - 系统异常使用 Spring 内置异常类
 - **异常信息**: 异常消息应包含详细的错误原因和上下文信息，便于问题排查
 
@@ -101,7 +101,7 @@ web/src/main/java/site/bitinit/pnd/web/
 - **分层架构**: 严格遵循 Controller → Service → DAO 分层架构
 - **模块划分**: 按功能模块划分代码，如文件管理、资源管理
 - **依赖注入**: 使用 Spring 依赖注入机制，减少硬编码依赖
-- **代码复用**: 提取公共代码到工具类或父类，减少代码冗余
+- **代码复用**: 提取公共代码到 `common` 包、工具类或父类，减少代码冗余
 
 ### 4.6 跨域策略（CORS）
 
@@ -161,8 +161,8 @@ web/src/main/java/site/bitinit/pnd/web/
 #### 配置说明
 
 - 默认使用 H2 嵌入式数据库，数据存储在 `{project}/web/data/data/` 目录
-- 通过 `pnd.useMysql=true` 配置可切换到 MySQL 生产环境
-- JDBC URL 格式：`jdbc:h2:file:{dataDir}/pnd;MODE=MySQL;DB_CLOSE_DELAY=-1`
+- 通过 `HomeDash.useMysql=true` 配置可切换到 MySQL 生产环境
+- JDBC URL 格式：`jdbc:h2:file:{dataDir}/HomeDash;MODE=MySQL;DB_CLOSE_DELAY=-1`
 
 ## 5. 重要规则
 
@@ -251,3 +251,5 @@ mvn spring-boot:run
 8. 禁止在 Service 层处理 HTTP 响应，应在 Controller 层处理
 9. 禁止在代码中记录敏感信息（如密码、密钥等）
 10. 所有数据库操作必须使用事务管理
+11. 项目的编码格式强制使用utf-8，确保跨平台兼容性
+
