@@ -139,7 +139,6 @@
           <failOnViolation>false</failOnViolation>
           <linkXRef>false</linkXRef>
           <targetJdk>21</targetJdk>
-          <sourceEncoding>UTF-8</sourceEncoding>
           <minimumPriority>3</minimumPriority>
         </configuration>
         <executions>
