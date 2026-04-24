@@ -1,4 +1,4 @@
-package com.hd.biz.system;
+package com.hd.biz;
 
 import com.hd.model.dto.SystemInfoDto;
 

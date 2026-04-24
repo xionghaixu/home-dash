@@ -1,4 +1,4 @@
-package com.hd.biz.resource.impl;
+package com.hd.biz.impl;
 
 import com.hd.common.HomeDashConstants;
 import com.hd.common.config.HomeDashProperties;
@@ -17,7 +17,7 @@ import com.hd.dao.service.FileDataService;
 import com.hd.dao.service.ResourceChunkDataService;
 import com.hd.dao.service.ResourceDataService;
 import com.hd.common.exception.UploadException;
-import com.hd.biz.resource.ResourceBiz;
+import com.hd.biz.ResourceBiz;
 import com.hd.common.util.FileUtils;
 import com.hd.common.util.Utils;
 
@@ -111,8 +111,10 @@ public class ResourceBizImpl implements ResourceBiz {
             return false;
         }
 
-        ResourceChunk resourceChunk = resourceChunkDataService.findByIdentifierAndChunkNumber(chunk.getIdentifier(),
-                chunk.getChunkNumber());
+        ResourceChunk resourceChunk = resourceChunkDataService.lambdaQuery()
+                .eq(ResourceChunk::getIdentifier, chunk.getIdentifier())
+                .eq(ResourceChunk::getChunkNumber, chunk.getChunkNumber())
+                .one();
         boolean exists = Objects.nonNull(resourceChunk);
 
         log.debug("文件分块检查完成 [identifier={}, chunkNumber={}, exists={}]",
@@ -126,7 +128,9 @@ public class ResourceBizImpl implements ResourceBiz {
         log.debug("获取已上传分块列表 [identifier={}]", identifier);
 
         try {
-            java.util.List<ResourceChunk> chunks = resourceChunkDataService.findByIdentifier(identifier);
+            java.util.List<ResourceChunk> chunks = resourceChunkDataService.lambdaQuery()
+                    .eq(ResourceChunk::getIdentifier, identifier)
+                    .list();
 
             log.info("已上传分块列表查询完成 [identifier={}, uploadedChunks={}, totalChunks={}]",
                     identifier, chunks.size(), chunks.isEmpty() ? 0 : chunks.get(0).getTotalChunks());
@@ -196,13 +200,19 @@ public class ResourceBizImpl implements ResourceBiz {
                             chunk.getIdentifier(), chunk.getChunkNumber(), calculatedMd5);
                 }
 
-                ResourceChunk existingChunk = resourceChunkDataService.findByIdentifierAndChunkNumber(
-                        chunk.getIdentifier(), chunk.getChunkNumber());
+                ResourceChunk existingChunk = resourceChunkDataService.lambdaQuery()
+                        .eq(ResourceChunk::getIdentifier, chunk.getIdentifier())
+                        .eq(ResourceChunk::getChunkNumber, chunk.getChunkNumber())
+                        .one();
 
                 if (Objects.nonNull(existingChunk)) {
                     log.debug("分块记录已存在，更新MD5信息 [identifier={}, chunkNumber={}]",
                             chunk.getIdentifier(), chunk.getChunkNumber());
-                    resourceChunkDataService.updateChunkMd5(chunk.getIdentifier(), chunk.getChunkNumber(), calculatedMd5);
+                    resourceChunkDataService.lambdaUpdate()
+                            .eq(ResourceChunk::getIdentifier, chunk.getIdentifier())
+                            .eq(ResourceChunk::getChunkNumber, chunk.getChunkNumber())
+                            .set(ResourceChunk::getMd5, calculatedMd5)
+                            .update();
                 } else {
                     chunk.setMd5(calculatedMd5);
                     resourceChunkDataService.save(chunk);
@@ -378,7 +388,9 @@ public class ResourceBizImpl implements ResourceBiz {
 
             Utils.deleteFile(getChunkTmpDir(mergeFileDto.getIdentifier()));
 
-            resourceChunkDataService.deleteChunk(mergeFileDto.getIdentifier());
+            resourceChunkDataService.lambdaUpdate()
+                    .eq(ResourceChunk::getIdentifier, mergeFileDto.getIdentifier())
+                    .remove();
 
             String relativePath = Utils.formatDate(mergeFileDto.getCreateTime(), "yyyy") + File.separator +
                     Utils.formatDate(mergeFileDto.getCreateTime(), "MM") + File.separator +
@@ -484,7 +496,9 @@ public class ResourceBizImpl implements ResourceBiz {
         try {
             Utils.deleteFile(getChunkTmpDir(mergeFileDto.getIdentifier()));
 
-            resourceChunkDataService.deleteChunk(mergeFileDto.getIdentifier());
+            resourceChunkDataService.lambdaUpdate()
+                    .eq(ResourceChunk::getIdentifier, mergeFileDto.getIdentifier())
+                    .remove();
 
             log.info("临时文件和分块记录删除成功 [identifier={}, fileName={}]",
                     mergeFileDto.getIdentifier(), mergeFileDto.getFileName());
@@ -557,7 +571,10 @@ public class ResourceBizImpl implements ResourceBiz {
         }
 
         try {
-            ResourceChunk chunkRecord = resourceChunkDataService.findByIdentifierAndChunkNumber(identifier, chunkNumber);
+            ResourceChunk chunkRecord = resourceChunkDataService.lambdaQuery()
+                    .eq(ResourceChunk::getIdentifier, identifier)
+                    .eq(ResourceChunk::getChunkNumber, chunkNumber)
+                    .one();
             if (Objects.isNull(chunkRecord)) {
                 log.debug("分块记录不存在 [identifier={}, chunkNumber={}]", identifier, chunkNumber);
                 return false;
@@ -620,7 +637,9 @@ public class ResourceBizImpl implements ResourceBiz {
         }
 
         try {
-            List<ResourceChunk> chunksBeforeCleanup = resourceChunkDataService.findByIdentifier(identifier);
+            List<ResourceChunk> chunksBeforeCleanup = resourceChunkDataService.lambdaQuery()
+                    .eq(ResourceChunk::getIdentifier, identifier)
+                    .list();
             int chunksCount = chunksBeforeCleanup.size();
             log.debug("准备清理的分块数量 [identifier={}, chunksCount={}]", identifier, chunksCount);
 
@@ -628,7 +647,9 @@ public class ResourceBizImpl implements ResourceBiz {
             Utils.deleteFile(chunkTmpDir);
             log.debug("临时目录删除成功 [chunkTmpDir={}]", chunkTmpDir);
 
-            resourceChunkDataService.deleteChunk(identifier);
+            resourceChunkDataService.lambdaUpdate()
+                    .eq(ResourceChunk::getIdentifier, identifier)
+                    .remove();
             log.debug("数据库分块记录删除成功 [identifier={}]", identifier);
 
             uploadActivityCache.remove(identifier);
@@ -744,7 +765,10 @@ public class ResourceBizImpl implements ResourceBiz {
         state.errorMessage = null;
         state.totalSize = chunk.getTotalSize();
         state.totalChunks = chunk.getTotalChunks();
-        state.uploadedChunks = resourceChunkDataService.findByIdentifier(chunk.getIdentifier()).size();
+        state.uploadedChunks = resourceChunkDataService.lambdaQuery()
+                .eq(ResourceChunk::getIdentifier, chunk.getIdentifier())
+                .count()
+                .intValue();
         state.updateTime = new Date();
         if (state.createTime == null) {
             state.createTime = new Date();

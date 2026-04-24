@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.hd.biz.resource.ResourceBiz;
+import com.hd.biz.ResourceBiz;
 import com.hd.common.HomeDashConstants;
 import com.hd.model.dto.MergeFileDto;
 import com.hd.model.dto.ResponseDto;

@@ -1,4 +1,4 @@
-package com.hd.biz.file;
+package com.hd.biz;
 
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;

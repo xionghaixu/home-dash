@@ -1,4 +1,4 @@
-package com.hd.biz.file.impl;
+package com.hd.biz.impl;
 
 import com.hd.common.config.HomeDashProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -18,15 +18,12 @@ import com.hd.dao.entity.Resource;
 import com.hd.dao.service.FileDataService;
 import com.hd.dao.service.ResourceDataService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.hd.common.exception.DataFormatException;
 import com.hd.common.exception.DataNotFoundException;
 import com.hd.common.exception.DatabaseException;
 import com.hd.common.exception.FileAlreadyExistsException;
 import com.hd.common.exception.FileOperationException;
-import com.hd.biz.file.FileBiz;
+import com.hd.biz.FileBiz;
 import com.hd.common.util.FileUtils;
 import com.hd.common.util.MD5Utils;
 

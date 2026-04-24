@@ -1,4 +1,4 @@
-package com.hd.biz.resource;
+package com.hd.biz;
 
 import com.hd.dao.entity.ResourceChunk;
 import com.hd.model.dto.MergeFileDto;

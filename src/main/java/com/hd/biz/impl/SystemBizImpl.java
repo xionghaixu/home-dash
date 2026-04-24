@@ -1,7 +1,7 @@
-package com.hd.biz.system.impl;
+package com.hd.biz.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.hd.biz.system.SystemBiz;
+import com.hd.biz.SystemBiz;
 import com.hd.common.config.HomeDashProperties;
 import com.hd.common.enums.FileType;
 import com.hd.dao.entity.File;

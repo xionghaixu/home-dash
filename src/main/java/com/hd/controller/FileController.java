@@ -12,7 +12,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import com.hd.biz.file.FileBiz;
+import com.hd.biz.FileBiz;
 import com.hd.common.HomeDashConstants;
 import com.hd.model.dto.InstantUploadDto;
 import com.hd.model.dto.MoveAndCopyFileDto;
