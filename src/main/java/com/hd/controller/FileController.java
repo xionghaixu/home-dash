@@ -1,8 +1,8 @@
 package com.hd.controller;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -23,11 +23,11 @@ import com.hd.common.exception.DataFormatException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 文件管理控制器。
@@ -40,19 +40,10 @@ import java.util.Objects;
 @Slf4j
 @RestController
 @RequestMapping(HomeDashConstants.API_VERSION)
+@RequiredArgsConstructor
 public class FileController {
 
     private final FileBiz fileBiz;
-
-    /**
-     * 构造函数，注入FileBiz依赖。
-     *
-     * @param fileBiz 文件业务接口
-     */
-    @Autowired
-    public FileController(FileBiz fileBiz) {
-        this.fileBiz = fileBiz;
-    }
 
     /**
      * 根据父文件夹ID获取文件列表。
@@ -65,7 +56,7 @@ public class FileController {
      */
     @GetMapping("/file/parent/{parentId}")
     public ResponseEntity<ResponseDto> getFiles(
-            @PathVariable(name = "parentId") Long parentId,
+            @PathVariable Long parentId,
             @RequestParam(defaultValue = "name") String sortBy,
             @RequestParam(defaultValue = "asc") String sortOrder) {
         log.info("获取文件列表请求 [parentId={}, sortBy={}, sortOrder={}]", parentId, sortBy, sortOrder);
@@ -135,7 +126,7 @@ public class FileController {
      * @return 包含文件详情的响应对象
      */
     @GetMapping("/file/{fileId}")
-    public ResponseEntity<ResponseDto> getFile(@PathVariable(name = "fileId") Long fileId) {
+    public ResponseEntity<ResponseDto> getFile(@PathVariable Long fileId) {
         log.info("获取文件详情请求 [fileId={}]", fileId);
         ResponseEntity<ResponseDto> response = ResponseEntity.ok(fileBiz.findByFileId(fileId));
         log.debug("获取文件详情成功 [fileId={}]", fileId);
@@ -156,10 +147,9 @@ public class FileController {
                 file.getFileName(), file.getParentId(), file.getType());
 
         if (result.hasErrors()) {
-            StringBuilder errors = new StringBuilder();
-            for (FieldError fe : result.getFieldErrors()) {
-                errors.append(fe.getDefaultMessage()).append("; ");
-            }
+            String errors = result.getFieldErrors().stream()
+                    .map(FieldError::getDefaultMessage)
+                    .collect(Collectors.joining("; "));
             log.warn("文件创建参数验证失败 [fileName={}, parentId={}, errors={}]",
                     file.getFileName(), file.getParentId(), errors);
             throw new DataFormatException(
@@ -240,7 +230,7 @@ public class FileController {
      * @return 重命名成功的响应对象
      */
     @PutMapping("/file/{fileId}/rename")
-    public ResponseEntity<ResponseDto> renameFile(@PathVariable(name = "fileId") Long fileId,
+    public ResponseEntity<ResponseDto> renameFile(@PathVariable Long fileId,
             @RequestBody File file) {
         log.info("重命名文件请求 [fileId={}, newFileName={}]", fileId,
                 file != null ? file.getFileName() : null);
@@ -263,30 +253,6 @@ public class FileController {
      * 移动或复制文件。
      * 根据dto中的type字段判断操作类型：move表示移动，copy表示复制。
      *
-     * <p><b>实现原理：</b>
-     * <ol>
-     *   <li>检查dto中的type字段，判断操作类型</li>
-     *   <li>如果是移动操作（move）：targetIds必须只有一个值（只能移动到一个目标文件夹）</li>
-     *   <li>如果是复制操作（copy）：允许复制到多个目标文件夹</li>
-     *   <li>如果type既不是move也不是copy，抛出异常</li>
-     * </ol>
-     *
-     * <p><b>业务规则：</b>
-     * <ul>
-     *   <li>移动操作：只能移动到一个目标文件夹</li>
-     *   <li>复制操作：可以复制到多个目标文件夹</li>
-     *   <li>不能将文件夹移动到自身或其子文件夹中</li>
-     *   <li>目标目录存在同名文件时返回错误</li>
-     * </ul>
-     *
-     * <p><b>错误码：</b>
-     * <ul>
-     *   <li>1101: 文件不存在</li>
-     *   <li>1102: 目标目录已存在同名文件</li>
-     *   <li>1201: 不能将文件夹移动到自身或子文件夹</li>
-     *   <li>1202: 目标文件夹不存在</li>
-     * </ul>
-     *
      * @param dto 包含文件ID列表、目标文件夹ID列表和操作类型的数据传输对象
      * @return 操作结果响应
      * @throws DataFormatException 当操作类型不正确或参数无效时抛出
@@ -298,7 +264,6 @@ public class FileController {
                 dto != null ? dto.getTargetIds() : null,
                 dto != null ? dto.getType() : null);
 
-        // 参数校验（由 @Valid 自动完成）
         if (Objects.isNull(dto)) {
             throw new DataFormatException("操作参数不能为空");
         }
@@ -325,8 +290,8 @@ public class FileController {
             log.warn("操作类型不正确 [fileIds={}, targetIds={}, type={}]",
                     dto.getFileIds(), dto.getTargetIds(), dto.getType());
             throw new DataFormatException(
-                    String.format("操作类型不正确，必须是move或copy [fileIds=%s, targetIds=%s, type=%s]",
-                            dto.getFileIds(), dto.getTargetIds(), dto.getType()));
+                     String.format("操作类型不正确，必须是move或copy [fileIds=%s, targetIds=%s, type=%s]",
+                             dto.getFileIds(), dto.getTargetIds(), dto.getType()));
         }
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ResponseDto.success());
@@ -356,16 +321,13 @@ public class FileController {
     /**
      * 下载文件。
      * 根据文件ID加载文件资源并提供下载。
-     * 实现原理：1) 根据文件ID加载文件资源和文件信息；2) 通过ServletContext推断文件MIME类型，无法推断则使用默认类型 `application/octet-stream`；3) 构建 `Content-Type` 和 `Content-Disposition` 响应头；4) 返回文件资源响应实体。
-     * 文件名编码说明：使用UTF-8编码文件名，格式为 `attachment; filename*=UTF-8''编码后的文件名`，以兼容中文文件名并符合 RFC 5987。
      * @param fileId 文件ID
      * @param request HTTP请求对象，用于获取文件MIME类型
      * @return 文件资源响应实体
-     * @throws UnsupportedEncodingException 当文件名编码失败时抛出
      */
     @GetMapping("/file/{fileId}/download")
-    public org.springframework.http.ResponseEntity<Resource> downloadFile(@PathVariable(name = "fileId") Long fileId,
-            HttpServletRequest request) throws UnsupportedEncodingException {
+    public org.springframework.http.ResponseEntity<Resource> downloadFile(@PathVariable Long fileId,
+            HttpServletRequest request) {
         log.info("下载文件请求 [fileId={}]", fileId);
 
         // 加载文件资源和文件信息
