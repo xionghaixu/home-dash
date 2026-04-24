@@ -13,7 +13,7 @@ import java.io.File;
  */
 @Getter
 @Setter
-@ConfigurationProperties(prefix = "HomeDash")
+@ConfigurationProperties(prefix = "home-dash")
 public class HomeDashProperties {
 
     private boolean useMysql;
@@ -37,7 +37,7 @@ public class HomeDashProperties {
     }
 
     public String getEmbedDbUrl() {
-        return "jdbc:h2:file:" + getDataDir() + File.separator
+        return "jdbc:h2:file:" + getDataDir().replace("\\", "/") + "/"
                 + "home_dash;MODE=MySQL;DATABASE_TO_UPPER=FALSE;DB_CLOSE_DELAY=-1";
     }
 

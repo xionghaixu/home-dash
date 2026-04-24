@@ -9,7 +9,7 @@ spring:
       max-file-size: 10MB
       max-request-size: 12MB
 
-HomeDash:
+home-dash:
   homeDir: ${user.dir}/data
   useMysql: false
   mysql:

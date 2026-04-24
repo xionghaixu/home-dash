@@ -5,8 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import com.hd.common.enums.FileType;
-import com.hd.dao.mapper.FileMapper;
 import com.hd.dao.entity.File;
+import com.hd.dao.service.FileDataService;
 
 import jakarta.annotation.PostConstruct;
 import java.util.List;
@@ -22,18 +22,21 @@ public class WorkspaceInitializer {
 
     private static final List<String> DEFAULT_FOLDERS = List.of("图片", "视频", "音频", "文档", "压缩包", "其他");
 
-    private final FileMapper fileMapper;
+    private final FileDataService fileDataService;
 
     @Autowired
-    public WorkspaceInitializer(FileMapper fileMapper) {
-        this.fileMapper = fileMapper;
+    public WorkspaceInitializer(FileDataService fileDataService) {
+        this.fileDataService = fileDataService;
     }
 
     @PostConstruct
     public void initDefaultFolders() {
         for (String folderName : DEFAULT_FOLDERS) {
-            Integer count = fileMapper.countByParentIdAndFileName(File.ROOT_FILE.getId(), folderName, null);
-            if (count != null && count > 0) {
+            long count = fileDataService.lambdaQuery()
+                    .eq(File::getParentId, File.ROOT_FILE.getId())
+                    .eq(File::getFileName, folderName)
+                    .count();
+            if (count > 0) {
                 continue;
             }
 
@@ -42,7 +45,7 @@ public class WorkspaceInitializer {
                     .fileName(folderName)
                     .type(FileType.FOLDER.toString())
                     .build();
-            fileMapper.save(folder);
+            fileDataService.save(folder);
             log.info("已初始化默认目录 [folderName={}, folderId={}]", folderName, folder.getId());
         }
     }
