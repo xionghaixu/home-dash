@@ -24,9 +24,6 @@ import java.security.NoSuchAlgorithmException;
  *   <li>支持进度回调，便于UI展示</li>
  *   <li>高性能的缓冲区读取优化</li>
  * </ul>
- *
- * @author john
- * @date 2020-01-08
  */
 @Slf4j
 public class MD5Utils {

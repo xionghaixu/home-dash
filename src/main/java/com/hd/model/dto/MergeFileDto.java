@@ -42,9 +42,6 @@ import java.util.Date;
  *   "createTime": "2024-01-15T10:30:00"
  * }
  * </pre>
- *
- * @author john
- * @date 2020-01-27
  */
 @Setter
 @Getter

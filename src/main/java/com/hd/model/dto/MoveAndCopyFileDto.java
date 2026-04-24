@@ -44,9 +44,6 @@ import java.util.List;
  *   "type": "copy"
  * }
  * </pre>
- *
- * @author john
- * @date 2020-01-22
  */
 @Setter
 @Getter

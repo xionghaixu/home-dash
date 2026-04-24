@@ -38,9 +38,6 @@ import java.util.Date;
  *   <li><b>success</b> - 操作成功</li>
  *   <li><b>failed</b> - 操作失败</li>
  * </ul>
- *
- * @author john
- * @date 2024-01-01
  */
 @Getter
 @Setter

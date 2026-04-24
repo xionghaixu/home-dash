@@ -25,8 +25,6 @@ import lombok.*;
  *   <li>critical - 危险（使用率 > 90%）</li>
  * </ul>
  */
- * @date 2020-02-10
- */
 @Setter
 @Getter
 @Builder

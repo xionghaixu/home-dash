@@ -52,9 +52,6 @@ import java.util.Map;
  *   ]
  * }
  * </pre>
- *
- * @author john
- * @date 2024-01-01
  */
 @Getter
 @Setter

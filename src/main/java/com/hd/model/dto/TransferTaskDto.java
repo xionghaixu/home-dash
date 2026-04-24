@@ -30,9 +30,6 @@ import java.util.Date;
  *   <li>上传进度追踪</li>
  *   <li>传输状态同步</li>
  * </ul>
- *
- * @author john
- * @date 2024-01-01
  */
 @Getter
 @Setter
