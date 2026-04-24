@@ -2,8 +2,7 @@ package com.hd.model.dto;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.util.List;
 
@@ -45,8 +44,7 @@ import java.util.List;
  * }
  * </pre>
  */
-@Setter
-@Getter
+@Data
 public class MoveAndCopyFileDto {
 
     /** 移动操作类型 */

@@ -2,9 +2,8 @@ package com.hd.model.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.Date;
 
@@ -39,8 +38,7 @@ import java.util.Date;
  *   <li><b>failed</b> - 操作失败</li>
  * </ul>
  */
-@Getter
-@Setter
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

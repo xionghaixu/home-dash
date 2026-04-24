@@ -2,10 +2,10 @@ package com.hd.model.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -33,8 +33,7 @@ import java.util.Map;
  *   <li>传输列表摘要信息</li>
  * </ul>
  */
-@Getter
-@Setter
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -89,8 +88,7 @@ public class RecentUploadSummaryDto {
      * 文件基础信息。
      * 用于列表展示。
      */
-    @Getter
-    @Setter
+    @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
@@ -119,7 +117,7 @@ public class RecentUploadSummaryDto {
         /**
          * 创建时间。
          */
-        private java.util.Date createTime;
+        private Date createTime;
 
         /**
          * 父目录ID。

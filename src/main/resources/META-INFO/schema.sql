@@ -5,6 +5,7 @@ CREATE TABLE file (
   file_name varchar(100) NOT NULL,
   parent_id bigint NOT NULL DEFAULT 0,
   type varchar(45) NOT NULL,
+  size bigint DEFAULT 0,
   create_time timestamp NOT NULL DEFAULT '2019-01-01 00:00:00',
   update_time timestamp NOT NULL DEFAULT '2019-01-01 00:00:00',
   resource_id bigint DEFAULT NULL,

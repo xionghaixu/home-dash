@@ -2,9 +2,8 @@ package com.hd.model.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.List;
 import java.util.Map;
@@ -53,8 +52,7 @@ import java.util.Map;
  * }
  * </pre>
  */
-@Getter
-@Setter
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -96,8 +94,7 @@ public class BatchOperationResultDto {
     /**
      * 批量操作中单个操作项的结果。
      */
-    @Getter
-    @Setter
+    @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor

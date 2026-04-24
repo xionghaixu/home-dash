@@ -131,11 +131,11 @@ public class ResourceBizImpl implements ResourceBiz {
     }
 
         @Override
-    public java.util.List<ResourceChunk> getUploadedChunks(String identifier) {
+    public List<ResourceChunk> getUploadedChunks(String identifier) {
         log.debug("获取已上传分块列表 [identifier={}]", identifier);
 
         try {
-            java.util.List<ResourceChunk> chunks = resourceChunkDataService.lambdaQuery()
+            List<ResourceChunk> chunks = resourceChunkDataService.lambdaQuery()
                     .eq(ResourceChunk::getIdentifier, identifier)
                     .list();
 
@@ -145,7 +145,7 @@ public class ResourceBizImpl implements ResourceBiz {
             return chunks;
         } catch (Exception e) {
             log.error("查询已上传分块列表失败 [identifier={}, error={}]", identifier, e.getMessage(), e);
-            return new java.util.ArrayList<>();
+            return new ArrayList<>();
         }
     }
 
@@ -354,7 +354,7 @@ public class ResourceBizImpl implements ResourceBiz {
         log.debug("目标文件路径 [targetFilePath={}]", targetFilePath);
 
         try {
-            java.util.List<Path> chunkPaths = getSortedChunkPaths(mergeFileDto);
+            List<Path> chunkPaths = getSortedChunkPaths(mergeFileDto);
 
             if (chunkPaths.isEmpty()) {
                 log.error("未找到分块文件 [identifier={}, fileName={}]",
@@ -417,8 +417,8 @@ public class ResourceBizImpl implements ResourceBiz {
         }
     }
 
-        private java.util.List<Path> getSortedChunkPaths(MergeFileDto mergeFileDto) throws IOException {
-        java.util.List<Path> chunkPaths = new java.util.ArrayList<>();
+        private List<Path> getSortedChunkPaths(MergeFileDto mergeFileDto) throws IOException {
+        List<Path> chunkPaths = new ArrayList<>();
 
         String originalFileName = mergeFileDto.getFileName();
 

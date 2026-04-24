@@ -2,9 +2,8 @@ package com.hd.model.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 /**
  * @author xhx
@@ -13,8 +12,7 @@ import lombok.Setter;
  * @createTime 2026/04/23 23:34
  * @description 文件分类摘要。用于阶段一基础分类浏览页面展示分类数量。
  */
-@Getter
-@Setter
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

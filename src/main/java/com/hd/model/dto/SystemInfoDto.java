@@ -1,6 +1,11 @@
 package com.hd.model.dto;
 
-import lombok.*;
+import lombok.Data;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+
+import java.util.Date;
 
 /**
  * @author xhx
@@ -25,8 +30,7 @@ import lombok.*;
  *   <li>critical - 危险（使用率 > 90%）</li>
  * </ul>
  */
-@Setter
-@Getter
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -137,5 +141,5 @@ public class SystemInfoDto {
     /**
      * 最后检查时间。
      */
-    private java.util.Date lastCheckTime;
+    private Date lastCheckTime;
 }

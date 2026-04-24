@@ -2,8 +2,7 @@ package com.hd.model.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import com.hd.dao.entity.File;
 
 import java.util.Date;
@@ -43,8 +42,7 @@ import java.util.Date;
  * }
  * </pre>
  */
-@Setter
-@Getter
+@Data
 public class MergeFileDto extends File {
 
     /**

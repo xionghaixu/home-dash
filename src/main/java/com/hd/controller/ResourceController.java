@@ -14,6 +14,7 @@ import com.hd.common.exception.DataFormatException;
 
 import java.io.EOFException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -102,7 +103,7 @@ public class ResourceController {
                     .body(ResponseDto.fail("文件标识符不能为空"));
         }
 
-        java.util.List<ResourceChunk> chunks = resourceBiz.getUploadedChunks(identifier);
+        List<ResourceChunk> chunks = resourceBiz.getUploadedChunks(identifier);
 
         log.info("已上传分块列表返回成功 [identifier={}, uploadedChunks={}]",
                 identifier, chunks.size());

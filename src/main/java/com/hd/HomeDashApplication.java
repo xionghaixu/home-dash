@@ -16,7 +16,7 @@ import org.mybatis.spring.annotation.MapperScan;
 @SpringBootApplication
 @EnableScheduling
 @ConfigurationPropertiesScan(basePackages = "com.hd.common.config")
-@MapperScan("com.hd.dao")
+@MapperScan("com.hd.dao.mapper")
 public class HomeDashApplication {
 
     /**

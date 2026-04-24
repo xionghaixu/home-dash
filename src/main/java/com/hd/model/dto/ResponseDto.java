@@ -1,8 +1,7 @@
 package com.hd.model.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import com.hd.common.enums.ErrorCode;
 
 import java.time.LocalDateTime;
@@ -16,8 +15,7 @@ import java.util.Collections;
  * @createTime 2026/04/23 23:34
  * @description 统一响应数据传输对象。封装API接口的响应数据，包含状态码、消息、数据、额外信息和时间戳。提供成功和失败响应的静态工厂方法。
  */
-@Setter
-@Getter
+@Data
 @AllArgsConstructor
 public class ResponseDto {
 

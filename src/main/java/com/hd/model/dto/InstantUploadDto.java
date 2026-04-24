@@ -1,7 +1,6 @@
 package com.hd.model.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 /**
  * @author xhx
@@ -10,8 +9,7 @@ import lombok.Setter;
  * @createTime 2026/04/23 23:34
  * @description 秒传请求数据传输对象。
  */
-@Getter
-@Setter
+@Data
 public class InstantUploadDto {
 
     private String md5;
