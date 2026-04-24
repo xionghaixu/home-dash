@@ -3,18 +3,17 @@ package com.hd.common.exception;
 import com.hd.common.enums.ErrorCode;
 
 /**
- * 数据库操作异常。
- * 当数据库操作失败时抛出此异常。
- * 继承自SystemException，表示系统层面的数据库错误。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.exception
+ * @createTime 2026/04/23 23:34
+ * @description 数据库操作异常。当数据库操作失败时抛出此异常。继承自SystemException，表示系统层面的数据库错误。
  *
  * 使用场景：
  * - 数据库连接失败
  * - SQL执行错误
  * - 数据库事务失败
  * - 数据库约束违反
- *
- * @author john
- * @date 2020-01-11
  */
 public class DatabaseException extends SystemException {
     private static final long serialVersionUID = -1731288043175680007L;

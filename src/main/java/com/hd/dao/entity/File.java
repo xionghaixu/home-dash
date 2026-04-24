@@ -9,12 +9,11 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Date;
 
 /**
- * 文件实体类。
- * 表示文件系统中的文件或文件夹，包含文件的基本信息如名称、类型、大小、父目录等。
- * 支持文件和文件夹的层级结构管理。
- *
- * @author john
- * @date 2020-01-08
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.dao.entity
+ * @createTime 2026/04/23 23:34
+ * @description 文件实体类。表示文件系统中的文件或文件夹，包含文件的基本信息如名称、类型、大小、父目录等。支持文件和文件夹的层级结构管理。
  */
 @Alias("file")
 @Setter

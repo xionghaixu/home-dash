@@ -6,12 +6,11 @@ import org.apache.ibatis.type.Alias;
 import java.util.Date;
 
 /**
- * 资源实体类。
- * 表示实际存储的文件资源，包含资源的物理路径、大小、MD5校验值等信息。
- * 支持多文件引用同一资源（通过link字段实现）。
- *
- * @author john
- * @date 2020-01-08
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.dao.entity
+ * @createTime 2026/04/23 23:34
+ * @description 资源实体类。表示实际存储的文件资源，包含资源的物理路径、大小、MD5校验值等信息。支持多文件引用同一资源（通过link字段实现）。
  */
 @Alias("resource")
 @Setter

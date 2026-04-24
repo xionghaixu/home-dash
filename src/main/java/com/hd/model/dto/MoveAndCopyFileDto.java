@@ -8,8 +8,11 @@ import lombok.Setter;
 import java.util.List;
 
 /**
- * 文件移动和复制数据传输对象。
- * 封装文件移动或复制操作的请求参数，包括文件ID列表、目标文件夹ID列表和操作类型。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.model.dto
+ * @createTime 2026/04/23 23:34
+ * @description 文件移动和复制数据传输对象。封装文件移动或复制操作的请求参数，包括文件ID列表、目标文件夹ID列表和操作类型。
  *
  * <p><b>使用场景：</b>
  * <ul>

@@ -3,12 +3,11 @@ package com.hd.common.exception;
 import com.hd.common.enums.ErrorCode;
 
 /**
- * 数据未找到异常。
- * 当请求的数据在数据库中不存在时抛出此异常。
- * 继承自BusinessException，表示业务层面的数据未找到错误。
- *
- * @author john
- * @date 2020-01-11
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.exception
+ * @createTime 2026/04/23 23:34
+ * @description 数据未找到异常。当请求的数据在数据库中不存在时抛出此异常。继承自BusinessException，表示业务层面的数据未找到错误。
  */
 public class DataNotFoundException extends BusinessException {
     private static final long serialVersionUID = -1731288043175679993L;

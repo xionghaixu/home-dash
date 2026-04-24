@@ -10,8 +10,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 文件工具类。
- * 提供文件类型判断、文件名验证、扩展名提取等文件相关操作方法。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.util
+ * @createTime 2026/04/23 23:34
+ * @description 文件工具类。提供文件类型判断、文件名验证、扩展名提取等文件相关操作方法。
  *
  * <p><b>文件类型分类：</b>
  * <ul>
@@ -29,9 +32,6 @@ import java.util.Set;
  *   <li>FOLDER - 文件夹</li>
  *   <li>DEFAULT - 未知类型</li>
  * </ul>
- *
- * @author john
- * @date 2020-01-11
  */
 public class FileUtils {
 

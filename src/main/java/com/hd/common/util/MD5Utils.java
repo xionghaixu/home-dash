@@ -11,8 +11,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * MD5工具类。
- * 提供文件MD5校验和计算功能，支持秒传功能。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.util
+ * @createTime 2026/04/23 23:34
+ * @description MD5工具类。提供文件MD5校验和计算功能，支持秒传功能。
  *
  * <p>功能特性：
  * <ul>

@@ -6,12 +6,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * HomeDash 异常基类。
- *
- * <p>统一承载错误码、上下文和详细信息。
- *
- * @author john
- * @date 2020-01-11
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.exception
+ * @createTime 2026/04/23 23:34
+ * @description HomeDash 异常基类。统一承载错误码、上下文和详细信息。
  */
 public class HomeDashException extends RuntimeException {
     private static final long serialVersionUID = -455084301379506105L;

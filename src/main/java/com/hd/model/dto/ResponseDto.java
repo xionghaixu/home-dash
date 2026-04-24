@@ -10,12 +10,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 
 /**
- * 统一响应数据传输对象。
- * 封装API接口的响应数据，包含状态码、消息、数据、额外信息和时间戳。
- * 提供成功和失败响应的静态工厂方法。
- *
- * @author john
- * @date 2020-01-05
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.model.dto
+ * @createTime 2026/04/23 23:34
+ * @description 统一响应数据传输对象。封装API接口的响应数据，包含状态码、消息、数据、额外信息和时间戳。提供成功和失败响应的静态工厂方法。
  */
 @Setter
 @Getter

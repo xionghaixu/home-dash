@@ -7,12 +7,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Date;
 
 /**
- * 资源分块实体类。
- * 表示大文件上传过程中的文件分块信息，用于实现断点续传和分块上传功能。
- * 包含分块编号、分块大小、文件标识符、MD5校验值等信息。
- *
- * @author john
- * @date 2020-01-27
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.dao.entity
+ * @createTime 2026/04/23 23:34
+ * @description 资源分块实体类。表示大文件上传过程中的文件分块信息，用于实现断点续传和分块上传功能。包含分块编号、分块大小、文件标识符、MD5校验值等信息。
  */
 @Alias("resourceChunk")
 @Setter

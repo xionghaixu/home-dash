@@ -1,9 +1,11 @@
 package com.hd.common;
 
 /**
- * 通用系统常量。
- *
- * <p>仅保留阶段一及基础运行所需的配置键、API 前缀和状态语义。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common
+ * @createTime 2026/04/23 23:34
+ * @description 通用系统常量。仅保留阶段一及基础运行所需的配置键、API 前缀和状态语义。
  */
 public class HomeDashConstants {
 

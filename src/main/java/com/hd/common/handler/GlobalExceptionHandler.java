@@ -23,7 +23,11 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.util.stream.Collectors;
 /**
- * 全局异常处理器。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.handler
+ * @createTime 2026/04/23 23:34
+ * @description 全局异常处理器。
  */
 @Slf4j
 @RestControllerAdvice

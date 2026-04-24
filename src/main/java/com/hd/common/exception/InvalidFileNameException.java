@@ -3,18 +3,17 @@ package com.hd.common.exception;
 import com.hd.common.enums.ErrorCode;
 
 /**
- * 无效文件名异常。
- * 当文件名不符合规范时抛出此异常。
- * 继承自BusinessException，表示业务层面的文件名验证错误。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.exception
+ * @createTime 2026/04/23 23:34
+ * @description 无效文件名异常。当文件名不符合规范时抛出此异常。继承自BusinessException，表示业务层面的文件名验证错误。
  *
  * 使用场景：
  * - 文件名包含非法字符
  * - 文件名过长
  * - 文件名为空
  * - 文件名与系统保留名冲突
- *
- * @author john
- * @date 2020-01-11
  */
 public class InvalidFileNameException extends BusinessException {
     private static final long serialVersionUID = -1731288043175680005L;

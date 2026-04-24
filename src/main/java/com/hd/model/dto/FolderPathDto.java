@@ -5,11 +5,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * 文件夹路径数据传输对象。
- * 封装文件夹路径信息，用于显示面包屑导航。
- *
- * @author john
- * @date 2020-01-11
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.model.dto
+ * @createTime 2026/04/23 23:34
+ * @description 文件夹路径数据传输对象。封装文件夹路径信息，用于显示面包屑导航。
  */
 @Setter
 @Getter

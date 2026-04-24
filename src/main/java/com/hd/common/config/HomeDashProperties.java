@@ -7,9 +7,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.io.File;
 
 /**
- * HomeDash 运行属性配置。
- *
- * <p>统一管理运行目录、数据库连接信息和资源目录，避免业务代码直接读取环境变量。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.config
+ * @createTime 2026/04/23 23:34
+ * @description HomeDash 运行属性配置。统一管理运行目录、数据库连接信息和资源目录，避免业务代码直接读取环境变量。
  */
 @Getter
 @Setter

@@ -3,8 +3,11 @@ package com.hd.model.dto;
 import lombok.*;
 
 /**
- * 系统信息数据传输对象。
- * 封装系统状态信息，包括存储容量、文件数量统计、容量预警等。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.model.dto
+ * @createTime 2026/04/23 23:34
+ * @description 系统信息数据传输对象。封装系统状态信息，包括存储容量、文件数量统计、容量预警等。
  *
  * <p><b>字段分类：</b>
  * <ul>
@@ -21,8 +24,7 @@ import lombok.*;
  *   <li>warning - 警告（使用率 80%-90%）</li>
  *   <li>critical - 危险（使用率 > 90%）</li>
  * </ul>
- *
- * @author john
+ */
  * @date 2020-02-10
  */
 @Setter

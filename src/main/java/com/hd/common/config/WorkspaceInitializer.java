@@ -12,8 +12,11 @@ import jakarta.annotation.PostConstruct;
 import java.util.List;
 
 /**
- * 根目录初始化。
- * 为阶段一工作台补齐默认目录结构，避免新部署后根目录为空。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.config
+ * @createTime 2026/04/23 23:34
+ * @description 根目录初始化。为阶段一工作台补齐默认目录结构，避免新部署后根目录为空。
  */
 @Slf4j
 @Component

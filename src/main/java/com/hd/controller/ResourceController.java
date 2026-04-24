@@ -18,17 +18,18 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * 资源上传控制器。
- * 处理大文件分块上传的相关操作，包括分块检查、分块上传、分块合并、断点续传、完整性校验、取消上传等功能。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.controller
+ * @createTime 2026/04/16 18:36
+ * @description 资源上传控制器。处理大文件分块上传的相关操作，包括分块检查、分块上传、分块合并、断点续传、完整性校验、取消上传等功能。
+ *
  * 支持的功能：
  * 1. 分块上传：上传文件分块到服务器
  * 2. 断点续传：查询已上传的分块信息
  * 3. 完整性校验：验证分块数据的MD5值
  * 4. 取消上传：清理未完成的上传任务
  * 5. 合并分块：将所有分块合并为完整文件
- *
- * @author john
- * @since 2020-01-27
  */
 @Slf4j
 @RestController

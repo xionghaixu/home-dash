@@ -7,7 +7,11 @@ import com.hd.model.dto.ResponseDto;
 import java.util.List;
 
 /**
- * 资源业务接口。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.biz
+ * @createTime 2026/04/24 11:17
+ * @description 资源业务接口。
  */
 public interface ResourceBiz {
 

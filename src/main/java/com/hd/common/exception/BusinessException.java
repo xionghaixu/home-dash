@@ -3,12 +3,11 @@ package com.hd.common.exception;
 import com.hd.common.enums.ErrorCode;
 
 /**
- * 业务异常基类。
- * 所有业务逻辑异常都应继承此类，用于区分业务异常和系统异常。
- * 业务异常通常是由于用户操作不当或业务规则限制导致的，可以通过修正操作来避免。
- *
- * @author john
- * @date 2020-01-11
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.exception
+ * @createTime 2026/04/23 23:34
+ * @description 业务异常基类。所有业务逻辑异常都应继承此类，用于区分业务异常和系统异常。业务异常通常是由于用户操作不当或业务规则限制导致的，可以通过修正操作来避免。
  */
 public class BusinessException extends HomeDashException {
     private static final long serialVersionUID = -455084301379506106L;

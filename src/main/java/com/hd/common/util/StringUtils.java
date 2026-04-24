@@ -1,11 +1,11 @@
 package com.hd.common.util;
 
 /**
- * 字符串工具类。
- * 提供字符串判空、长度检查等常用字符串操作方法。
- *
- * @author john
- * @date 2020-01-11
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.util
+ * @createTime 2026/04/23 23:34
+ * @description 字符串工具类。提供字符串判空、长度检查等常用字符串操作方法。
  */
 public class StringUtils {
 

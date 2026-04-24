@@ -10,8 +10,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 批量操作结果数据传输对象。
- * 统一规范批量文件操作（移动、复制、删除等）的响应格式。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.model.dto
+ * @createTime 2026/04/23 23:34
+ * @description 批量操作结果数据传输对象。统一规范批量文件操作（移动、复制、删除等）的响应格式。
  *
  * <p><b>设计原则：</b>
  * <ul>

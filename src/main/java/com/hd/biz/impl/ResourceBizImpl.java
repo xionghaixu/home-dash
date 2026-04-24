@@ -32,6 +32,13 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.biz.impl
+ * @createTime 2026/04/24 11:17
+ * @description 资源服务实现类。实现资源管理的核心业务逻辑，包括分块上传、合并、资源管理等功能。
+ */
 @Slf4j
 @Service
 public class ResourceBizImpl implements ResourceBiz {

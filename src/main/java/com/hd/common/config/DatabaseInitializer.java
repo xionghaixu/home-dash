@@ -19,12 +19,11 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 数据库初始化组件。
- *
- * <p>在应用启动时自动执行数据库初始化脚本，创建必要的数据表结构，
- * 支持 MySQL 和嵌入式数据库两种初始化方式。
- * @author john
- * @date 2020-01-10
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.config
+ * @createTime 2026/04/23 23:34
+ * @description 数据库初始化组件。在应用启动时自动执行数据库初始化脚本，创建必要的数据表结构，支持 MySQL 和嵌入式数据库两种初始化方式。
  */
 @Slf4j
 @Component

@@ -12,11 +12,11 @@ import com.hd.model.dto.ResponseDto;
 import com.hd.model.dto.SystemInfoDto;
 
 /**
- * 系统信息控制器。
- * 提供系统状态信息的查询接口，包括存储容量、文件统计等信息。
- *
- * @author john
- * @since 2020-02-10
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.controller
+ * @createTime 2026/04/16 18:36
+ * @description 系统信息控制器。提供系统状态信息的查询接口，包括存储容量、文件统计等信息。
  */
 @Slf4j
 @RestController

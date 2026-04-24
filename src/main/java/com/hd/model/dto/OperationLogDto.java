@@ -9,8 +9,11 @@ import lombok.Setter;
 import java.util.Date;
 
 /**
- * 轻量操作记录数据传输对象。
- * 用于记录文件操作历史，支持上传、下载、移动、复制、重命名、删除等操作。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.model.dto
+ * @createTime 2026/04/23 23:34
+ * @description 轻量操作记录数据传输对象。用于记录文件操作历史，支持上传、下载、移动、复制、重命名、删除等操作。
  *
  * <p><b>设计说明：</b>
  * <ul>

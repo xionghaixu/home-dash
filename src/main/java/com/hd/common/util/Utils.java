@@ -6,11 +6,11 @@ import java.util.Date;
 import java.util.UUID;
 
 /**
- * 通用工具类。
- * 提供文件操作、日期格式化、UUID生成等通用工具方法。
- *
- * @author john
- * @date 2020-01-27
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.util
+ * @createTime 2026/04/23 23:34
+ * @description 通用工具类。提供文件操作、日期格式化、UUID生成等通用工具方法。
  */
 public class Utils {
 

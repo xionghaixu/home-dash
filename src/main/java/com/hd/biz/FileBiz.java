@@ -8,7 +8,11 @@ import com.hd.model.dto.ResponseDto;
 import java.util.List;
 
 /**
- * 文件业务接口。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.biz
+ * @createTime 2026/04/24 11:17
+ * @description 文件业务接口。
  */
 public interface FileBiz {
 

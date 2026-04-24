@@ -10,8 +10,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 最近上传摘要数据传输对象。
- * 封装最近上传文件的统计摘要信息，用于工作台和传输列表展示。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.model.dto
+ * @createTime 2026/04/23 23:34
+ * @description 最近上传摘要数据传输对象。封装最近上传文件的统计摘要信息，用于工作台和传输列表展示。
  *
  * <p><b>包含内容：</b>
  * <ul>
@@ -29,9 +32,6 @@ import java.util.Map;
  *   <li>最近上传页面数据展示</li>
  *   <li>传输列表摘要信息</li>
  * </ul>
- *
- * @author john
- * @date 2024-01-01
  */
 @Getter
 @Setter

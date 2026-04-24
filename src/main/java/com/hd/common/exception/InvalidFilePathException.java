@@ -3,18 +3,17 @@ package com.hd.common.exception;
 import com.hd.common.enums.ErrorCode;
 
 /**
- * 无效文件路径异常。
- * 当文件路径不符合规范时抛出此异常。
- * 继承自BusinessException，表示业务层面的文件路径验证错误。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.exception
+ * @createTime 2026/04/23 23:34
+ * @description 无效文件路径异常。当文件路径不符合规范时抛出此异常。继承自BusinessException，表示业务层面的文件路径验证错误。
  *
  * 使用场景：
  * - 文件路径包含非法字符
  * - 文件路径不存在
  * - 文件路径格式错误
  * - 文件路径访问越权
- *
- * @author john
- * @date 2020-01-11
  */
 public class InvalidFilePathException extends BusinessException {
     private static final long serialVersionUID = -1731288043175680006L;

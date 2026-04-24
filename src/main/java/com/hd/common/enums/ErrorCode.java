@@ -1,8 +1,11 @@
 package com.hd.common.enums;
 
 /**
- * 统一错误码枚举。
- * 定义系统中所有可能的错误码，便于统一管理和问题定位。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.enums
+ * @createTime 2026/04/23 23:34
+ * @description 统一错误码枚举。定义系统中所有可能的错误码，便于统一管理和问题定位。
  *
  * <h3>错误码分类：</h3>
  * <ul>
@@ -11,9 +14,6 @@ package com.hd.common.enums;
  * <li>5xx：业务错误（1001-1999）- 业务逻辑相关错误</li>
  * <li>6xx：系统错误（501-599）- 系统级别错误</li>
  * </ul>
- *
- * @author john
- * @date 2020-01-11
  */
 public enum ErrorCode {
 

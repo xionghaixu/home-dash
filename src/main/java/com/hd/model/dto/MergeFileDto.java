@@ -9,8 +9,11 @@ import com.hd.dao.entity.File;
 import java.util.Date;
 
 /**
- * 文件合并数据传输对象。
- * 用于分块上传时将所有分块合并成完整文件的请求参数。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.model.dto
+ * @createTime 2026/04/23 23:34
+ * @description 文件合并数据传输对象。用于分块上传时将所有分块合并成完整文件的请求参数。
  *
  * <p><b>使用场景：</b>
  * <ul>

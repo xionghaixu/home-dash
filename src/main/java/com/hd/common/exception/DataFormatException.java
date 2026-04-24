@@ -3,12 +3,11 @@ package com.hd.common.exception;
 import com.hd.common.enums.ErrorCode;
 
 /**
- * 数据格式异常。
- * 当请求数据格式不正确或验证失败时抛出此异常。
- * 继承自BusinessException，表示业务层面的数据格式错误。
- *
- * @author john
- * @date 2020-01-11
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.exception
+ * @createTime 2026/04/23 23:34
+ * @description 数据格式异常。当请求数据格式不正确或验证失败时抛出此异常。继承自BusinessException，表示业务层面的数据格式错误。
  */
 public class DataFormatException extends BusinessException {
     private static final long serialVersionUID = 586909787278516210L;

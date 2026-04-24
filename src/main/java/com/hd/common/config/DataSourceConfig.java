@@ -7,9 +7,11 @@ import org.springframework.context.annotation.Configuration;
 import javax.sql.DataSource;
 
 /**
- * 应用配置类。
- *
- * <p>根据阶段一配置选择 H2 或 MySQL 数据源。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.config
+ * @createTime 2026/04/23 23:34
+ * @description 应用配置类。根据阶段一配置选择 H2 或 MySQL 数据源。
  */
 @Configuration
 public class DataSourceConfig {

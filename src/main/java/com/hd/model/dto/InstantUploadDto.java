@@ -4,7 +4,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * 秒传请求数据传输对象。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.model.dto
+ * @createTime 2026/04/23 23:34
+ * @description 秒传请求数据传输对象。
  */
 @Getter
 @Setter

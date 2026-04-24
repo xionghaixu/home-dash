@@ -9,8 +9,11 @@ import lombok.Setter;
 import java.util.Date;
 
 /**
- * 轻量传输任务数据传输对象。
- * 用于在内存中追踪上传/下载任务的状态，不持久化到数据库。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.model.dto
+ * @createTime 2026/04/23 23:34
+ * @description 轻量传输任务数据传输对象。用于在内存中追踪上传/下载任务的状态，不持久化到数据库。
  *
  * <p><b>状态说明：</b>
  * <ul>

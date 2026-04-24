@@ -3,11 +3,11 @@ package com.hd.common.exception;
 import com.hd.common.enums.ErrorCode;
 
 /**
- * 系统异常。
- *
- * <p>用于表示数据库、IO、网络等系统级错误。
- * @author john
- * @date 2020-01-11
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.exception
+ * @createTime 2026/04/23 23:34
+ * @description 系统异常。用于表示数据库、IO、网络等系统级错误。
  */
 public class SystemException extends HomeDashException {
     private static final long serialVersionUID = -455084301379506107L;

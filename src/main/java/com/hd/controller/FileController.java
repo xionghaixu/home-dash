@@ -30,12 +30,11 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * 文件管理控制器。
- * 提供文件的增删改查、移动、复制、下载等操作的REST API接口。
- * 所有接口均遵循RESTful规范，返回统一的响应格式。
- *
- * @author john
- * @since 2020-01-05
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.controller
+ * @createTime 2026/04/16 18:36
+ * @description 文件管理控制器。提供文件的增删改查、移动、复制、下载等操作的REST API接口。所有接口均遵循RESTful规范，返回统一的响应格式。
  */
 @Slf4j
 @RestController

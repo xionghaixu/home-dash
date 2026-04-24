@@ -7,12 +7,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.mybatis.spring.annotation.MapperScan;
 
 /**
- * HomeDash Web 应用入口。
- *
- * <p>作为 Spring Boot 启动类，负责完成应用初始化与组件扫描。
- *
- * @author john
- * @since 2020-01-05
+ * @author xhx
+ * @version 1.0
+ * @package com.hd
+ * @createTime 2026/04/23 23:34
+ * @description HomeDash Web 应用入口。作为 Spring Boot 启动类，负责完成应用初始化与组件扫描。
  */
 @SpringBootApplication
 @EnableScheduling

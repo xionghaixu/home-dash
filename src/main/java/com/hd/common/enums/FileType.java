@@ -1,11 +1,11 @@
 package com.hd.common.enums;
 
 /**
- * 文件类型枚举。
- * 定义系统中支持的文件类型分类，包括文件夹、视频、音频、PDF、压缩文件、图片、文档等。
- *
- * @author john
- * @date 2020-01-11
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.enums
+ * @createTime 2026/04/23 23:34
+ * @description 文件类型枚举。定义系统中支持的文件类型分类，包括文件夹、视频、音频、PDF、压缩文件、图片、文档等。
  */
 public enum FileType {
     /** 默认文件类型，用于无法识别的文件扩展名。 */

@@ -6,7 +6,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 /**
- * 前端路由兜底处理。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.handler
+ * @createTime 2026/04/23 23:34
+ * @description 前端路由兜底处理。
  */
 @Slf4j
 @ControllerAdvice

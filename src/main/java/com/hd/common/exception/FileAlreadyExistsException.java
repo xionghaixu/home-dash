@@ -3,9 +3,11 @@ package com.hd.common.exception;
 import com.hd.common.enums.ErrorCode;
 
 /**
- * 文件已存在异常。
- * 当尝试创建已存在的文件或文件夹时抛出此异常。
- * 继承自BusinessException，表示业务层面的文件冲突错误。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.exception
+ * @createTime 2026/04/23 23:34
+ * @description 文件已存在异常。当尝试创建已存在的文件或文件夹时抛出此异常。继承自BusinessException，表示业务层面的文件冲突错误。
  *
  * <p><b>使用场景：</b>
  * <ul>
@@ -14,10 +16,7 @@ import com.hd.common.enums.ErrorCode;
  *   <li>移动文件时目标位置已存在同名文件</li>
  *   <li>复制文件时目标位置已存在同名文件</li>
  * </ul>
- *
- * <p><b>冲突详情字段：</b>
- * <ul>
- *   <li>parentId - 父目录ID</li>
+ */
  *   <li>fileName - 冲突的文件名</li>
  *   <li>existingFileId - 已存在文件的ID（如果有）</li>
  *   <li>suggestedName - 建议的新文件名（如果适用）</li>

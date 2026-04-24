@@ -1,10 +1,11 @@
 package com.hd.common.util;
 
 /**
- * 文件大小格式化工具类。
- * 将字节数转换为易读的格式，支持 B、KB、MB、GB、TB 单位。
- *
- * @author john
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.util
+ * @createTime 2026/04/23 23:34
+ * @description 文件大小格式化工具类。将字节数转换为易读的格式，支持 B、KB、MB、GB、TB 单位。
  */
 public class FileSizeFormatter {
 

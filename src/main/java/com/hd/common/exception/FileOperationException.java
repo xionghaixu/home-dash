@@ -3,18 +3,17 @@ package com.hd.common.exception;
 import com.hd.common.enums.ErrorCode;
 
 /**
- * 文件操作失败异常。
- * 当文件操作（移动、复制、删除等）失败时抛出此异常。
- * 继承自BusinessException，表示业务层面的文件操作错误。
+ * @author xhx
+ * @version 1.0
+ * @package com.hd.common.exception
+ * @createTime 2026/04/23 23:34
+ * @description 文件操作失败异常。当文件操作（移动、复制、删除等）失败时抛出此异常。继承自BusinessException，表示业务层面的文件操作错误。
  *
  * 使用场景：
  * - 文件移动失败
  * - 文件复制失败
  * - 文件删除失败
  * - 文件重命名失败
- *
- * @author john
- * @date 2020-01-11
  */
 public class FileOperationException extends BusinessException {
     private static final long serialVersionUID = -1731288043175680002L;
