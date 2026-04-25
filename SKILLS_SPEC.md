@@ -90,7 +90,7 @@ home-dash/
 ## 7. 日志规范
 
 - 日志门面统一为 SLF4J
-- 级别顺序：`DEBUG < INFO < WARN < ERROR`
+- 级别顺序：`INFO < WARN < ERROR`
 - 推荐格式：`[操作类型] 操作描述 - 参数信息`
 - 约束：
   - `INFO` 记录关键业务路径
