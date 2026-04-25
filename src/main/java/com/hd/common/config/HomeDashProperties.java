@@ -88,6 +88,6 @@ public class HomeDashProperties {
     public static class Mysql {
         private String url = "jdbc:mysql://localhost:3306/home_dash";
         private String username = "root";
-        private String password = "123456";
+        private String password = "";
     }
 }

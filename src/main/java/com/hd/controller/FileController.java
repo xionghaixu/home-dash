@@ -60,7 +60,7 @@ public class FileController {
             @RequestParam(defaultValue = "asc") String sortOrder) {
         log.info("获取文件列表请求 [parentId={}, sortBy={}, sortOrder={}]", parentId, sortBy, sortOrder);
         ResponseEntity<ResponseDto> response = ResponseEntity.ok(fileBiz.findByParentId(parentId, sortBy, sortOrder));
-        log.debug("获取文件列表成功 [parentId={}, sortBy={}, sortOrder={}]", parentId, sortBy, sortOrder);
+        log.info("获取文件列表成功 [parentId={}, sortBy={}, sortOrder={}]", parentId, sortBy, sortOrder);
         return response;
     }
 

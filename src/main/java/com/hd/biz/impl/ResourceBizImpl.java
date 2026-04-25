@@ -139,7 +139,7 @@ public class ResourceBizImpl implements ResourceBiz {
                     .eq(ResourceChunk::getIdentifier, identifier)
                     .list();
 
-            log.info("已上传分块列表查询完成 [identifier={}, uploadedChunks={}, totalChunks={}]",
+            log.debug("已上传分块列表查询完成 [identifier={}, uploadedChunks={}, totalChunks={}]",
                     identifier, chunks.size(), chunks.isEmpty() ? 0 : chunks.get(0).getTotalChunks());
 
             return chunks;

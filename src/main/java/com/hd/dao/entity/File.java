@@ -2,6 +2,7 @@ package com.hd.dao.entity;
 
 import lombok.*;
 import org.apache.ibatis.type.Alias;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.hd.common.enums.FileType;
 
 import jakarta.validation.constraints.NotEmpty;
@@ -35,6 +36,7 @@ public class File {
             .build();
 
     /** 文件唯一标识符（主键）。 */
+    @TableId
     private Long id;
 
     /** 父文件夹ID，0表示根目录。 */

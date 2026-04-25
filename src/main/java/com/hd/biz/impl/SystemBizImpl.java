@@ -35,7 +35,7 @@ public class SystemBizImpl implements SystemBiz {
 
     @Override
     public SystemInfoDto systemInfo() {
-        log.debug("开始查询系统信息");
+        log.info("开始查询系统信息");
 
         SystemInfoDto.SystemInfoDtoBuilder builder = SystemInfoDto.builder();
 
