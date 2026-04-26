@@ -48,6 +48,10 @@ public interface FileBiz {
 
     ResponseDto instantUpload(String md5, String fileName, Long parentId);
 
+    String getTextFileContent(Long fileId);
+
+    String getAudioFileUrl(Long fileId);
+
     class ResourceWrapper {
         public Resource resource;
         public File file;

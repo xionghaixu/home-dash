@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.hd.biz.FileBiz;
 import com.hd.common.config.HomeDashProperties;
+import com.hd.common.enums.ErrorCode;
 import com.hd.common.enums.FileType;
 import com.hd.common.exception.*;
 import com.hd.common.util.FileUtils;
@@ -984,5 +985,47 @@ public class FileBizImpl implements FileBiz {
                 .toList();
 
         fileDataService.saveBatch(newFiles);
+    }
+
+    @Override
+    public String getTextFileContent(Long fileId) {
+        log.info("获取文本文件内容 [fileId={}]", fileId);
+        File file = findById(fileId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND));
+
+        if (file.getResourceId() == null) {
+            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+        }
+
+        Resource resource = resourceDataService.getById(file.getResourceId());
+        if (resource == null) {
+            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+        }
+
+        try {
+            Path filePath = Paths.get(homeDashProperties.getBasicResourcePath(), resource.getPath());
+            return Files.readString(filePath);
+        } catch (IOException e) {
+            log.error("读取文本文件内容失败 [fileId={}]", fileId, e);
+            throw new FileOperationException("读取文件内容失败", e);
+        }
+    }
+
+    @Override
+    public String getAudioFileUrl(Long fileId) {
+        log.info("获取音频文件播放URL [fileId={}]", fileId);
+        File file = findById(fileId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND));
+
+        if (file.getResourceId() == null) {
+            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+        }
+
+        Resource resource = resourceDataService.getById(file.getResourceId());
+        if (resource == null) {
+            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+        }
+
+        return "/v1/resource/" + resource.getId() + "/download";
     }
 }

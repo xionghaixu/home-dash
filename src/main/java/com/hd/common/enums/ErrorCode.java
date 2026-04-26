@@ -80,6 +80,21 @@ public enum ErrorCode {
     DOWNLOAD_PERMISSION_DENIED(1506, "下载权限不足"),
     DOWNLOAD_SPEED_LIMITED(1507, "下载速度受限"),
 
+    // ========== 业务错误 5xx (1600-1699: 媒体中心相关) ==========
+    MEDIA_SCAN_TASK_NOT_FOUND(1601, "媒体扫描任务不存在"),
+    MEDIA_SCAN_TASK_FAILED(1602, "媒体扫描任务执行失败"),
+    THUMBNAIL_GENERATE_FAILED(1603, "缩略图生成失败"),
+    METADATA_EXTRACT_FAILED(1604, "元数据提取失败"),
+    COVER_GENERATE_FAILED(1605, "封面生成失败"),
+    SUBTITLE_NOT_FOUND(1606, "字幕文件不存在"),
+    VIDEO_SERIES_NOT_FOUND(1607, "视频合集不存在"),
+    PLAYLIST_NOT_FOUND(1608, "播放列表不存在"),
+    ALBUM_NOT_FOUND(1609, "相册不存在"),
+    WATCH_PROGRESS_NOT_FOUND(1610, "观看进度记录不存在"),
+    TASK_MAX_RETRIES_REACHED(1611, "任务已达最大重试次数"),
+    MEDIA_TYPE_NOT_SUPPORTED(1612, "媒体文件不支持"),
+    PROGRESS_REPORT_RATE_LIMITED(1613, "播放进度上报频率过高"),
+
     // ========== 系统错误 6xx ==========
     INTERNAL_SERVER_ERROR(500, "服务器内部错误"),
     DATABASE_ERROR(501, "数据库操作失败"),

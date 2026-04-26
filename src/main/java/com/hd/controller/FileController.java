@@ -45,6 +45,32 @@ public class FileController {
     private final FileBiz fileBiz;
 
     /**
+     * 获取文本文件内容。
+     *
+     * @param fileId 文件ID
+     * @return 文本内容响应
+     */
+    @GetMapping("/file/{fileId}/content")
+    public ResponseEntity<ResponseDto> getTextFileContent(@PathVariable Long fileId) {
+        log.info("获取文本文件内容请求 [fileId={}]", fileId);
+        String content = fileBiz.getTextFileContent(fileId);
+        return ResponseEntity.ok(ResponseDto.success(content));
+    }
+
+    /**
+     * 获取音频文件播放URL。
+     *
+     * @param fileId 文件ID
+     * @return 音频播放URL响应
+     */
+    @GetMapping("/file/{fileId}/audio-url")
+    public ResponseEntity<ResponseDto> getAudioFileUrl(@PathVariable Long fileId) {
+        log.info("获取音频文件播放URL请求 [fileId={}]", fileId);
+        String audioUrl = fileBiz.getAudioFileUrl(fileId);
+        return ResponseEntity.ok(ResponseDto.success(audioUrl));
+    }
+
+    /**
      * 根据父文件夹ID获取文件列表。
      * 支持按文件名、大小、修改时间等字段排序。
      *
