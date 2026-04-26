@@ -20,6 +20,7 @@
     <fastjson2.version>2.0.53</fastjson2.version>
     <hutool.version>5.8.36</hutool.version>
     <pmd.version>3.22.0</pmd.version>
+    <metadata-extractor.version>2.19.0</metadata-extractor.version>
   </properties>
 
   <dependencyManagement>
@@ -87,6 +88,13 @@
       <groupId>cn.hutool</groupId>
       <artifactId>hutool-all</artifactId>
       <version>${hutool.version}</version>
+    </dependency>
+
+    <!-- metadata-extractor 图片/音频元数据提取 -->
+    <dependency>
+      <groupId>com.drewnoakes</groupId>
+      <artifactId>metadata-extractor</artifactId>
+      <version>${metadata-extractor.version}</version>
     </dependency>
 
     <!-- 测试依赖 -->

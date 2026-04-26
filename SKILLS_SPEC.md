@@ -72,8 +72,10 @@ home-dash/
 
 ### 5.3 分层约定
 
-- 严格遵循 `Controller -> Biz/Service -> Dao` 分层
-- `Controller` 不直接访问 `Mapper`
+- 严格遵循 `Controller -> Biz -> Service -> Dao` 分层
+- `Controller`,`Biz`,`Service` 不直接访问 `Mapper`
+- `Biz` 层负责业务逻辑，不直接访问 `Mapper`，仅通过 `Service` 调用
+- `Service` 继承 `IService<T>` 接口, 提供通用数据操作方法
 - `Service/Biz` 不处理 HTTP 响应对象
 - 公共能力优先沉淀到 `common` 或可复用组件
 

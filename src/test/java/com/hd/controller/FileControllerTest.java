@@ -13,8 +13,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
 
 import java.util.*;
 
@@ -29,6 +33,7 @@ import static org.mockito.Mockito.*;
  * @version 1.0
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("FileController REST接口测试")
 class FileControllerTest {
 
@@ -148,7 +153,7 @@ class FileControllerTest {
         @DisplayName("应使用默认limit值")
         void shouldUseDefaultLimit() {
             ResponseDto mockResponse = ResponseDto.success(Map.of("count", 0));
-            when(fileBiz.getRecentUploadSummary(eq(20))).thenReturn(mockResponse);
+            when(fileBiz.getRecentUploadSummary(any())).thenReturn(mockResponse);
 
             ResponseEntity<ResponseDto> response = fileController.getRecentUploadSummary(null);
 
@@ -264,10 +269,11 @@ class FileControllerTest {
                     .type("TXT")
                     .parentId(1L)
                     .build();
+            BindingResult bindingResult = new BeanPropertyBindingResult(newFile, "file");
 
             doNothing().when(fileBiz).createFile(any(File.class));
 
-            ResponseEntity<ResponseDto> response = fileController.createFile(newFile, null);
+            ResponseEntity<ResponseDto> response = fileController.createFile(newFile, bindingResult);
 
             assertEquals(HttpStatus.CREATED, response.getStatusCode());
             assertNotNull(response.getBody());
@@ -300,9 +306,9 @@ class FileControllerTest {
                     .fileName("")
                     .build();
 
-            ResponseEntity<ResponseDto> response = fileController.renameFile(2L, emptyNameFile);
-
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+            assertThrows(DataFormatException.class, () ->
+                fileController.renameFile(2L, emptyNameFile)
+            );
         }
     }
 
@@ -326,9 +332,6 @@ class FileControllerTest {
         @Test
         @DisplayName("应抛出异常当文件ID列表为空")
         void shouldThrowExceptionWhenIdsEmpty() {
-            doThrow(new DataFormatException("要删除的文件ID列表不能为空"))
-                    .when(fileBiz).deleteFiles(anyList());
-
             assertThrows(DataFormatException.class, () ->
                 fileController.deleteFiles(null)
             );

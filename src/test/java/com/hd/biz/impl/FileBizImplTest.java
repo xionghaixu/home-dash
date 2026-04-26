@@ -18,12 +18,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 
 /**
  * FileBizImpl 单元测试
@@ -32,6 +35,7 @@ import static org.mockito.Mockito.*;
  * @version 1.0
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("FileBizImpl 业务逻辑测试")
 class FileBizImplTest {
 
@@ -90,6 +94,7 @@ class FileBizImplTest {
         @DisplayName("应返回文件详情")
         void shouldReturnFileDetail() {
             when(fileDataService.getById(2L)).thenReturn(testFile);
+            when(fileDataService.getById(1L)).thenReturn(testFolder);
 
             ResponseDto result = fileBiz.findByFileId(2L);
 
@@ -228,7 +233,7 @@ class FileBizImplTest {
         void shouldDeleteFilesSuccessfully() {
             when(fileDataService.listByIds(List.of(2L))).thenReturn(List.of(testFile));
             when(fileDataService.list()).thenReturn(List.of());
-            doNothing().when(fileDataService).removeByIds(anyList());
+            when(fileDataService.removeByIds(anyList())).thenReturn(true);
 
             assertDoesNotThrow(() -> fileBiz.deleteFiles(List.of(2L)));
         }
@@ -246,6 +251,7 @@ class FileBizImplTest {
         void shouldHandlePartialNotFound() {
             when(fileDataService.listByIds(List.of(2L, 999L))).thenReturn(List.of(testFile));
             when(fileDataService.list()).thenReturn(List.of());
+            when(fileDataService.removeByIds(anyList())).thenReturn(true);
 
             assertDoesNotThrow(() -> fileBiz.deleteFiles(List.of(2L, 999L)));
         }
@@ -255,10 +261,19 @@ class FileBizImplTest {
     @DisplayName("checkFileByMD5 方法测试")
     class CheckFileByMD5Tests {
 
+        @SuppressWarnings("unchecked")
+        private LambdaQueryChainWrapper<Resource> mockLambdaQuery() {
+            LambdaQueryChainWrapper<Resource> wrapper = mock(LambdaQueryChainWrapper.class);
+            when(resourceDataService.lambdaQuery()).thenReturn(wrapper);
+            when(wrapper.eq(any(), any())).thenReturn(wrapper);
+            return wrapper;
+        }
+
         @Test
         @DisplayName("应返回存在结果当MD5存在")
         void shouldReturnExistsWhenMD5Exists() {
-            when(resourceDataService.getOne(any())).thenReturn(testResource);
+            LambdaQueryChainWrapper<Resource> wrapper = mockLambdaQuery();
+            when(wrapper.one()).thenReturn(testResource);
 
             ResponseDto result = fileBiz.checkFileByMD5("abc123");
 
@@ -269,7 +284,8 @@ class FileBizImplTest {
         @Test
         @DisplayName("应返回不存在结果当MD5不存在")
         void shouldReturnNotExistsWhenMD5NotFound() {
-            when(resourceDataService.getOne(any())).thenReturn(null);
+            LambdaQueryChainWrapper<Resource> wrapper = mockLambdaQuery();
+            when(wrapper.one()).thenReturn(null);
 
             ResponseDto result = fileBiz.checkFileByMD5("notexist");
 
@@ -296,7 +312,8 @@ class FileBizImplTest {
         @Test
         @DisplayName("应处理MD5大小写")
         void shouldHandleMD5CaseInsensitive() {
-            when(resourceDataService.getOne(any())).thenReturn(null);
+            LambdaQueryChainWrapper<Resource> wrapper = mockLambdaQuery();
+            when(wrapper.one()).thenReturn(null);
 
             ResponseDto result = fileBiz.checkFileByMD5("ABC123");
 

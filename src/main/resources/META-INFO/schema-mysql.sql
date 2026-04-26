@@ -73,6 +73,111 @@ CREATE TABLE `resource_chunk` (
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+-- ============================================
+-- 二阶段：预览与检索整理 - 表结构
+-- ============================================
+
+--
+-- Table structure for table `file_tag`
+--
+
+CREATE TABLE `file_tag` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `tag_name` varchar(50) NOT NULL,
+  `tag_color` varchar(20) DEFAULT '#409EFF',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tag_name` (`tag_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `search_history`
+--
+
+CREATE TABLE `search_history` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `keyword` varchar(200) NOT NULL,
+  `search_type` varchar(20) DEFAULT 'FILE',
+  `search_params` varchar(1000) DEFAULT NULL,
+  `searched_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_keyword` (`keyword`),
+  KEY `idx_searched_at` (`searched_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `favorite`
+--
+
+CREATE TABLE `favorite` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `resource_id` bigint(20) NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_resource_id` (`resource_id`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `recent_use`
+--
+
+CREATE TABLE `recent_use` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `resource_id` bigint(20) NOT NULL,
+  `use_type` varchar(20) NOT NULL,
+  `used_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_resource_type` (`resource_id`,`use_type`),
+  KEY `idx_used_at` (`used_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `file_remark`
+--
+
+CREATE TABLE `file_remark` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `resource_id` bigint(20) NOT NULL,
+  `remark_content` varchar(500) DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_resource_id` (`resource_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `file_tag_relation`
+--
+
+CREATE TABLE `file_tag_relation` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `file_id` bigint(20) NOT NULL,
+  `tag_id` bigint(20) NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_file_tag` (`file_id`,`tag_id`),
+  KEY `idx_file_id` (`file_id`),
+  KEY `idx_tag_id` (`tag_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `filter_view`
+--
+
+CREATE TABLE `filter_view` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `view_name` varchar(50) NOT NULL,
+  `view_params` varchar(1000) NOT NULL,
+  `is_default` tinyint(1) DEFAULT '0',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_view_name` (`view_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Dump completed on 2020-01-31 14:52:17
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
