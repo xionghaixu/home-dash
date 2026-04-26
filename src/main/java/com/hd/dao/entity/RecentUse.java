@@ -17,8 +17,7 @@ import java.util.Date;
  * @createTime 2026/04/25
  */
 @TableName("recent_use")
-@Getter
-@Setter
+@Data
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

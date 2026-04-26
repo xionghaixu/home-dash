@@ -29,6 +29,9 @@ public class PreviewStatusVo {
     /** 错误信息。 */
     private String errorMessage;
 
+    /** 降级建议。 */
+    private String suggestion;
+
     /** 预览类型常量。 */
     public static final String TYPE_IMAGE = "IMAGE";
     public static final String TYPE_TEXT = "TEXT";

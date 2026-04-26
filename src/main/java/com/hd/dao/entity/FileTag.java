@@ -17,8 +17,7 @@ import java.util.Date;
  * @createTime 2026/04/25
  */
 @TableName("file_tag")
-@Getter
-@Setter
+@Data
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

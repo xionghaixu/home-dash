@@ -21,6 +21,8 @@
     <hutool.version>5.8.36</hutool.version>
     <pmd.version>3.22.0</pmd.version>
     <metadata-extractor.version>2.19.0</metadata-extractor.version>
+    <jaudiotagger.version>2.0.3</jaudiotagger.version>
+    <lombok.version>1.18.30</lombok.version>
   </properties>
 
   <dependencyManagement>
@@ -73,6 +75,7 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
+      <version>${lombok.version}</version>
       <scope>provided</scope>
     </dependency>
 
@@ -97,6 +100,13 @@
       <version>${metadata-extractor.version}</version>
     </dependency>
 
+    <!-- jaudiotagger 音频元数据提取 -->
+    <dependency>
+      <groupId>org</groupId>
+      <artifactId>jaudiotagger</artifactId>
+      <version>${jaudiotagger.version}</version>
+    </dependency>
+
     <!-- 测试依赖 -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -114,6 +124,13 @@
         <version>3.11.0</version>
         <configuration>
           <parameters>true</parameters>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>1.18.30</version>
+            </path>
+          </annotationProcessorPaths>
         </configuration>
       </plugin>
       <plugin>

@@ -39,6 +39,14 @@ public interface RemarkBiz {
     boolean deleteFileRemark(Long resourceId);
 
     /**
+     * 批量删除文件备注。
+     *
+     * @param resourceIds 资源ID列表
+     * @return 删除数量
+     */
+    int batchDeleteFileRemarks(List<Long> resourceIds);
+
+    /**
      * 批量获取文件备注。
      *
      * @param resourceIds 资源ID列表

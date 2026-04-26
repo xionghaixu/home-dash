@@ -136,6 +136,40 @@ public class PreviewController {
     }
 
     /**
+     * 获取音频流用于播放。
+     *
+     * @param resourceId 资源ID
+     * @return 音频流数据
+     */
+    @GetMapping("/preview/audio/{resourceId}/stream")
+    public ResponseEntity<byte[]> getAudioStream(@PathVariable Long resourceId) {
+        log.info("获取音频流请求 [resourceId={}]", resourceId);
+        byte[] audioData = previewBiz.getAudioStream(resourceId);
+        if (audioData == null) {
+            throw new DataNotFoundException("音频流不存在 [resourceId=" + resourceId + "]");
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("audio/mpeg"))
+                .body(audioData);
+    }
+
+    /**
+     * 获取预览降级信息（当预览失败时）。
+     *
+     * @param resourceId 资源ID
+     * @param previewType 预览类型
+     * @return 降级信息
+     */
+    @GetMapping("/preview/{resourceId}/fallback")
+    public ResponseEntity<ResponseDto> getPreviewFallback(
+            @PathVariable Long resourceId,
+            @RequestParam(defaultValue = "unknown") String previewType) {
+        log.info("获取预览降级信息 [resourceId={}, previewType={}]", resourceId, previewType);
+        Map<String, Object> fallback = previewBiz.getPreviewFallback(resourceId, previewType);
+        return ResponseEntity.ok(ResponseDto.success(fallback));
+    }
+
+    /**
      * 记录最近播放。
      *
      * @param resourceId 资源ID

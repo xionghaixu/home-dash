@@ -1,5 +1,7 @@
 package com.hd.biz.impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hd.biz.FavoriteBiz;
 import com.hd.dao.entity.*;
 import com.hd.dao.service.*;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 收藏业务实现类。
@@ -32,7 +35,6 @@ public class FavoriteBizImpl implements FavoriteBiz {
     public boolean addFavorite(Long resourceId) {
         log.info("添加收藏 [resourceId={}]", resourceId);
 
-        // 检查是否已收藏
         if (isFavorite(resourceId)) {
             log.info("资源已收藏 [resourceId={}]", resourceId);
             return true;
@@ -128,23 +130,29 @@ public class FavoriteBizImpl implements FavoriteBiz {
     }
 
     @Override
-    public List<FileDetailVo> getFavoriteList(Integer page, Integer pageSize) {
+    public IPage<FileDetailVo> getFavoriteList(Integer page, Integer pageSize) {
         log.info("获取收藏列表 [page={}, pageSize={}]", page, pageSize);
 
-        List<Favorite> favorites = favoriteDataService.lambdaQuery()
+        int pageNum = page != null ? page : 1;
+        int size = pageSize != null ? pageSize : 20;
+        Page<Favorite> pageParam = new Page<>(pageNum, size);
+
+        IPage<Favorite> favoritePage = favoriteDataService.lambdaQuery()
                 .orderByDesc(Favorite::getCreatedAt)
-                .list();
+                .page(pageParam);
 
-        // 获取收藏的资源对应的文件
-        List<FileDetailVo> result = new ArrayList<>();
-        for (Favorite fav : favorites) {
-            File file = findFileByResourceId(fav.getResourceId());
-            if (file != null) {
-                result.add(convertToFileDetailVo(file, true));
-            }
-        }
+        List<FileDetailVo> fileDetails = favoritePage.getRecords().stream()
+                .map(fav -> {
+                    File file = findFileByResourceId(fav.getResourceId());
+                    return file != null ? convertToFileDetailVo(file, true) : null;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
-        return result;
+        IPage<FileDetailVo> resultPage = new Page<>(pageNum, size, favoritePage.getTotal());
+        resultPage.setRecords(fileDetails);
+
+        return resultPage;
     }
 
     @Override
@@ -152,9 +160,6 @@ public class FavoriteBizImpl implements FavoriteBiz {
         return favoriteDataService.count();
     }
 
-    /**
-     * 根据资源ID查找文件。
-     */
     private File findFileByResourceId(Long resourceId) {
         return fileDataService.lambdaQuery()
                 .eq(File::getResourceId, resourceId)
@@ -162,9 +167,6 @@ public class FavoriteBizImpl implements FavoriteBiz {
                 .stream().findFirst().orElse(null);
     }
 
-    /**
-     * 转换为FileDetailVo。
-     */
     private FileDetailVo convertToFileDetailVo(File file, boolean isFavorite) {
         return FileDetailVo.builder()
                 .fileId(file.getId())

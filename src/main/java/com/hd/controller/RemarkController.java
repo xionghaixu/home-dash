@@ -70,6 +70,19 @@ public class RemarkController {
     }
 
     /**
+     * 批量删除文件备注。
+     *
+     * @param resourceIds 资源ID列表
+     * @return 删除数量
+     */
+    @DeleteMapping("/remark/batch")
+    public ResponseEntity<ResponseDto> batchDeleteFileRemarks(@RequestBody List<Long> resourceIds) {
+        log.info("批量删除文件备注请求 [resourceIds={}]", resourceIds);
+        int count = remarkBiz.batchDeleteFileRemarks(resourceIds);
+        return ResponseEntity.ok(ResponseDto.success(count));
+    }
+
+    /**
      * 批量获取文件备注。
      *
      * @param resourceIds 资源ID列表

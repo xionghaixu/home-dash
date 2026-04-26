@@ -79,6 +79,23 @@ public class RemarkBizImpl implements RemarkBiz {
     }
 
     @Override
+    @Transactional
+    public int batchDeleteFileRemarks(List<Long> resourceIds) {
+        log.info("批量删除文件备注 [count={}]", resourceIds != null ? resourceIds.size() : 0);
+
+        if (resourceIds == null || resourceIds.isEmpty()) {
+            return 0;
+        }
+
+        int count = fileRemarkDataService.lambdaUpdate()
+                .in(FileRemark::getResourceId, resourceIds)
+                .remove() ? resourceIds.size() : 0;
+
+        log.info("批量删除文件备注完成 [count={}]", count);
+        return count;
+    }
+
+    @Override
     public List<FileRemarkVo> getFileRemarks(List<Long> resourceIds) {
         log.info("批量获取文件备注 [resourceIds={}]", resourceIds);
 

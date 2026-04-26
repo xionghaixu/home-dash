@@ -71,6 +71,23 @@ public interface PreviewBiz {
     Map<String, Object> getAudioMetadata(Long resourceId);
 
     /**
+     * 获取音频流数据用于播放。
+     *
+     * @param resourceId 资源ID
+     * @return 音频字节数据，如果不存在返回null
+     */
+    byte[] getAudioStream(Long resourceId);
+
+    /**
+     * 获取预览降级信息（当预览失败时返回结构化错误）。
+     *
+     * @param resourceId 资源ID
+     * @param previewType 预览类型（image/text/audio）
+     * @return 包含错误信息和降级建议的Map
+     */
+    Map<String, Object> getPreviewFallback(Long resourceId, String previewType);
+
+    /**
      * 记录最近使用。
      *
      * @param resourceId 资源ID

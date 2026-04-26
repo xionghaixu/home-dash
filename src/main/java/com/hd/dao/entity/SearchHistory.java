@@ -17,8 +17,7 @@ import java.util.Date;
  * @createTime 2026/04/25
  */
 @TableName("search_history")
-@Getter
-@Setter
+@Data
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
@@ -42,4 +41,7 @@ public class SearchHistory implements Serializable {
 
     /** 搜索时间。 */
     private Date searchedAt;
+
+    /** 用户ID（多用户场景隔离）。 */
+    private Long userId;
 }

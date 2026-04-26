@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.metadata.Directory;
@@ -21,12 +22,20 @@ import com.drew.metadata.exif.ExifIFD0Directory;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.drew.metadata.exif.GpsDirectory;
 import com.drew.metadata.jpeg.JpegDirectory;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.audio.AudioHeader;
+import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
+import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
+import org.jaudiotagger.tag.FieldKey;
 import javax.imageio.ImageIO;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,8 +65,11 @@ public class PreviewBizImpl implements PreviewBiz {
     @Value("${HomeDash.homeDir:./data}")
     private String homeDir;
 
-    private static final long MAX_TEXT_PREVIEW_SIZE = 1024 * 1024; // 1MB
-    private static final long TEXT_SUMMARY_MAX_SIZE = 50 * 1024; // 50KB for summary
+    @Value("${HomeDash.preview.maxTextPreviewSize:1048576}")
+    private long maxTextPreviewSize;
+
+    @Value("${HomeDash.preview.maxTextSummarySize:51200}")
+    private long textSummaryMaxSize;
     private static final int THUMBNAIL_MAX_WIDTH = 300;
     private static final int THUMBNAIL_MAX_HEIGHT = 300;
     private static final String THUMBNAIL_FORMAT = "png";
@@ -297,9 +309,9 @@ public class PreviewBizImpl implements PreviewBiz {
             if (limit == null || limit <= 0) {
                 limit = 65536L;
             }
-            if (offset + limit > MAX_TEXT_PREVIEW_SIZE) {
-                if (fileSize > MAX_TEXT_PREVIEW_SIZE) {
-                    limit = MAX_TEXT_PREVIEW_SIZE - offset;
+            if (offset + limit > maxTextPreviewSize) {
+                if (fileSize > maxTextPreviewSize) {
+                    limit = maxTextPreviewSize - offset;
                 }
             }
 
@@ -308,7 +320,7 @@ public class PreviewBizImpl implements PreviewBiz {
                 previewInfo.put("content", "");
                 previewInfo.put("offset", offset);
                 previewInfo.put("length", 0);
-                previewInfo.put("truncated", fileSize > MAX_TEXT_PREVIEW_SIZE);
+                previewInfo.put("truncated", fileSize > maxTextPreviewSize);
                 return previewInfo;
             }
 
@@ -316,14 +328,16 @@ public class PreviewBizImpl implements PreviewBiz {
             int start = (int) Math.min(offset, bytes.length);
             int length = (int) Math.min(actualLimit, bytes.length - start);
 
-            String content = new String(bytes, start, length, StandardCharsets.UTF_8);
+            String detectedEncoding = detectEncoding(bytes);
+            Charset charset = getCharsetFromEncoding(detectedEncoding);
+
+            String content = new String(bytes, start, length, charset);
             previewInfo.put("content", content);
             previewInfo.put("offset", offset);
             previewInfo.put("length", length);
             previewInfo.put("hasMore", offset + length < fileSize);
-            previewInfo.put("truncated", fileSize > MAX_TEXT_PREVIEW_SIZE);
+            previewInfo.put("truncated", fileSize > maxTextPreviewSize);
 
-            String detectedEncoding = detectEncoding(bytes);
             previewInfo.put("encoding", detectedEncoding);
 
             String extension = getExtension(filePath.getFileName().toString());
@@ -361,17 +375,20 @@ public class PreviewBizImpl implements PreviewBiz {
             long fileSize = Files.size(filePath);
             summary.put("totalSize", fileSize);
 
-            long readSize = (int) Math.min(fileSize, TEXT_SUMMARY_MAX_SIZE);
+            long readSize = (int) Math.min(fileSize, textSummaryMaxSize);
             byte[] bytes = Files.readAllBytes(filePath);
 
+            String detectedEncoding = detectEncoding(bytes);
+            Charset charset = getCharsetFromEncoding(detectedEncoding);
+
             int contentLength = (int) Math.min(readSize, bytes.length);
-            String content = new String(bytes, 0, contentLength, StandardCharsets.UTF_8);
+            String content = new String(bytes, 0, contentLength, charset);
 
             summary.put("lineCount", content.split("\n").length);
             summary.put("charCount", content.length());
             summary.put("preview", content.substring(0, Math.min(500, content.length())));
 
-            if (fileSize > TEXT_SUMMARY_MAX_SIZE) {
+            if (fileSize > textSummaryMaxSize) {
                 summary.put("truncated", true);
                 summary.put("originalSize", fileSize);
             }
@@ -384,7 +401,6 @@ public class PreviewBizImpl implements PreviewBiz {
             List<String> keyPhrases = extractKeyPhrases(content);
             summary.put("keyPhrases", keyPhrases);
 
-            String detectedEncoding = detectEncoding(bytes);
             summary.put("encoding", detectedEncoding);
 
         } catch (DataNotFoundException e) {
@@ -444,6 +460,95 @@ public class PreviewBizImpl implements PreviewBiz {
         }
 
         return metadata;
+    }
+
+    @Override
+    public byte[] getAudioStream(Long resourceId) {
+        log.info("获取音频流 [resourceId={}]", resourceId);
+
+        Resource resource = resourceDataService.getById(resourceId);
+        if (resource == null || resource.getPath() == null) {
+            log.warn("资源不存在 [resourceId={}]", resourceId);
+            return null;
+        }
+
+        try {
+            Path filePath = Paths.get(homeDir, resource.getPath());
+            if (!Files.exists(filePath)) {
+                log.warn("文件不存在 [path={}]", filePath);
+                return null;
+            }
+
+            return Files.readAllBytes(filePath);
+        } catch (IOException e) {
+            log.error("读取音频文件失败 [resourceId={}, error={}]", resourceId, e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public Map<String, Object> getPreviewFallback(Long resourceId, String previewType) {
+        log.info("获取预览降级信息 [resourceId={}, previewType={}]", resourceId, previewType);
+
+        Map<String, Object> fallback = new LinkedHashMap<>();
+        fallback.put("resourceId", resourceId);
+        fallback.put("previewType", previewType);
+        fallback.put("canPreview", false);
+
+        Resource resource = resourceDataService.getById(resourceId);
+        if (resource == null) {
+            fallback.put("errorCode", "RESOURCE_NOT_FOUND");
+            fallback.put("errorMessage", "资源不存在");
+            fallback.put("suggestion", "请检查资源是否已被删除");
+            return fallback;
+        }
+
+        try {
+            Path filePath = Paths.get(homeDir, resource.getPath());
+            if (!Files.exists(filePath)) {
+                fallback.put("errorCode", "FILE_NOT_FOUND");
+                fallback.put("errorMessage", "文件不存在");
+                fallback.put("suggestion", "文件可能已被移动或删除");
+                fallback.put("filePath", resource.getPath());
+                return fallback;
+            }
+
+            String extension = getExtension(filePath.getFileName().toString());
+            fallback.put("fileExtension", extension);
+            fallback.put("fileSize", Files.size(filePath));
+
+            switch (previewType.toLowerCase()) {
+                case "image":
+                    fallback.put("errorCode", "IMAGE_PREVIEW_FAILED");
+                    fallback.put("errorMessage", "图片预览失败");
+                    fallback.put("suggestion", "图片格式可能不支持或文件已损坏");
+                    fallback.put("alternativeActions", List.of("下载原始文件", "查看文件信息"));
+                    break;
+                case "text":
+                    fallback.put("errorCode", "TEXT_PREVIEW_FAILED");
+                    fallback.put("errorMessage", "文本预览失败");
+                    fallback.put("suggestion", "文件编码可能不支持或文件过大");
+                    fallback.put("alternativeActions", List.of("下载原始文件", "查看文件摘要"));
+                    break;
+                case "audio":
+                    fallback.put("errorCode", "AUDIO_PREVIEW_FAILED");
+                    fallback.put("errorMessage", "音频预览失败");
+                    fallback.put("suggestion", "音频格式可能不支持或文件已损坏");
+                    fallback.put("alternativeActions", List.of("下载原始文件", "查看音频信息"));
+                    break;
+                default:
+                    fallback.put("errorCode", "UNSUPPORTED_TYPE");
+                    fallback.put("errorMessage", "不支持的预览类型");
+                    fallback.put("suggestion", "该文件类型暂不支持在线预览");
+                    fallback.put("alternativeActions", List.of("下载原始文件"));
+            }
+        } catch (Exception e) {
+            fallback.put("errorCode", "SYSTEM_ERROR");
+            fallback.put("errorMessage", "系统错误: " + e.getMessage());
+            fallback.put("suggestion", "请稍后重试或联系管理员");
+        }
+
+        return fallback;
     }
 
     @Override
@@ -547,45 +652,60 @@ public class PreviewBizImpl implements PreviewBiz {
 
     private void extractAudioMetadataWithLibrary(Path filePath, Map<String, Object> metadata) {
         try {
-            Metadata audioMetadata = ImageMetadataReader.readMetadata(filePath.toFile());
+            AudioFile audioFile = AudioFileIO.read(filePath.toFile());
+            org.jaudiotagger.tag.Tag tag = audioFile.getTag();
+            AudioHeader header = audioFile.getAudioHeader();
 
-            for (Directory directory : audioMetadata.getDirectories()) {
-                for (Tag tag : directory.getTags()) {
-                    String tagName = tag.getTagName();
-                    String description = tag.getDescription();
+            if (tag != null) {
+                String title = tag.getFirst(FieldKey.TITLE);
+                if (StringUtils.hasText(title)) metadata.put("title", title);
 
-                    if (tagName.contains("Duration") || tagName.contains(" duration")) {
-                        metadata.put("duration", description);
-                        // 尝试解析秒数
-                        try {
-                            long durationMs = parseDuration(description);
-                            if (durationMs > 0) {
-                                metadata.put("durationMs", durationMs);
-                                metadata.put("durationFormatted", formatDuration(durationMs));
-                            }
-                        } catch (Exception ignored) {
-                        }
-                    } else if (tagName.contains("Sample Rate")) {
-                        metadata.put("sampleRate", description);
-                    } else if (tagName.contains("Channels")) {
-                        metadata.put("channels", description);
-                    } else if (tagName.contains("Bitrate") || tagName.contains("Bit Rate")) {
-                        metadata.put("bitrate", description);
-                    } else if (tagName.contains("Artist") || tagName.contains("Performer")) {
-                        metadata.put("artist", description);
-                    } else if (tagName.contains("Title") || tagName.contains("Track")) {
-                        metadata.put("title", description);
-                    } else if (tagName.contains("Album")) {
-                        metadata.put("album", description);
-                    } else if (tagName.contains("Genre")) {
-                        metadata.put("genre", description);
-                    } else if (tagName.contains("Year") || tagName.contains("Date")) {
-                        metadata.put("year", description);
-                    }
+                String artist = tag.getFirst(FieldKey.ARTIST);
+                if (StringUtils.hasText(artist)) metadata.put("artist", artist);
+
+                String album = tag.getFirst(FieldKey.ALBUM);
+                if (StringUtils.hasText(album)) metadata.put("album", album);
+
+                String genre = tag.getFirst(FieldKey.GENRE);
+                if (StringUtils.hasText(genre)) metadata.put("genre", genre);
+
+                String year = tag.getFirst(FieldKey.YEAR);
+                if (StringUtils.hasText(year)) metadata.put("year", year);
+
+                String track = tag.getFirst(FieldKey.TRACK);
+                if (StringUtils.hasText(track)) metadata.put("track", track);
+
+                String composer = tag.getFirst(FieldKey.COMPOSER);
+                if (StringUtils.hasText(composer)) metadata.put("composer", composer);
+            }
+
+            if (header != null) {
+                int trackLength = header.getTrackLength();
+                if (trackLength > 0) {
+                    metadata.put("duration", trackLength + "秒");
+                    metadata.put("durationMs", trackLength * 1000L);
+                    metadata.put("durationFormatted", formatDuration(trackLength * 1000L));
                 }
+
+                String sampleRate = header.getSampleRate();
+                if (sampleRate != null) metadata.put("sampleRate", sampleRate + " Hz");
+
+                String channels = header.getChannels();
+                if (channels != null) metadata.put("channels", channels);
+
+                String bitRate = header.getBitRate();
+                if (bitRate != null) metadata.put("bitrate", bitRate + " kbps");
+
+                String encodingType = header.getEncodingType();
+                if (encodingType != null) metadata.put("encodingType", encodingType);
             }
 
             metadata.put("hasMetadata", true);
+
+            // 封面字段预留（规范 5.2E）
+            metadata.put("coverUrl", null);
+            metadata.put("coverAvailable", false);
+            metadata.put("coverNote", "音频封面提取功能预留，后续版本支持");
         } catch (Exception e) {
             log.warn("音频元数据提取失败 [path={}, error={}]", filePath, e.getMessage());
             metadata.put("metadataError", e.getMessage());
@@ -639,6 +759,15 @@ public class PreviewBizImpl implements PreviewBiz {
         }
 
         return "UTF-8";
+    }
+
+    private Charset getCharsetFromEncoding(String encoding) {
+        return switch (encoding) {
+            case "UTF-16BE" -> StandardCharsets.UTF_16BE;
+            case "UTF-16LE" -> StandardCharsets.UTF_16LE;
+            case "ASCII" -> StandardCharsets.US_ASCII;
+            default -> StandardCharsets.UTF_8;
+        };
     }
 
     private List<String> extractKeyPhrases(String content) {

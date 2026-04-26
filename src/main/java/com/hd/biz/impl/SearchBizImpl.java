@@ -1,5 +1,6 @@
 package com.hd.biz.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hd.biz.SearchBiz;
@@ -86,11 +87,13 @@ public class SearchBizImpl implements SearchBiz {
                 .build();
     }
 
-    private com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<File> buildSearchQuery(SearchRequestDto dto) {
-        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<File> query = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+    private QueryWrapper<File> buildSearchQuery(SearchRequestDto dto) {
+        QueryWrapper<File> query = new QueryWrapper<>();
 
         if (StringUtils.hasText(dto.getKeyword())) {
-            query.like("file_name", dto.getKeyword());
+            query.and(qw -> qw.like("file_name", dto.getKeyword())
+                    .or()
+                    .exists("SELECT 1 FROM file_tag_relation ftr JOIN file_tag ft ON ftr.tag_id = ft.id WHERE ftr.file_id = file.id AND ft.tag_name LIKE '" + dto.getKeyword() + "'"));
         }
         if (dto.getFileTypes() != null && !dto.getFileTypes().isEmpty()) {
             query.in("type", dto.getFileTypes());
@@ -141,6 +144,7 @@ public class SearchBizImpl implements SearchBiz {
         String column = switch (sortBy.toLowerCase()) {
             case "name" -> "file_name";
             case "size" -> "size";
+            case "createtime" -> "create_time";
             default -> "update_time";
         };
         if ("ASC".equalsIgnoreCase(sortOrder)) {
@@ -190,6 +194,17 @@ public class SearchBizImpl implements SearchBiz {
                 .map(FileTagRelation::getFileId)
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    private List<Long> getFileIdsByTagNames(List<String> tagNames) {
+        List<FileTag> tags = fileTagDataService.lambdaQuery()
+                .in(FileTag::getTagName, tagNames)
+                .list();
+        if (tags.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Long> tagIds = tags.stream().map(FileTag::getId).collect(Collectors.toList());
+        return getFileIdsByTagIds(tagIds);
     }
 
     private List<Long> getFavoriteResourceIds() {
@@ -469,7 +484,7 @@ public class SearchBizImpl implements SearchBiz {
 
         List<File> files = fileDataService.lambdaQuery()
                 .eq(File::getParentId, file.getParentId())
-                .ne(fileId != null, File::getId, fileId)
+                .ne(File::getId, fileId)
                 .orderByDesc(File::getUpdateTime)
                 .last("LIMIT " + limit)
                 .list();
@@ -490,7 +505,7 @@ public class SearchBizImpl implements SearchBiz {
 
         List<File> files = fileDataService.lambdaQuery()
                 .eq(File::getType, file.getType())
-                .ne(fileId != null, File::getId, fileId)
+                .ne(File::getId, fileId)
                 .orderByDesc(File::getUpdateTime)
                 .last("LIMIT " + limit)
                 .list();
@@ -668,9 +683,11 @@ public class SearchBizImpl implements SearchBiz {
                         .previewStatus(PreviewStatusVo.STATUS_READY);
                 break;
             case "VIDEO":
-                builder.canPreview(true)
+                builder.canPreview(false)
                         .previewType(PreviewStatusVo.TYPE_VIDEO)
-                        .previewStatus(PreviewStatusVo.STATUS_READY);
+                        .previewStatus(PreviewStatusVo.STATUS_UNSUPPORTED)
+                        .errorMessage("视频预览暂不支持，建议下载后使用本地播放器观看")
+                        .suggestion("可尝试下载文件后用 VLC、PotPlayer 等播放器打开，或转换为MP4格式后重试");
                 break;
             default:
                 builder.canPreview(false)

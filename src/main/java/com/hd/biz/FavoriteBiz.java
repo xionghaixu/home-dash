@@ -1,5 +1,6 @@
 package com.hd.biz;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.hd.model.vo.*;
 import java.util.List;
 
@@ -54,13 +55,13 @@ public interface FavoriteBiz {
     boolean isFavorite(Long resourceId);
 
     /**
-     * 获取收藏列表。
+     * 获取收藏列表（分页）。
      *
      * @param page 页码
      * @param pageSize 每页数量
-     * @return 收藏文件列表
+     * @return 分页收藏文件列表
      */
-    List<FileDetailVo> getFavoriteList(Integer page, Integer pageSize);
+    IPage<FileDetailVo> getFavoriteList(Integer page, Integer pageSize);
 
     /**
      * 获取收藏数量。
