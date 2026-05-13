@@ -22,6 +22,8 @@ public class PictureListDto {
 
     private Long fileId;
 
+    private Long resourceId;
+
     private String fileName;
 
     private Long size;

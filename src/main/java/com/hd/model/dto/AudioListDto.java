@@ -19,6 +19,8 @@ public class AudioListDto {
 
     private Long fileId;
 
+    private Long resourceId;
+
     private String fileName;
 
     private String title;
@@ -38,4 +40,6 @@ public class AudioListDto {
     private String genre;
 
     private String coverUrl;
+
+    private String audioUrl;
 }

@@ -12,9 +12,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,25 +47,28 @@ public class AudioMediaBizImpl implements AudioMediaBiz {
 
         List<File> files = fileDataService.lambdaQuery()
                 .eq(File::getType, FileType.AUDIO.toString())
-                .orderByDesc(File::getCreateTime)
                 .list();
 
-        List<AudioListDto> allAudio = files.stream().map(this::convertToAudioListDto).collect(Collectors.toList());
-
-        if (album != null && !album.isEmpty()) {
-            allAudio = allAudio.stream().filter(a -> album.equals(a.getAlbum())).collect(Collectors.toList());
-        }
-        if (artist != null && !artist.isEmpty()) {
-            allAudio = allAudio.stream().filter(a -> artist.equals(a.getArtist())).collect(Collectors.toList());
-        }
-        if (genre != null && !genre.isEmpty()) {
-            allAudio = allAudio.stream().filter(a -> genre.equals(a.getGenre())).collect(Collectors.toList());
+        if (files.isEmpty()) {
+            return PageResponseDto.of(new ArrayList<>(), 0L, current, size);
         }
 
-        long total = allAudio.size();
+        Map<Long, MediaAudioMetadata> metadataMap = getAudioMetadataMap(
+                files.stream().map(File::getId).collect(Collectors.toList()));
+
+        files = files.stream()
+                .filter(file -> matchesAudioFilter(metadataMap.get(file.getId()), album, artist, genre))
+                .sorted(buildAudioComparator(sortBy, sortOrder, metadataMap))
+                .collect(Collectors.toList());
+
+        long total = files.size();
         int fromIndex = (current - 1) * size;
-        int toIndex = Math.min(fromIndex + size, allAudio.size());
-        List<AudioListDto> pageList = fromIndex < allAudio.size() ? allAudio.subList(fromIndex, toIndex) : new ArrayList<>();
+        int toIndex = Math.min(fromIndex + size, files.size());
+        List<AudioListDto> pageList = fromIndex < files.size()
+                ? files.subList(fromIndex, toIndex).stream()
+                .map(file -> convertToAudioListDto(file, metadataMap.get(file.getId())))
+                .collect(Collectors.toList())
+                : new ArrayList<>();
 
         return PageResponseDto.of(pageList, total, current, size);
     }
@@ -81,7 +87,7 @@ public class AudioMediaBizImpl implements AudioMediaBiz {
         AudioDetailDto.AudioDetailDtoBuilder builder = AudioDetailDto.builder()
                 .fileId(fileId)
                 .fileName(file.getFileName())
-                .audioUrl("/v1/resource/" + fileId)
+                .audioUrl(buildAudioStreamUrl(file.getResourceId()))
                 .favorite(false);
 
         if (metadata != null) {
@@ -96,7 +102,7 @@ public class AudioMediaBizImpl implements AudioMediaBiz {
                     .duration(metadata.getDuration())
                     .bitrate(metadata.getBitrate())
                     .sampleRate(metadata.getSampleRate())
-                    .coverUrl(metadata.getCoverPath())
+                    .coverUrl(normalizeAccessibleUrl(metadata.getCoverPath()))
                     .lyrics(metadata.getLyrics());
         }
 
@@ -126,7 +132,7 @@ public class AudioMediaBizImpl implements AudioMediaBiz {
                     .album(entry.getKey())
                     .artist(first.getAlbumArtist() != null ? first.getAlbumArtist() : first.getArtist())
                     .trackCount(list.size())
-                    .coverUrl(first.getCoverPath())
+                    .coverUrl(normalizeAccessibleUrl(first.getCoverPath()))
                     .build();
         }).collect(Collectors.toList());
     }
@@ -143,8 +149,15 @@ public class AudioMediaBizImpl implements AudioMediaBiz {
             return new ArrayList<>();
         }
 
-        List<File> files = fileDataService.listByIds(fileIds);
-        return files.stream().map(this::convertToAudioListDto).collect(Collectors.toList());
+        Map<Long, File> fileMap = fileDataService.listByIds(fileIds).stream()
+                .collect(Collectors.toMap(File::getId, file -> file));
+        return metadataList.stream()
+                .map(metadata -> {
+                    File file = fileMap.get(metadata.getFileId());
+                    return file != null ? convertToAudioListDto(file, metadata) : null;
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -161,7 +174,7 @@ public class AudioMediaBizImpl implements AudioMediaBiz {
             return AudioArtistDto.builder()
                     .artist(entry.getKey())
                     .trackCount(list.size())
-                    .coverUrl(list.get(0).getCoverPath())
+                    .coverUrl(normalizeAccessibleUrl(list.get(0).getCoverPath()))
                     .build();
         }).collect(Collectors.toList());
     }
@@ -177,8 +190,15 @@ public class AudioMediaBizImpl implements AudioMediaBiz {
             return new ArrayList<>();
         }
 
-        List<File> files = fileDataService.listByIds(fileIds);
-        return files.stream().map(this::convertToAudioListDto).collect(Collectors.toList());
+        Map<Long, File> fileMap = fileDataService.listByIds(fileIds).stream()
+                .collect(Collectors.toMap(File::getId, file -> file));
+        return metadataList.stream()
+                .map(metadata -> {
+                    File file = fileMap.get(metadata.getFileId());
+                    return file != null ? convertToAudioListDto(file, metadata) : null;
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -188,7 +208,7 @@ public class AudioMediaBizImpl implements AudioMediaBiz {
                         .playlistId(p.getId())
                         .playlistName(p.getPlaylistName())
                         .description(p.getDescription())
-                        .coverUrl(p.getCoverPath())
+                        .coverUrl(normalizeAccessibleUrl(p.getCoverPath()))
                         .playMode(p.getPlayMode())
                         .totalTracks(p.getTotalTracks())
                         .totalDuration(p.getTotalDuration())
@@ -338,7 +358,7 @@ public class AudioMediaBizImpl implements AudioMediaBiz {
                     .album(metadata != null ? metadata.getAlbum() : null)
                     .duration(metadata != null ? metadata.getDuration() : null)
                     .position(item.getPosition())
-                    .coverUrl(metadata != null ? metadata.getCoverPath() : null)
+                    .coverUrl(metadata != null ? normalizeAccessibleUrl(metadata.getCoverPath()) : null)
                     .build();
         }).collect(Collectors.toList());
     }
@@ -356,30 +376,115 @@ public class AudioMediaBizImpl implements AudioMediaBiz {
             return new ArrayList<>();
         }
 
-        List<File> files = fileDataService.listByIds(fileIds);
-        return files.stream().map(this::convertToAudioListDto).collect(Collectors.toList());
+        Map<Long, File> fileMap = fileDataService.listByIds(fileIds).stream()
+                .collect(Collectors.toMap(File::getId, file -> file));
+        Map<Long, MediaAudioMetadata> metadataMap = getAudioMetadataMap(fileIds);
+
+        return fileIds.stream()
+                .map(fileMap::get)
+                .filter(java.util.Objects::nonNull)
+                .map(file -> convertToAudioListDto(file, metadataMap.get(file.getId())))
+                .collect(Collectors.toList());
     }
 
     private AudioListDto convertToAudioListDto(File file) {
-        MediaAudioMetadata metadata = audioMetadataDataService.lambdaQuery()
+        return convertToAudioListDto(file, null);
+    }
+
+    private AudioListDto convertToAudioListDto(File file, MediaAudioMetadata metadata) {
+        MediaAudioMetadata resolvedMetadata = metadata != null ? metadata : audioMetadataDataService.lambdaQuery()
                 .eq(MediaAudioMetadata::getFileId, file.getId())
                 .one();
 
         AudioListDto.AudioListDtoBuilder builder = AudioListDto.builder()
                 .fileId(file.getId())
-                .fileName(file.getFileName());
+                .resourceId(file.getResourceId())
+                .fileName(file.getFileName())
+                .audioUrl(buildAudioStreamUrl(file.getResourceId()));
 
-        if (metadata != null) {
-            builder.title(metadata.getTitle())
-                    .album(metadata.getAlbum())
-                    .artist(metadata.getArtist())
-                    .duration(metadata.getDuration())
-                    .bitrate(metadata.getBitrate())
-                    .trackNumber(metadata.getTrackNumber())
-                    .year(metadata.getYear())
-                    .coverUrl(metadata.getCoverPath());
+        if (resolvedMetadata != null) {
+            builder.title(resolvedMetadata.getTitle())
+                    .album(resolvedMetadata.getAlbum())
+                    .artist(resolvedMetadata.getArtist())
+                    .duration(resolvedMetadata.getDuration())
+                    .bitrate(resolvedMetadata.getBitrate())
+                    .trackNumber(resolvedMetadata.getTrackNumber())
+                    .year(resolvedMetadata.getYear())
+                    .genre(resolvedMetadata.getGenre())
+                    .coverUrl(normalizeAccessibleUrl(resolvedMetadata.getCoverPath()));
         }
 
         return builder.build();
+    }
+
+    private Map<Long, MediaAudioMetadata> getAudioMetadataMap(List<Long> fileIds) {
+        if (fileIds == null || fileIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return audioMetadataDataService.lambdaQuery()
+                .in(MediaAudioMetadata::getFileId, fileIds)
+                .list().stream()
+                .collect(Collectors.toMap(MediaAudioMetadata::getFileId, metadata -> metadata, (left, right) -> left));
+    }
+
+    private boolean matchesAudioFilter(MediaAudioMetadata metadata, String album, String artist, String genre) {
+        return matchesTextFilter(metadata != null ? metadata.getAlbum() : null, album)
+                && matchesTextFilter(metadata != null ? metadata.getArtist() : null, artist)
+                && matchesTextFilter(metadata != null ? metadata.getGenre() : null, genre);
+    }
+
+    private boolean matchesTextFilter(String actualValue, String expectedValue) {
+        return !StringUtils.hasText(expectedValue) || expectedValue.equals(actualValue);
+    }
+
+    private Comparator<File> buildAudioComparator(String sortBy, String sortOrder, Map<Long, MediaAudioMetadata> metadataMap) {
+        String normalizedSortBy = StringUtils.hasText(sortBy) ? sortBy.trim().toLowerCase() : "createtime";
+        boolean isAsc = "asc".equalsIgnoreCase(sortOrder);
+
+        Comparator<File> comparator = switch (normalizedSortBy) {
+            case "title", "name", "filename" -> Comparator.comparing(
+                    file -> safeLowerCase(resolveAudioDisplayName(file, metadataMap.get(file.getId()))),
+                    Comparator.nullsLast(String::compareTo));
+            case "artist" -> Comparator.comparing(
+                    file -> safeLowerCase(metadataMap.containsKey(file.getId()) ? metadataMap.get(file.getId()).getArtist() : null),
+                    Comparator.nullsLast(String::compareTo));
+            case "album" -> Comparator.comparing(
+                    file -> safeLowerCase(metadataMap.containsKey(file.getId()) ? metadataMap.get(file.getId()).getAlbum() : null),
+                    Comparator.nullsLast(String::compareTo));
+            case "duration" -> Comparator.comparing(
+                    file -> metadataMap.containsKey(file.getId()) ? metadataMap.get(file.getId()).getDuration() : null,
+                    Comparator.nullsLast(Long::compareTo));
+            case "size" -> Comparator.comparing(File::getSize, Comparator.nullsLast(Long::compareTo));
+            default -> Comparator.comparing(File::getCreateTime, Comparator.nullsLast(java.util.Date::compareTo));
+        };
+
+        comparator = comparator.thenComparing(File::getId, Comparator.nullsLast(Long::compareTo));
+        return isAsc ? comparator : comparator.reversed();
+    }
+
+    private String resolveAudioDisplayName(File file, MediaAudioMetadata metadata) {
+        if (metadata != null && StringUtils.hasText(metadata.getTitle())) {
+            return metadata.getTitle();
+        }
+        return file != null ? file.getFileName() : null;
+    }
+
+    private String safeLowerCase(String value) {
+        return value != null ? value.toLowerCase() : null;
+    }
+
+    private String buildAudioStreamUrl(Long resourceId) {
+        return resourceId != null ? "/v1/preview/audio/" + resourceId + "/stream" : null;
+    }
+
+    private String normalizeAccessibleUrl(String path) {
+        if (path == null || path.isBlank()) {
+            return null;
+        }
+        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("/")) {
+            return path;
+        }
+        return null;
     }
 }

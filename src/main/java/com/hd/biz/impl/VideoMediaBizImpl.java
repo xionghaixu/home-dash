@@ -12,11 +12,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -47,8 +51,14 @@ public class VideoMediaBizImpl implements VideoMediaBiz {
 
         List<File> files = fileDataService.lambdaQuery()
                 .eq(File::getType, FileType.VIDEO.toString())
-                .orderByDesc(File::getCreateTime)
                 .list();
+
+        if (files.isEmpty()) {
+            return PageResponseDto.of(new ArrayList<>(), 0L, current, size);
+        }
+
+        List<Long> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
+        Map<Long, MediaVideoMetadata> metadataMap = getVideoMetadataMap(fileIds);
 
         if (seriesId != null) {
             List<Long> seriesFileIds = episodeDataService.lambdaQuery()
@@ -58,6 +68,29 @@ public class VideoMediaBizImpl implements VideoMediaBiz {
                     .collect(Collectors.toList());
             files = files.stream().filter(f -> seriesFileIds.contains(f.getId())).collect(Collectors.toList());
         }
+
+        if (hasSubtitle != null) {
+            files = files.stream()
+                    .filter(file -> {
+                        MediaVideoMetadata metadata = metadataMap.get(file.getId());
+                        return metadata != null && hasSubtitle.equals(metadata.getHasSubtitle());
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        if (StringUtils.hasText(resolution)) {
+            String normalizedResolution = resolution.trim();
+            files = files.stream()
+                    .filter(file -> {
+                        MediaVideoMetadata metadata = metadataMap.get(file.getId());
+                        return metadata != null && normalizedResolution.equalsIgnoreCase(metadata.getResolution());
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        files = files.stream()
+                .sorted(buildVideoComparator(sortBy, sortOrder, metadataMap))
+                .collect(Collectors.toList());
 
         long total = files.size();
         int fromIndex = (current - 1) * size;
@@ -87,7 +120,7 @@ public class VideoMediaBizImpl implements VideoMediaBiz {
                 .fileId(fileId)
                 .fileName(file.getFileName())
                 .size(file.getSize())
-                .coverUrl("/thumb/" + fileId + "_cover.jpg")
+                .coverUrl(normalizeAccessibleUrl(metadata != null ? metadata.getCoverPath() : null))
                 .watchProgress(getWatchProgress(fileId))
                 .subtitleList(getSubtitleList(fileId))
                 .favorite(false);
@@ -185,7 +218,7 @@ public class VideoMediaBizImpl implements VideoMediaBiz {
                         .seriesId(s.getId())
                         .seriesName(s.getSeriesName())
                         .description(s.getDescription())
-                        .posterUrl(s.getPosterPath())
+                        .posterUrl(normalizeAccessibleUrl(s.getPosterPath()))
                         .totalEpisodes(s.getTotalEpisodes())
                         .createTime(s.getCreateTime())
                         .build())
@@ -254,17 +287,27 @@ public class VideoMediaBizImpl implements VideoMediaBiz {
 
     @Override
     public List<VideoEpisodeDto> getSeriesEpisodes(Long seriesId) {
-        return episodeDataService.lambdaQuery()
+        List<MediaVideoEpisode> episodes = episodeDataService.lambdaQuery()
                 .eq(MediaVideoEpisode::getSeriesId, seriesId)
                 .orderByAsc(MediaVideoEpisode::getEpisodeNumber)
-                .list().stream()
+                .list();
+
+        if (episodes.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Long> fileIds = episodes.stream().map(MediaVideoEpisode::getFileId).collect(Collectors.toList());
+        Map<Long, MediaVideoMetadata> metadataMap = getVideoMetadataMap(fileIds);
+
+        return episodes.stream()
                 .map(e -> VideoEpisodeDto.builder()
                         .episodeId(e.getId())
                         .fileId(e.getFileId())
                         .episodeNumber(e.getEpisodeNumber())
                         .seasonNumber(e.getSeasonNumber())
                         .episodeTitle(e.getEpisodeTitle())
-                        .coverUrl("/thumb/" + e.getFileId() + "_cover.jpg")
+                        .coverUrl(normalizeAccessibleUrl(
+                                metadataMap.containsKey(e.getFileId()) ? metadataMap.get(e.getFileId()).getCoverPath() : null))
                         .watchProgress(getWatchProgress(e.getFileId()))
                         .build())
                 .collect(Collectors.toList());
@@ -284,9 +327,14 @@ public class VideoMediaBizImpl implements VideoMediaBiz {
             return new ArrayList<>();
         }
 
-        List<File> files = fileDataService.listByIds(fileIds);
-        return files.stream()
+        Map<Long, File> fileMap = fileDataService.listByIds(fileIds).stream()
                 .filter(f -> FileType.VIDEO.toString().equals(f.getType()))
+                .collect(Collectors.toMap(File::getId, file -> file));
+
+        return progresses.stream()
+                .map(WatchProgress::getFileId)
+                .map(fileMap::get)
+                .filter(Objects::nonNull)
                 .map(this::convertToVideoListDto)
                 .collect(Collectors.toList());
     }
@@ -304,7 +352,7 @@ public class VideoMediaBizImpl implements VideoMediaBiz {
                 .fileId(file.getId())
                 .fileName(file.getFileName())
                 .size(file.getSize())
-                .coverUrl("/thumb/" + file.getId() + "_cover.jpg")
+                .coverUrl(normalizeAccessibleUrl(metadata != null ? metadata.getCoverPath() : null))
                 .watchProgress(getWatchProgress(file.getId()));
 
         if (metadata != null) {
@@ -326,5 +374,52 @@ public class VideoMediaBizImpl implements VideoMediaBiz {
         }
 
         return builder.build();
+    }
+
+    private Map<Long, MediaVideoMetadata> getVideoMetadataMap(List<Long> fileIds) {
+        if (fileIds == null || fileIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return videoMetadataDataService.lambdaQuery()
+                .in(MediaVideoMetadata::getFileId, fileIds)
+                .list().stream()
+                .collect(Collectors.toMap(MediaVideoMetadata::getFileId, metadata -> metadata, (left, right) -> left));
+    }
+
+    private Comparator<File> buildVideoComparator(String sortBy, String sortOrder, Map<Long, MediaVideoMetadata> metadataMap) {
+        String normalizedSortBy = StringUtils.hasText(sortBy) ? sortBy.trim().toLowerCase() : "createtime";
+        boolean isAsc = "asc".equalsIgnoreCase(sortOrder);
+
+        Comparator<File> comparator = switch (normalizedSortBy) {
+            case "name", "filename" -> Comparator.comparing(
+                    file -> safeLowerCase(file.getFileName()),
+                    Comparator.nullsLast(String::compareTo));
+            case "size" -> Comparator.comparing(File::getSize, Comparator.nullsLast(Long::compareTo));
+            case "duration" -> Comparator.comparing(
+                    file -> metadataMap.containsKey(file.getId()) ? metadataMap.get(file.getId()).getDuration() : null,
+                    Comparator.nullsLast(Long::compareTo));
+            case "resolution" -> Comparator.comparing(
+                    file -> safeLowerCase(metadataMap.containsKey(file.getId()) ? metadataMap.get(file.getId()).getResolution() : null),
+                    Comparator.nullsLast(String::compareTo));
+            default -> Comparator.comparing(File::getCreateTime, Comparator.nullsLast(java.util.Date::compareTo));
+        };
+
+        comparator = comparator.thenComparing(File::getId, Comparator.nullsLast(Long::compareTo));
+        return isAsc ? comparator : comparator.reversed();
+    }
+
+    private String normalizeAccessibleUrl(String path) {
+        if (!StringUtils.hasText(path)) {
+            return null;
+        }
+        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("/")) {
+            return path;
+        }
+        return null;
+    }
+
+    private String safeLowerCase(String value) {
+        return value != null ? value.toLowerCase() : null;
     }
 }

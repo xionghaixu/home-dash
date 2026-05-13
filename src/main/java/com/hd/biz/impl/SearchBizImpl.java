@@ -91,9 +91,14 @@ public class SearchBizImpl implements SearchBiz {
         QueryWrapper<File> query = new QueryWrapper<>();
 
         if (StringUtils.hasText(dto.getKeyword())) {
-            query.and(qw -> qw.like("file_name", dto.getKeyword())
-                    .or()
-                    .exists("SELECT 1 FROM file_tag_relation ftr JOIN file_tag ft ON ftr.tag_id = ft.id WHERE ftr.file_id = file.id AND ft.tag_name LIKE '" + dto.getKeyword() + "'"));
+            String keyword = dto.getKeyword().trim();
+            List<Long> keywordMatchedFileIds = getFileIdsByTagKeyword(keyword);
+            query.and(qw -> {
+                qw.like("file_name", keyword);
+                if (!keywordMatchedFileIds.isEmpty()) {
+                    qw.or().in("id", keywordMatchedFileIds);
+                }
+            });
         }
         if (dto.getFileTypes() != null && !dto.getFileTypes().isEmpty()) {
             query.in("type", dto.getFileTypes());
@@ -112,13 +117,13 @@ public class SearchBizImpl implements SearchBiz {
         }
         if (StringUtils.hasText(dto.getDirectoryPath())) {
             Long parentId = resolveDirectoryPathToParentId(dto.getDirectoryPath());
-            if (parentId != null) {
-                if (Boolean.TRUE.equals(dto.getIncludeSubdirectories())) {
-                    List<Long> allChildIds = getAllChildDirectoryIds(parentId);
-                    query.in("parent_id", allChildIds);
-                } else {
-                    query.eq("parent_id", parentId);
-                }
+            if (parentId == null) {
+                query.eq("id", -1L);
+            } else if (Boolean.TRUE.equals(dto.getIncludeSubdirectories())) {
+                List<Long> allChildIds = getAllChildDirectoryIds(parentId);
+                query.in("parent_id", allChildIds);
+            } else {
+                query.eq("parent_id", parentId);
             }
         }
         if (dto.getTags() != null && !dto.getTags().isEmpty()) {
@@ -194,6 +199,16 @@ public class SearchBizImpl implements SearchBiz {
                 .map(FileTagRelation::getFileId)
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    private List<Long> getFileIdsByTagKeyword(String keyword) {
+        List<FileTag> tags = fileTagDataService.lambdaQuery()
+                .like(FileTag::getTagName, keyword)
+                .list();
+        if (tags.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return getFileIdsByTagIds(tags.stream().map(FileTag::getId).collect(Collectors.toList()));
     }
 
     private List<Long> getFileIdsByTagNames(List<String> tagNames) {
@@ -544,7 +559,7 @@ public class SearchBizImpl implements SearchBiz {
             Resource resource = resourceDataService.getById(file.getResourceId());
             if (resource != null) {
                 builder.resourceId(resource.getId())
-                        .previewUrl("/v1/preview/" + file.getType().toLowerCase() + "/" + resource.getId());
+                        .previewUrl(buildPreviewUrl(file, resource.getId()));
             }
 
             // 检查收藏状态
@@ -697,6 +712,19 @@ public class SearchBizImpl implements SearchBiz {
         }
 
         return builder.build();
+    }
+
+    private String buildPreviewUrl(File file, Long resourceId) {
+        if (file == null || resourceId == null || !StringUtils.hasText(file.getType())) {
+            return null;
+        }
+
+        return switch (file.getType().toUpperCase()) {
+            case "PICTURE" -> "/v1/preview/image/" + resourceId + "/thumbnail";
+            case "TXT", "TEXT", "DOC", "PDF", "CODE", "WEB" -> "/v1/preview/text/" + resourceId;
+            case "AUDIO" -> "/v1/preview/audio/" + resourceId + "/stream";
+            default -> null;
+        };
     }
 
     private SearchHistoryVo convertToSearchHistoryVo(SearchHistory history) {

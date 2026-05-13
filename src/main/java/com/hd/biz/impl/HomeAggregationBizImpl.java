@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -58,11 +59,6 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
                 .limit(5)
                 .collect(Collectors.toList());
 
-        List<PlayHistory> recentPlays = playHistoryDataService.lambdaQuery()
-                .orderByDesc(PlayHistory::getPlayTime)
-                .last("LIMIT 20")
-                .list();
-
         List<File> allPictures = fileDataService.lambdaQuery()
                 .eq(File::getType, FileType.PICTURE.toString())
                 .orderByDesc(File::getCreateTime)
@@ -77,11 +73,11 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
         long videoSize = sumFileSize(FileType.VIDEO.toString());
         long audioSize = sumFileSize(FileType.AUDIO.toString());
 
-        List<MediaScanTask> pendingTasks = scanTaskDataService.lambdaQuery()
+        List<MediaScanTask> pendingTasks = safeListQuery("pending media tasks", () -> scanTaskDataService.lambdaQuery()
                 .in(MediaScanTask::getStatus, List.of("PENDING", "RUNNING", "FAILED"))
                 .orderByDesc(MediaScanTask::getCreateTime)
                 .last("LIMIT 5")
-                .list();
+                .list());
 
         HomeMediaSummaryDto summary = HomeMediaSummaryDto.builder()
                 .recentUploads(HomeMediaSummaryDto.RecentUploads.builder()
@@ -122,11 +118,11 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
     }
 
     private List<HomeMediaSummaryDto.VideoPlayItem> getRecentVideoPlays() {
-        List<PlayHistory> histories = playHistoryDataService.lambdaQuery()
+        List<PlayHistory> histories = safeListQuery("recent video plays", () -> playHistoryDataService.lambdaQuery()
                 .eq(PlayHistory::getMediaType, "VIDEO")
                 .orderByDesc(PlayHistory::getPlayTime)
                 .last("LIMIT 5")
-                .list();
+                .list());
 
         List<Long> fileIds = histories.stream().map(PlayHistory::getFileId).distinct().collect(Collectors.toList());
         if (fileIds.isEmpty()) {
@@ -135,20 +131,23 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
 
         Map<Long, File> fileMap = fileDataService.listByIds(fileIds).stream()
                 .collect(Collectors.toMap(File::getId, f -> f));
-        Map<Long, WatchProgress> progressMap = watchProgressDataService.lambdaQuery()
+        Map<Long, WatchProgress> progressMap = safeMapQuery("video watch progress", () -> watchProgressDataService.lambdaQuery()
                 .in(WatchProgress::getFileId, fileIds)
                 .list().stream()
-                .collect(Collectors.toMap(WatchProgress::getFileId, p -> p));
+                .collect(Collectors.toMap(WatchProgress::getFileId, p -> p)));
 
         return histories.stream()
                 .filter(h -> fileMap.containsKey(h.getFileId()))
                 .map(h -> {
                     File file = fileMap.get(h.getFileId());
                     WatchProgress progress = progressMap.get(h.getFileId());
+                    MediaVideoMetadata metadata = videoMetadataDataService.lambdaQuery()
+                            .eq(MediaVideoMetadata::getFileId, h.getFileId())
+                            .one();
                     return HomeMediaSummaryDto.VideoPlayItem.builder()
                             .fileId(h.getFileId())
                             .fileName(file.getFileName())
-                            .coverUrl("/thumb/" + h.getFileId() + "_cover.jpg")
+                            .coverUrl(normalizeAccessibleUrl(metadata != null ? metadata.getCoverPath() : null))
                             .progress(progress != null && progress.getProgressPercent() != null ? progress.getProgressPercent().intValue() : 0)
                             .lastPlayedAt(h.getPlayTime() != null ? h.getPlayTime().toString() : null)
                             .build();
@@ -157,11 +156,11 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
     }
 
     private List<HomeMediaSummaryDto.AudioPlayItem> getRecentAudioPlays() {
-        List<PlayHistory> histories = playHistoryDataService.lambdaQuery()
+        List<PlayHistory> histories = safeListQuery("recent audio plays", () -> playHistoryDataService.lambdaQuery()
                 .eq(PlayHistory::getMediaType, "AUDIO")
                 .orderByDesc(PlayHistory::getPlayTime)
                 .last("LIMIT 5")
-                .list();
+                .list());
 
         List<Long> fileIds = histories.stream().map(PlayHistory::getFileId).distinct().collect(Collectors.toList());
         if (fileIds.isEmpty()) {
@@ -183,7 +182,7 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
                     return HomeMediaSummaryDto.AudioPlayItem.builder()
                             .fileId(h.getFileId())
                             .fileName(file.getFileName())
-                            .coverUrl(metadata != null ? metadata.getCoverPath() : null)
+                            .coverUrl(normalizeAccessibleUrl(metadata != null ? metadata.getCoverPath() : null))
                             .title(metadata != null ? metadata.getTitle() : file.getFileName())
                             .artist(metadata != null ? metadata.getArtist() : null)
                             .lastPlayedAt(h.getPlayTime() != null ? h.getPlayTime().toString() : null)
@@ -196,15 +195,22 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
         String thumbnailUrl = null;
         String coverUrl = null;
         if (FileType.PICTURE.toString().equals(file.getType())) {
-            thumbnailUrl = "/thumb/" + file.getId() + "_small.jpg";
+            thumbnailUrl = buildPictureThumbnailUrl(file.getResourceId());
         } else if (FileType.VIDEO.toString().equals(file.getType())) {
-            coverUrl = "/thumb/" + file.getId() + "_cover.jpg";
+            MediaVideoMetadata metadata = videoMetadataDataService.lambdaQuery()
+                    .eq(MediaVideoMetadata::getFileId, file.getId())
+                    .one();
+            coverUrl = normalizeAccessibleUrl(metadata != null ? metadata.getCoverPath() : null);
         } else if (FileType.AUDIO.toString().equals(file.getType())) {
-            coverUrl = "/thumb/" + file.getId() + "_cover.jpg";
+            MediaAudioMetadata metadata = audioMetadataDataService.lambdaQuery()
+                    .eq(MediaAudioMetadata::getFileId, file.getId())
+                    .one();
+            coverUrl = normalizeAccessibleUrl(metadata != null ? metadata.getCoverPath() : null);
         }
 
         return MediaItemDto.builder()
                 .fileId(file.getId())
+                .resourceId(file.getResourceId())
                 .fileName(file.getFileName())
                 .size(file.getSize())
                 .type(file.getType())
@@ -220,5 +226,37 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
                 .list().stream()
                 .mapToLong(f -> f.getSize() != null ? f.getSize() : 0)
                 .sum();
+    }
+
+    private String buildPictureThumbnailUrl(Long resourceId) {
+        return resourceId != null ? "/v1/preview/image/" + resourceId + "/thumbnail" : null;
+    }
+
+    private String normalizeAccessibleUrl(String path) {
+        if (path == null || path.isBlank()) {
+            return null;
+        }
+        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("/")) {
+            return path;
+        }
+        return null;
+    }
+
+    private <T> List<T> safeListQuery(String queryName, Supplier<List<T>> supplier) {
+        try {
+            return supplier.get();
+        } catch (Exception exception) {
+            log.warn("[HomeAggregation] Fallback to empty list for {}: {}", queryName, exception.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    private <K, V> Map<K, V> safeMapQuery(String queryName, Supplier<Map<K, V>> supplier) {
+        try {
+            return supplier.get();
+        } catch (Exception exception) {
+            log.warn("[HomeAggregation] Fallback to empty map for {}: {}", queryName, exception.getMessage());
+            return Map.of();
+        }
     }
 }
