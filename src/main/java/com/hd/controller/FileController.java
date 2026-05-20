@@ -117,6 +117,18 @@ public class FileController {
     }
 
     /**
+     * 获取文件夹聚合大小。
+     *
+     * @param folderId 文件夹ID
+     * @return 文件夹聚合大小
+     */
+    @GetMapping("/file/folder/{folderId}/size")
+    public ResponseEntity<ResponseDto> getFolderSize(@PathVariable Long folderId) {
+        log.info("获取文件夹大小请求 [folderId={}]", folderId);
+        return ResponseEntity.ok(fileBiz.getFolderSize(folderId));
+    }
+
+    /**
      * 获取基础分类文件列表。
      *
      * @param category  分类名称

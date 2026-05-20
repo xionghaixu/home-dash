@@ -48,6 +48,7 @@ public class FileBizImpl implements FileBiz {
 
     private static final int DEFAULT_RECENT_LIMIT = 20;
     private static final int MAX_RECENT_LIMIT = 100;
+    private static final List<String> SYSTEM_INITIALIZED_FOLDERS = List.of("图片", "视频", "音频", "文档", "压缩包", "其他");
     private static final List<String> DOCUMENT_TYPES = List.of(
             FileType.PDF.toString(),
             FileType.DOC.toString(),
@@ -78,8 +79,19 @@ public class FileBizImpl implements FileBiz {
                 .eq(File::getParentId, parentId)
                 .orderBy(true, isAsc, getSortColumn(sortBy))
                 .list();
+        files.forEach(this::fillFolderSizeIfNecessary);
         List<FolderPathDto> folderPaths = getFolderTree(parentId);
         return ResponseDto.success(files, folderPaths);
+    }
+
+    @Override
+    public ResponseDto getFolderSize(Long folderId) {
+        File folder = findById(folderId)
+                .orElseThrow(() -> new DataNotFoundException(String.format("文件夹不存在 [folderId=%d]", folderId)));
+        if (!FileType.FOLDER.toString().equals(folder.getType())) {
+            throw new DataFormatException(String.format("目标不是文件夹 [folderId=%d]", folderId));
+        }
+        return ResponseDto.success(Map.of("size", calculateFolderSize(folderId)));
     }
 
     @Override
@@ -87,8 +99,10 @@ public class FileBizImpl implements FileBiz {
         int safeLimit = normalizeLimit(limit);
         List<File> recentFiles = fileDataService.lambdaQuery()
                 .orderByDesc(File::getCreateTime)
-                .last("LIMIT " + safeLimit)
-                .list();
+                .list().stream()
+                .filter(this::isRecentUploadCandidate)
+                .limit(safeLimit)
+                .toList();
         return ResponseDto.success(recentFiles, Map.of("limit", safeLimit));
     }
 
@@ -111,8 +125,10 @@ public class FileBizImpl implements FileBiz {
 
         List<File> recentFiles = fileDataService.lambdaQuery()
                 .orderByDesc(File::getCreateTime)
-                .last("LIMIT " + safeLimit)
-                .list();
+                .list().stream()
+                .filter(this::isRecentUploadCandidate)
+                .limit(safeLimit)
+                .toList();
 
         List<RecentUploadSummaryDto.File> recentFileList = recentFiles.stream()
                 .map(f -> RecentUploadSummaryDto.File.builder()
@@ -918,7 +934,40 @@ public class FileBizImpl implements FileBiz {
         return fileDataService.lambdaQuery()
                 .between(File::getCreateTime, start, end)
                 .orderByDesc(File::getCreateTime)
+                .list().stream()
+                .filter(this::isRecentUploadCandidate)
+                .toList();
+    }
+
+    private boolean isRecentUploadCandidate(File file) {
+        if (file == null) {
+            return false;
+        }
+        return !(FileType.FOLDER.toString().equals(file.getType())
+                && Objects.equals(file.getParentId(), File.ROOT_FILE.getId())
+                && SYSTEM_INITIALIZED_FOLDERS.contains(file.getFileName()));
+    }
+
+    private void fillFolderSizeIfNecessary(File file) {
+        if (file != null && FileType.FOLDER.toString().equals(file.getType())) {
+            file.setFolderSize(calculateFolderSize(file.getId()));
+        }
+    }
+
+    private long calculateFolderSize(Long folderId) {
+        List<File> children = fileDataService.lambdaQuery()
+                .eq(File::getParentId, folderId)
                 .list();
+
+        long totalSize = 0L;
+        for (File child : children) {
+            if (FileType.FOLDER.toString().equals(child.getType())) {
+                totalSize += calculateFolderSize(child.getId());
+            } else {
+                totalSize += child.getSize() != null ? child.getSize() : 0L;
+            }
+        }
+        return totalSize;
     }
 
     private SFunction<File, ?> getSortColumn(String sortBy) {

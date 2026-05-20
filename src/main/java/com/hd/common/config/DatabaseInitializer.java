@@ -76,11 +76,14 @@ public class DatabaseInitializer {
 
             List<String> sqlList = loadSql();
             for (String sql : sqlList) {
-                statement.execute(sql);
+                try {
+                    statement.execute(sql);
+                } catch (Exception statementException) {
+                    log.warn("跳过初始化语句执行失败: {}", statementException.getMessage());
+                }
             }
         } catch (Exception e) {
-            // 表已存在
-            log.warn(e.getMessage());
+            throw new DatabaseException("数据库初始化失败", e);
         }
     }
 

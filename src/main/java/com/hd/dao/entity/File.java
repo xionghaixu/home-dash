@@ -2,7 +2,10 @@ package com.hd.dao.entity;
 
 import lombok.*;
 import org.apache.ibatis.type.Alias;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.hd.common.enums.FileType;
 
 import jakarta.validation.constraints.NotEmpty;
@@ -37,10 +40,12 @@ public class File {
 
     /** 文件唯一标识符（主键）。 */
     @TableId
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 父文件夹ID，0表示根目录。 */
     @NotNull(message = "parentId不能为null")
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long parentId;
 
     /** 文件或文件夹名称，最大长度100个字符。 */
@@ -54,7 +59,12 @@ public class File {
     /** 文件大小（字节），文件夹可为null。 */
     private Long size;
 
+    /** 文件夹聚合大小（字节），仅用于列表展示，不参与持久化。 */
+    @TableField(exist = false)
+    private Long folderSize;
+
     /** 关联的资源ID，文件夹可为null。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long resourceId;
 
     /** 文件创建时间。 */

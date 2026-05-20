@@ -51,6 +51,30 @@ public class WorkspaceInitializer {
             fileDataService.save(folder);
             log.info("已初始化默认目录 [folderName={}, folderId={}]", folderName, folder.getId());
         }
+
+        repairOrphanFiles();
+    }
+
+    private void repairOrphanFiles() {
+        List<Long> validFolderIds = fileDataService.lambdaQuery()
+                .eq(File::getType, FileType.FOLDER.toString())
+                .list().stream()
+                .map(File::getId)
+                .toList();
+
+        List<File> orphanFiles = fileDataService.lambdaQuery()
+                .ne(File::getParentId, File.ROOT_FILE.getId())
+                .list().stream()
+                .filter(file -> !validFolderIds.contains(file.getParentId()))
+                .toList();
+
+        for (File orphanFile : orphanFiles) {
+            Long invalidParentId = orphanFile.getParentId();
+            orphanFile.setParentId(File.ROOT_FILE.getId());
+            fileDataService.updateById(orphanFile);
+            log.warn("已将孤儿文件回收到根目录 [fileId={}, fileName={}, invalidParentId={}]",
+                    orphanFile.getId(), orphanFile.getFileName(), invalidParentId);
+        }
     }
 }
 

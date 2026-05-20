@@ -28,6 +28,8 @@ public interface FileBiz {
 
     ResponseDto findByFileId(Long fileId);
 
+    ResponseDto getFolderSize(Long folderId);
+
     void createFile(File file);
 
     void renameFile(String fileName, Long id);

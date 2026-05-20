@@ -2,6 +2,7 @@ package com.hd.biz.impl;
 
 import com.hd.common.HomeDashConstants;
 import com.hd.common.config.HomeDashProperties;
+import com.hd.common.enums.FileType;
 import com.hd.common.exception.DataFormatException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -489,6 +490,7 @@ public class ResourceBizImpl implements ResourceBiz {
 
         fileDto.setResourceId(resource.getId());
         fileDto.setType(FileUtils.getFileType(fileDto.getFileName()).toString());
+        fileDto.setParentId(resolveValidParentId(fileDto.getParentId()));
 
         fileDataService.save(fileDto);
 
@@ -556,6 +558,7 @@ public class ResourceBizImpl implements ResourceBiz {
 
         fileDto.setResourceId(resource.getId());
         fileDto.setType(FileUtils.getFileType(fileDto.getFileName()).toString());
+        fileDto.setParentId(resolveValidParentId(fileDto.getParentId()));
 
         fileDataService.save(fileDto);
 
@@ -631,6 +634,22 @@ public class ResourceBizImpl implements ResourceBiz {
                     identifier, chunkNumber, e.getMessage(), e);
             return false;
         }
+    }
+
+    private Long resolveValidParentId(Long parentId) {
+        Long safeParentId = parentId == null ? com.hd.dao.entity.File.ROOT_FILE.getId() : parentId;
+        if (Objects.equals(safeParentId, com.hd.dao.entity.File.ROOT_FILE.getId())) {
+            return com.hd.dao.entity.File.ROOT_FILE.getId();
+        }
+
+        com.hd.dao.entity.File parentFolder = fileDataService.getById(safeParentId);
+        if (parentFolder == null) {
+            throw new DataFormatException(String.format("目标父目录不存在 [parentId=%d]", safeParentId));
+        }
+        if (!FileType.FOLDER.toString().equals(parentFolder.getType())) {
+            throw new DataFormatException(String.format("目标父级不是文件夹 [parentId=%d]", safeParentId));
+        }
+        return safeParentId;
     }
 
         @Transactional(rollbackFor = Exception.class)

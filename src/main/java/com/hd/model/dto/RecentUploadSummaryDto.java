@@ -1,5 +1,7 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -97,6 +99,7 @@ public class RecentUploadSummaryDto {
         /**
          * 文件ID。
          */
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long id;
 
         /**
@@ -122,6 +125,7 @@ public class RecentUploadSummaryDto {
         /**
          * 父目录ID。
          */
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long parentId;
     }
 }
