@@ -210,6 +210,7 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
 
         return MediaItemDto.builder()
                 .fileId(file.getId())
+                .parentId(file.getParentId())
                 .resourceId(file.getResourceId())
                 .fileName(file.getFileName())
                 .size(file.getSize())
@@ -221,11 +222,19 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
     }
 
     private long sumFileSize(String type) {
-        return fileDataService.lambdaQuery()
-                .eq(File::getType, type)
-                .list().stream()
-                .mapToLong(f -> f.getSize() != null ? f.getSize() : 0)
-                .sum();
+        try {
+            Map<String, Object> map = fileDataService.getMap(
+                    new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<File>()
+                            .select("COALESCE(SUM(size), 0) as total_size")
+                            .eq("type", type)
+            );
+            if (map != null && map.get("total_size") != null) {
+                return ((Number) map.get("total_size")).longValue();
+            }
+        } catch (Exception e) {
+            log.warn("[HomeAggregation] Failed to sum file size for type {}: {}", type, e.getMessage());
+        }
+        return 0L;
     }
 
     private String buildPictureThumbnailUrl(Long resourceId) {

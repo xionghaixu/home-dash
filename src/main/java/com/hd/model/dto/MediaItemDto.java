@@ -23,6 +23,8 @@ public class MediaItemDto {
 
     private Long fileId;
 
+    private Long parentId;
+
     private Long resourceId;
 
     private String fileName;

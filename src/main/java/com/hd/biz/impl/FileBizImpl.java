@@ -97,12 +97,15 @@ public class FileBizImpl implements FileBiz {
     @Override
     public ResponseDto findRecentFiles(Integer limit) {
         int safeLimit = normalizeLimit(limit);
-        List<File> recentFiles = fileDataService.lambdaQuery()
-                .orderByDesc(File::getCreateTime)
-                .list().stream()
-                .filter(this::isRecentUploadCandidate)
-                .limit(safeLimit)
-                .toList();
+        LambdaQueryWrapper<File> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w -> w.ne(File::getType, FileType.FOLDER.toString())
+                .or(sub -> sub.eq(File::getType, FileType.FOLDER.toString())
+                        .and(cond -> cond.ne(File::getParentId, File.ROOT_FILE.getId())
+                                .or().notIn(File::getFileName, SYSTEM_INITIALIZED_FOLDERS)))
+        );
+        wrapper.orderByDesc(File::getCreateTime);
+        wrapper.last("LIMIT " + safeLimit);
+        List<File> recentFiles = fileDataService.list(wrapper);
         return ResponseDto.success(recentFiles, Map.of("limit", safeLimit));
     }
 
@@ -123,12 +126,15 @@ public class FileBizImpl implements FileBiz {
         long weekSize = weekFiles.stream().mapToLong(f -> f.getSize() != null ? f.getSize() : 0).sum();
         long monthSize = monthFiles.stream().mapToLong(f -> f.getSize() != null ? f.getSize() : 0).sum();
 
-        List<File> recentFiles = fileDataService.lambdaQuery()
-                .orderByDesc(File::getCreateTime)
-                .list().stream()
-                .filter(this::isRecentUploadCandidate)
-                .limit(safeLimit)
-                .toList();
+        LambdaQueryWrapper<File> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w -> w.ne(File::getType, FileType.FOLDER.toString())
+                .or(sub -> sub.eq(File::getType, FileType.FOLDER.toString())
+                        .and(cond -> cond.ne(File::getParentId, File.ROOT_FILE.getId())
+                                .or().notIn(File::getFileName, SYSTEM_INITIALIZED_FOLDERS)))
+        );
+        wrapper.orderByDesc(File::getCreateTime);
+        wrapper.last("LIMIT " + safeLimit);
+        List<File> recentFiles = fileDataService.list(wrapper);
 
         List<RecentUploadSummaryDto.File> recentFileList = recentFiles.stream()
                 .map(f -> RecentUploadSummaryDto.File.builder()
@@ -161,12 +167,39 @@ public class FileBizImpl implements FileBiz {
         String normalizedCategory = normalizeCategory(category);
         boolean isAsc = "asc".equalsIgnoreCase(normalizeSortOrder(sortOrder));
 
-        List<File> files = fileDataService.lambdaQuery()
-                .orderBy(true, isAsc, getSortColumn(sortBy))
-                .list().stream()
-                .filter(file -> !FileType.FOLDER.toString().equals(file.getType()))
-                .filter(file -> matchesCategory(file, normalizedCategory))
-                .toList();
+        LambdaQueryWrapper<File> wrapper = new LambdaQueryWrapper<>();
+        wrapper.ne(File::getType, FileType.FOLDER.toString());
+        switch (normalizedCategory) {
+            case "picture":
+                wrapper.eq(File::getType, FileType.PICTURE.toString());
+                break;
+            case "video":
+                wrapper.eq(File::getType, FileType.VIDEO.toString());
+                break;
+            case "audio":
+                wrapper.eq(File::getType, FileType.AUDIO.toString());
+                break;
+            case "document":
+                wrapper.in(File::getType, DOCUMENT_TYPES);
+                break;
+            case "compress":
+                wrapper.in(File::getType, COMPRESS_TYPES);
+                break;
+            case "other":
+                List<String> knownTypes = new ArrayList<>();
+                knownTypes.add(FileType.FOLDER.toString());
+                knownTypes.add(FileType.PICTURE.toString());
+                knownTypes.add(FileType.VIDEO.toString());
+                knownTypes.add(FileType.AUDIO.toString());
+                knownTypes.addAll(DOCUMENT_TYPES);
+                knownTypes.addAll(COMPRESS_TYPES);
+                wrapper.notIn(File::getType, knownTypes);
+                break;
+            default:
+                break;
+        }
+        wrapper.orderBy(true, isAsc, getSortColumn(sortBy));
+        List<File> files = fileDataService.list(wrapper);
         return ResponseDto.success(files, Map.of(
                 "category", normalizedCategory,
                 "count", files.size()));
@@ -174,17 +207,40 @@ public class FileBizImpl implements FileBiz {
 
     @Override
     public ResponseDto categorySummary() {
-        Map<String, Long> categoryCountMap = fileDataService.list().stream()
-                .filter(file -> !FileType.FOLDER.toString().equals(file.getType()))
-                .collect(Collectors.groupingBy(this::getCategoryForFileType, Collectors.counting()));
+        long pictureCount = fileDataService.count(
+                new LambdaQueryWrapper<File>().eq(File::getType, FileType.PICTURE.toString())
+        );
+        long videoCount = fileDataService.count(
+                new LambdaQueryWrapper<File>().eq(File::getType, FileType.VIDEO.toString())
+        );
+        long audioCount = fileDataService.count(
+                new LambdaQueryWrapper<File>().eq(File::getType, FileType.AUDIO.toString())
+        );
+        long docCount = fileDataService.count(
+                new LambdaQueryWrapper<File>().in(File::getType, DOCUMENT_TYPES)
+        );
+        long compressCount = fileDataService.count(
+                new LambdaQueryWrapper<File>().in(File::getType, COMPRESS_TYPES)
+        );
+
+        List<String> knownTypes = new ArrayList<>();
+        knownTypes.add(FileType.FOLDER.toString());
+        knownTypes.add(FileType.PICTURE.toString());
+        knownTypes.add(FileType.VIDEO.toString());
+        knownTypes.add(FileType.AUDIO.toString());
+        knownTypes.addAll(DOCUMENT_TYPES);
+        knownTypes.addAll(COMPRESS_TYPES);
+        long otherCount = fileDataService.count(
+                new LambdaQueryWrapper<File>().notIn(File::getType, knownTypes)
+        );
 
         List<FileCategorySummaryDto> summaries = List.of(
-                new FileCategorySummaryDto("picture", "图片", categoryCountMap.getOrDefault("picture", 0L).intValue()),
-                new FileCategorySummaryDto("video", "视频", categoryCountMap.getOrDefault("video", 0L).intValue()),
-                new FileCategorySummaryDto("audio", "音频", categoryCountMap.getOrDefault("audio", 0L).intValue()),
-                new FileCategorySummaryDto("document", "文档", categoryCountMap.getOrDefault("document", 0L).intValue()),
-                new FileCategorySummaryDto("compress", "压缩包", categoryCountMap.getOrDefault("compress", 0L).intValue()),
-                new FileCategorySummaryDto("other", "其他", categoryCountMap.getOrDefault("other", 0L).intValue()));
+                new FileCategorySummaryDto("picture", "图片", (int) pictureCount),
+                new FileCategorySummaryDto("video", "视频", (int) videoCount),
+                new FileCategorySummaryDto("audio", "音频", (int) audioCount),
+                new FileCategorySummaryDto("document", "文档", (int) docCount),
+                new FileCategorySummaryDto("compress", "压缩包", (int) compressCount),
+                new FileCategorySummaryDto("other", "其他", (int) otherCount));
         return ResponseDto.success(summaries);
     }
 
@@ -931,12 +987,15 @@ public class FileBizImpl implements FileBiz {
     }
 
     private List<File> queryByTimeRange(LocalDateTime start, LocalDateTime end) {
-        return fileDataService.lambdaQuery()
-                .between(File::getCreateTime, start, end)
-                .orderByDesc(File::getCreateTime)
-                .list().stream()
-                .filter(this::isRecentUploadCandidate)
-                .toList();
+        LambdaQueryWrapper<File> wrapper = new LambdaQueryWrapper<>();
+        wrapper.between(File::getCreateTime, start, end)
+                .and(w -> w.ne(File::getType, FileType.FOLDER.toString())
+                        .or(sub -> sub.eq(File::getType, FileType.FOLDER.toString())
+                                .and(cond -> cond.ne(File::getParentId, File.ROOT_FILE.getId())
+                                        .or().notIn(File::getFileName, SYSTEM_INITIALIZED_FOLDERS)))
+                )
+                .orderByDesc(File::getCreateTime);
+        return fileDataService.list(wrapper);
     }
 
     private boolean isRecentUploadCandidate(File file) {

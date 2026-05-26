@@ -9,7 +9,7 @@ import com.hd.dao.entity.File;
 import com.hd.dao.entity.Resource;
 import com.hd.dao.service.FileDataService;
 import com.hd.dao.service.ResourceDataService;
-import com.hd.model.dto.ResponseDto;
+import com.hd.model.dto.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -328,7 +328,7 @@ class FileBizImplTest {
         @Test
         @DisplayName("应返回分类摘要统计")
         void shouldReturnCategorySummary() {
-            when(fileDataService.list()).thenReturn(List.of(testFile));
+            when(fileDataService.count(any())).thenReturn(1L);
 
             ResponseDto result = fileBiz.categorySummary();
 
@@ -339,29 +339,29 @@ class FileBizImplTest {
         @Test
         @DisplayName("应正确统计各分类数量")
         void shouldCountEachCategory() {
-            File imageFile = File.builder()
-                    .id(3L)
-                    .fileName("image.jpg")
-                    .type(FileType.PICTURE.toString())
-                    .parentId(0L)
-                    .size(2048L)
-                    .build();
-
-            when(fileDataService.list()).thenReturn(List.of(testFile, imageFile));
+            when(fileDataService.count(any())).thenReturn(5L);
 
             ResponseDto result = fileBiz.categorySummary();
 
             assertNotNull(result);
+            List<FileCategorySummaryDto> list = (List<FileCategorySummaryDto>) result.getData();
+            for (FileCategorySummaryDto dto : list) {
+                assertEquals(5, dto.getCount());
+            }
         }
 
         @Test
-        @DisplayName("应正确处理空列表")
-        void shouldHandleEmptyList() {
-            when(fileDataService.list()).thenReturn(List.of());
+        @DisplayName("应正确处理数量为0的情况")
+        void shouldHandleEmptyCounts() {
+            when(fileDataService.count(any())).thenReturn(0L);
 
             ResponseDto result = fileBiz.categorySummary();
 
             assertNotNull(result);
+            List<FileCategorySummaryDto> list = (List<FileCategorySummaryDto>) result.getData();
+            for (FileCategorySummaryDto dto : list) {
+                assertEquals(0, dto.getCount());
+            }
         }
     }
 

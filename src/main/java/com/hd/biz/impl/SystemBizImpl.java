@@ -65,59 +65,54 @@ public class SystemBizImpl implements SystemBiz {
         builder.warningLevel(warningLevel)
                 .warningMessage(warningMessage);
 
-        List<File> files = fileDataService.list();
-        int totalFileNum = 0;
-        int folderNum = 0;
-        int videoNum = 0;
-        int audioNum = 0;
-        int pictureNum = 0;
-        int docNum = 0;
-        int compressNum = 0;
+        long totalFileNum = fileDataService.count();
+        long folderNum = fileDataService.count(
+                new LambdaQueryWrapper<File>().eq(File::getType, FileType.FOLDER.toString())
+        );
+        long videoNum = fileDataService.count(
+                new LambdaQueryWrapper<File>().eq(File::getType, FileType.VIDEO.toString())
+        );
+        long audioNum = fileDataService.count(
+                new LambdaQueryWrapper<File>().eq(File::getType, FileType.AUDIO.toString())
+        );
+        long pictureNum = fileDataService.count(
+                new LambdaQueryWrapper<File>().eq(File::getType, FileType.PICTURE.toString())
+        );
+        long docNum = fileDataService.count(
+                new LambdaQueryWrapper<File>().in(File::getType, List.of(
+                        FileType.DOC.toString(), FileType.PDF.toString(), FileType.TXT.toString(),
+                        FileType.PPT.toString(), FileType.CODE.toString(), FileType.WEB.toString()
+                ))
+        );
+        long compressNum = fileDataService.count(
+                new LambdaQueryWrapper<File>().eq(File::getType, FileType.COMPRESS_FILE.toString())
+        );
 
-        for (File file : files) {
-            totalFileNum++;
-            String type = file.getType();
-            if (FileType.FOLDER.toString().equals(type)) {
-                folderNum++;
-            }
-            if (FileType.VIDEO.toString().equals(type)) {
-                videoNum++;
-            }
-            if (FileType.AUDIO.toString().equals(type)) {
-                audioNum++;
-            }
-            if (FileType.PICTURE.toString().equals(type)) {
-                pictureNum++;
-            }
-            if (FileType.DOC.toString().equals(type)
-                    || FileType.PDF.toString().equals(type)
-                    || FileType.TXT.toString().equals(type)
-                    || FileType.PPT.toString().equals(type)
-                    || FileType.CODE.toString().equals(type)
-                    || FileType.WEB.toString().equals(type)) {
-                docNum++;
-            }
-            if (FileType.COMPRESS_FILE.toString().equals(type)) {
-                compressNum++;
-            }
-        }
+        long normalFileNum = totalFileNum - folderNum;
+        long otherNum = normalFileNum - videoNum - audioNum - pictureNum - docNum - compressNum;
 
-        int normalFileNum = totalFileNum - folderNum;
-        int otherNum = normalFileNum - videoNum - audioNum - pictureNum - docNum - compressNum;
         LambdaQueryWrapper<File> recentWrapper = new LambdaQueryWrapper<>();
+        recentWrapper.and(wrapper -> wrapper
+                .ne(File::getType, FileType.FOLDER.toString())
+                .or(sub -> sub
+                        .eq(File::getType, FileType.FOLDER.toString())
+                        .and(cond -> cond.ne(File::getParentId, File.ROOT_FILE.getId())
+                                .or().notIn(File::getFileName, List.of("图片", "视频", "音频", "文档", "压缩包", "其他")))
+                )
+        );
         recentWrapper.orderByDesc(File::getCreateTime);
         recentWrapper.last("LIMIT 20");
         int recentUploadNum = fileDataService.list(recentWrapper).size();
 
-        builder.totalNum(totalFileNum)
-                .fileNum(totalFileNum - folderNum)
-                .folderNum(folderNum)
-                .videoNum(videoNum)
-                .audioNum(audioNum)
-                .pictureNum(pictureNum)
-                .docNum(docNum)
-                .compressNum(compressNum)
-                .otherNum(Math.max(otherNum, 0))
+        builder.totalNum((int) totalFileNum)
+                .fileNum((int) normalFileNum)
+                .folderNum((int) folderNum)
+                .videoNum((int) videoNum)
+                .audioNum((int) audioNum)
+                .pictureNum((int) pictureNum)
+                .docNum((int) docNum)
+                .compressNum((int) compressNum)
+                .otherNum((int) Math.max(otherNum, 0))
                 .recentUploadNum(recentUploadNum);
 
         SystemInfoDto result = builder.build();
