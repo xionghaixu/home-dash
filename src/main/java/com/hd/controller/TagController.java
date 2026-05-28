@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * 标签控制器。
@@ -95,8 +96,28 @@ public class TagController {
      */
     @PostMapping("/tag/batch/add")
     public ResponseEntity<ResponseDto> batchAddTags(@RequestBody BatchTagRequest request) {
-        log.info("批量添加标签请求 [fileIds={}, tagIds={}]", request.getFileIds(), request.getTagIds());
-        BatchOperationResultVo result = tagBiz.addTagsToFiles(request.getFileIds(), request.getTagIds());
+        log.info("批量添加标签请求 [fileIds={}, tagIds={}, tagNames={}]", 
+                request.getFileIds(), request.getTagIds(), request.getTagNames());
+        
+        List<Long> tagIds = request.getTagIds() != null ? new ArrayList<>(request.getTagIds()) : new ArrayList<>();
+        if (request.getTagNames() != null && !request.getTagNames().isEmpty()) {
+            for (String name : request.getTagNames()) {
+                if (name == null || name.trim().isEmpty()) {
+                    continue;
+                }
+                String trimmedName = name.trim();
+                TagVo tag = tagBiz.getTagList().stream()
+                        .filter(t -> trimmedName.equalsIgnoreCase(t.getTagName()))
+                        .findFirst()
+                        .orElse(null);
+                if (tag == null) {
+                    tag = tagBiz.createTag(TagRequestDto.builder().tagName(trimmedName).tagColor("#409EFF").build());
+                }
+                tagIds.add(tag.getId());
+            }
+        }
+        
+        BatchOperationResultVo result = tagBiz.addTagsToFiles(request.getFileIds(), tagIds);
         return ResponseEntity.ok(ResponseDto.success(result));
     }
 
@@ -105,8 +126,27 @@ public class TagController {
      */
     @PostMapping("/tag/batch/remove")
     public ResponseEntity<ResponseDto> batchRemoveTags(@RequestBody BatchTagRequest request) {
-        log.info("批量移除标签请求 [fileIds={}, tagIds={}]", request.getFileIds(), request.getTagIds());
-        BatchOperationResultVo result = tagBiz.removeTagsFromFiles(request.getFileIds(), request.getTagIds());
+        log.info("批量移除标签请求 [fileIds={}, tagIds={}, tagNames={}]", 
+                request.getFileIds(), request.getTagIds(), request.getTagNames());
+        
+        List<Long> tagIds = request.getTagIds() != null ? new ArrayList<>(request.getTagIds()) : new ArrayList<>();
+        if (request.getTagNames() != null && !request.getTagNames().isEmpty()) {
+            for (String name : request.getTagNames()) {
+                if (name == null || name.trim().isEmpty()) {
+                    continue;
+                }
+                String trimmedName = name.trim();
+                TagVo tag = tagBiz.getTagList().stream()
+                        .filter(t -> trimmedName.equalsIgnoreCase(t.getTagName()))
+                        .findFirst()
+                        .orElse(null);
+                if (tag != null) {
+                    tagIds.add(tag.getId());
+                }
+            }
+        }
+        
+        BatchOperationResultVo result = tagBiz.removeTagsFromFiles(request.getFileIds(), tagIds);
         return ResponseEntity.ok(ResponseDto.success(result));
     }
 
@@ -148,6 +188,7 @@ public class TagController {
     public static class BatchTagRequest {
         private List<Long> fileIds;
         private List<Long> tagIds;
+        private List<String> tagNames;
     }
 
     /**

@@ -1,5 +1,8 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import lombok.*;
 
 /**
@@ -18,5 +21,6 @@ import lombok.*;
 public class FavoriteRequestDto {
 
     /** 资源ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long resourceId;
 }

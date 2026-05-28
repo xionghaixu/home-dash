@@ -1,5 +1,7 @@
 package com.hd.dao.entity;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 import org.apache.ibatis.type.Alias;
 
@@ -24,6 +26,7 @@ public class Resource {
     public static final String ALIAS = "resource";
 
     /** 资源唯一标识符（主键）。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 文件大小（字节）。 */

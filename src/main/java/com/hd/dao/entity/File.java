@@ -4,6 +4,7 @@ import lombok.*;
 import org.apache.ibatis.type.Alias;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.hd.common.enums.FileType;
@@ -74,4 +75,9 @@ public class File {
     /** 文件最后更新时间。 */
     @Builder.Default
     private Date updateTime = new Date();
+
+    /** 逻辑删除标志 (0:未删除, 1:已删除) */
+    @TableLogic
+    @Builder.Default
+    private Integer isDeleted = 0;
 }

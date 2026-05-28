@@ -1,5 +1,7 @@
 package com.hd.model.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 
 /**
@@ -18,6 +20,7 @@ import lombok.*;
 public class SearchHistoryVo {
 
     /** 记录ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 搜索关键词。 */

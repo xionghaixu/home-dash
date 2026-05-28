@@ -1,5 +1,8 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import lombok.Data;
 
 import java.util.List;
@@ -13,5 +16,6 @@ import java.util.List;
 @Data
 public class BatchRetryDto {
 
+    @JsonSerialize(contentUsing = ToStringSerializer.class)
     private List<Long> taskIds;
 }

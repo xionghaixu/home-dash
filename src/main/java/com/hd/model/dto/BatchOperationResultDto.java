@@ -1,5 +1,8 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -103,6 +106,7 @@ public class BatchOperationResultDto {
         /**
          * 文件ID。
          */
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long fileId;
 
         /**
@@ -129,6 +133,7 @@ public class BatchOperationResultDto {
         /**
          * 新文件ID（仅复制成功时填充，用于复制到新位置）。
          */
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long newFileId;
 
         /**

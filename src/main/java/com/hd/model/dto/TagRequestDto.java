@@ -1,5 +1,7 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
@@ -19,6 +21,7 @@ import lombok.*;
 public class TagRequestDto {
 
     /** 标签ID（更新时需要）。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 标签名称。 */

@@ -1,5 +1,7 @@
 package com.hd.model.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 
 /**
@@ -17,9 +19,11 @@ import lombok.*;
 public class FileRemarkVo {
 
     /** 备注ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 资源ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long resourceId;
 
     /** 备注内容。 */

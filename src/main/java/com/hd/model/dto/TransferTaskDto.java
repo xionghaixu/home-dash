@@ -1,5 +1,8 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -75,11 +78,13 @@ public class TransferTaskDto {
     /**
      * 目标父目录ID。
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long parentId;
 
     /**
      * 创建后的文件ID（完成后填充）。
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;
 
     /**

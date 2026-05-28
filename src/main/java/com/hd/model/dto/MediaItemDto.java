@@ -1,5 +1,7 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,10 +23,13 @@ import java.util.Map;
 @AllArgsConstructor
 public class MediaItemDto {
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long parentId;
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long resourceId;
 
     private String fileName;

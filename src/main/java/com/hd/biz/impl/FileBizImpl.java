@@ -13,6 +13,8 @@ import com.hd.dao.entity.File;
 import com.hd.dao.entity.Resource;
 import com.hd.dao.service.FileDataService;
 import com.hd.dao.service.ResourceDataService;
+import com.hd.dao.mapper.FileMapper;
+import com.hd.biz.RecycleBinBiz;
 import com.hd.model.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +63,13 @@ public class FileBizImpl implements FileBiz {
     private final FileDataService fileDataService;
     private final ResourceDataService resourceDataService;
     private final HomeDashProperties homeDashProperties;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private FileMapper fileMapper;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private RecycleBinBiz recycleBinBiz;
 
     /**
      * 根据父文件夹ID获取文件列表。
@@ -446,34 +455,8 @@ public class FileBizImpl implements FileBiz {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void deleteFiles(List<Long> ids) {
-        long startTime = System.currentTimeMillis();
-        log.info("开始删除文件 [fileIds={}, fileCount={}]", ids, ids != null ? ids.size() : 0);
-
-        Objects.requireNonNull(ids, "要删除的文件ID列表不能为空");
-
-        List<File> filesToDelete = fileDataService.listByIds(ids);
-        if (filesToDelete.size() != ids.size()) {
-            Set<Long> foundIds = filesToDelete.stream().map(File::getId).collect(Collectors.toSet());
-            List<Long> missingIds = ids.stream().filter(id -> !foundIds.contains(id)).toList();
-            log.warn("部分要删除的文件不存在 [missingFileIds={}]", missingIds);
-        }
-
-        Map<Boolean, List<File>> fileGroups = filesToDelete.stream()
-                .collect(Collectors.partitioningBy(
-                        file -> FileType.FOLDER.toString().equals(file.getType())));
-
-        List<File> folders = fileGroups.get(true);
-        List<File> commonFiles = fileGroups.get(false);
-
-        if (!commonFiles.isEmpty()) {
-            batchDeleteCommonFiles(commonFiles);
-        }
-
-        for (File folder : folders) {
-            deleteFolderIterative(folder);
-        }
-
-        log.info("文件删除成功 [fileIds={}, 总耗时={}ms]", ids, System.currentTimeMillis() - startTime);
+        log.info("开始逻辑删除文件并移入回收站 [fileIds={}]", ids);
+        recycleBinBiz.softDelete(ids);
     }
 
     @Override
@@ -536,8 +519,42 @@ public class FileBizImpl implements FileBiz {
         return path;
     }
 
-    private void batchDeleteCommonFiles(List<File> files) {
-        log.debug("开始批量删除普通文件 [文件数量={}]", files.size());
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void permanentlyDelete(List<Long> ids) {
+        long startTime = System.currentTimeMillis();
+        log.info("开始物理彻底删除文件 [fileIds={}, fileCount={}]", ids, ids != null ? ids.size() : 0);
+
+        Objects.requireNonNull(ids, "要删除的文件ID列表不能为空");
+
+        List<File> filesToDelete = new ArrayList<>();
+        for (Long id : ids) {
+            File f = fileMapper.selectByIdWithDeleted(id);
+            if (f != null) {
+                filesToDelete.add(f);
+            }
+        }
+
+        Map<Boolean, List<File>> fileGroups = filesToDelete.stream()
+                .collect(Collectors.partitioningBy(
+                        file -> FileType.FOLDER.toString().equals(file.getType())));
+
+        List<File> folders = fileGroups.get(true);
+        List<File> commonFiles = fileGroups.get(false);
+
+        if (!commonFiles.isEmpty()) {
+            batchPermanentlyDeleteCommonFiles(commonFiles);
+        }
+
+        for (File folder : folders) {
+            permanentlyDeleteFolderIterative(folder);
+        }
+
+        log.info("彻底物理删除文件成功 [fileIds={}, 总耗时={}ms]", ids, System.currentTimeMillis() - startTime);
+    }
+
+    private void batchPermanentlyDeleteCommonFiles(List<File> files) {
+        log.debug("开始批量物理彻底删除普通文件 [文件数量={}]", files.size());
 
         List<Long> fileIdsToDelete = files.stream().map(File::getId).toList();
         Map<Long, Long> deleteCountByResourceId = files.stream()
@@ -546,7 +563,9 @@ public class FileBizImpl implements FileBiz {
 
         if (deleteCountByResourceId.isEmpty()) {
             if (!fileIdsToDelete.isEmpty()) {
-                fileDataService.removeByIds(fileIdsToDelete);
+                for (Long fileId : fileIdsToDelete) {
+                    fileMapper.permanentlyDelete(fileId);
+                }
             }
             return;
         }
@@ -584,12 +603,14 @@ public class FileBizImpl implements FileBiz {
         }
 
         if (!fileIdsToDelete.isEmpty()) {
-            fileDataService.removeByIds(fileIdsToDelete);
+            for (Long fileId : fileIdsToDelete) {
+                fileMapper.permanentlyDelete(fileId);
+            }
         }
     }
 
-    private void deleteFolderIterative(File folder) {
-        log.debug("开始迭代删除文件夹 [folderId={}, folderName={}]", folder.getId(), folder.getFileName());
+    private void permanentlyDeleteFolderIterative(File folder) {
+        log.debug("开始迭代物理彻底删除文件夹 [folderId={}, folderName={}]", folder.getId(), folder.getFileName());
 
         Stack<File> folderStack = new Stack<>();
         folderStack.push(folder);
@@ -600,7 +621,7 @@ public class FileBizImpl implements FileBiz {
 
         while (!folderStack.isEmpty()) {
             File currentFolder = folderStack.pop();
-            List<File> children = fileDataService.lambdaQuery().eq(File::getParentId, currentFolder.getId()).list();
+            List<File> children = fileMapper.selectAllChildrenByParentId(currentFolder.getId());
 
             for (File child : children) {
                 if (FileType.FOLDER.toString().equals(child.getType())) {
@@ -613,14 +634,15 @@ public class FileBizImpl implements FileBiz {
         }
 
         if (!allFilesToDelete.isEmpty()) {
-            batchDeleteCommonFiles(allFilesToDelete);
+            batchPermanentlyDeleteCommonFiles(allFilesToDelete);
         }
 
         Collections.reverse(allFoldersToDelete);
-        List<Long> folderIdsToDelete = allFoldersToDelete.stream().map(File::getId).toList();
-        fileDataService.removeByIds(folderIdsToDelete);
+        for (File f : allFoldersToDelete) {
+            fileMapper.permanentlyDelete(f.getId());
+        }
 
-        log.info("迭代删除文件夹成功 [folderId={}, folderName={}, 删除文件夹数量={}, 删除文件数量={}]",
+        log.info("迭代物理彻底删除文件夹成功 [folderId={}, folderName={}, 删除文件夹数量={}, 删除文件数量={}]",
                 folder.getId(), folder.getFileName(), allFoldersToDelete.size(), allFilesToDelete.size());
     }
 

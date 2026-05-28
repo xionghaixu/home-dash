@@ -1,6 +1,7 @@
 package com.hd.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -40,6 +41,7 @@ public class MediaAudioMetadata implements Serializable {
 
     private Integer discNumber;
 
+    @TableField("audio_year")
     private Integer year;
 
     private Long duration;

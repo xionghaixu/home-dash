@@ -319,9 +319,17 @@ public class ResourceController {
 
         resourceBiz.mergeChunk(fileDto);
 
-        log.info("文件分块合并成功 [identifier={}, fileName={}, resourceId={}]",
-                fileDto.getIdentifier(), fileDto.getFileName(), fileDto.getResourceId());
-        return ResponseEntity.ok(ResponseDto.success());
+        log.info("文件分块合并成功 [identifier={}, fileName={}, resourceId={}, isInstantUpload={}]",
+                fileDto.getIdentifier(), fileDto.getFileName(), fileDto.getResourceId(), fileDto.isInstantUpload());
+
+        // 返回合并结果，包含秒传标识
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("identifier", fileDto.getIdentifier());
+        result.put("fileName", fileDto.getFileName());
+        result.put("resourceId", fileDto.getResourceId());
+        result.put("isInstantUpload", fileDto.isInstantUpload());
+
+        return ResponseEntity.ok(ResponseDto.success(result));
     }
 
     /**

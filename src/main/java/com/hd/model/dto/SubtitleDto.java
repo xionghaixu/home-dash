@@ -1,5 +1,8 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +20,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SubtitleDto {
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long subtitleId;
 
     private String language;

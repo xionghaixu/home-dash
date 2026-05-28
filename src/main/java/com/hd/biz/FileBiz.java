@@ -40,6 +40,8 @@ public interface FileBiz {
 
     void deleteFiles(List<Long> ids);
 
+    void permanentlyDelete(List<Long> ids);
+
     ResourceWrapper loadResource(Long fileId);
 
     ResponseDto uploadWithMD5(MultipartFile file, Long parentId);

@@ -1,5 +1,7 @@
 package com.hd.model.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 import java.util.List;
 
@@ -19,9 +21,11 @@ import java.util.List;
 public class FileDetailVo {
 
     /** 资源ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long resourceId;
 
     /** 文件ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;
 
     /** 文件名称。 */
@@ -40,6 +44,7 @@ public class FileDetailVo {
     private String type;
 
     /** 父目录ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long parentId;
 
     /** 父目录路径。 */
@@ -49,6 +54,7 @@ public class FileDetailVo {
     private String updateTime;
 
     /** 标签列表。 */
+    @JsonSerialize(contentUsing = ToStringSerializer.class)
     private List<TagVo> tags;
 
     /** 是否收藏。 */

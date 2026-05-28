@@ -1,5 +1,8 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import lombok.*;
 import java.util.List;
 
@@ -43,6 +46,7 @@ public class SearchRequestDto {
     private Boolean includeSubdirectories;
 
     /** 标签ID列表。 */
+    @JsonSerialize(contentUsing = ToStringSerializer.class)
     private List<Long> tags;
 
     /** 是否仅显示收藏。 */

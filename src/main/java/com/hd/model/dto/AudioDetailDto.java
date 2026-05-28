@@ -1,5 +1,7 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +21,7 @@ import java.util.List;
 @AllArgsConstructor
 public class AudioDetailDto {
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;
 
     private String fileName;
@@ -53,6 +56,7 @@ public class AudioDetailDto {
 
     private String lyrics;
 
+    @JsonSerialize(contentUsing = ToStringSerializer.class)
     private List<Long> playlistIds;
 
     private Boolean favorite;

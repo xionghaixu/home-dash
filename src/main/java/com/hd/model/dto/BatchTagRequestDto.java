@@ -1,5 +1,8 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import lombok.*;
 
 /**
@@ -18,9 +21,11 @@ import lombok.*;
 public class BatchTagRequestDto {
 
     /** 资源ID列表。 */
+    @JsonSerialize(contentUsing = ToStringSerializer.class)
     private java.util.List<Long> resourceIds;
 
     /** 标签ID列表。 */
+    @JsonSerialize(contentUsing = ToStringSerializer.class)
     private java.util.List<Long> tagIds;
 
     /** 操作类型：ADD-添加，REMOVE-移除，REPLACE-替换。 */

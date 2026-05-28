@@ -1,5 +1,8 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -73,5 +76,11 @@ public class MergeFileDto extends File {
     /**
      * 资源ID（合并成功后由服务端填充）。
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long resourceId;
+
+    /**
+     * 是否为秒传（合并成功后由服务端填充）。
+     */
+    private boolean instantUpload;
 }

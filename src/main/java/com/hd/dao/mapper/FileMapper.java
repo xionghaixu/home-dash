@@ -13,4 +13,18 @@ import com.hd.dao.entity.File;
  */
 @Mapper
 public interface FileMapper extends BaseMapper<File> {
+    @org.apache.ibatis.annotations.Update("UPDATE file SET is_deleted = 0, parent_id = #{parentId} WHERE id = #{id}")
+    void restoreFile(@org.apache.ibatis.annotations.Param("id") Long id, @org.apache.ibatis.annotations.Param("parentId") Long parentId);
+
+    @org.apache.ibatis.annotations.Delete("DELETE FROM file WHERE id = #{id}")
+    void permanentlyDelete(@org.apache.ibatis.annotations.Param("id") Long id);
+
+    @org.apache.ibatis.annotations.Select("SELECT * FROM file WHERE id = #{id}")
+    File selectByIdWithDeleted(@org.apache.ibatis.annotations.Param("id") Long id);
+
+    @org.apache.ibatis.annotations.Select("SELECT * FROM file WHERE parent_id = #{parentId} AND is_deleted = 1")
+    java.util.List<File> selectDeletedFilesByParentId(@org.apache.ibatis.annotations.Param("parentId") Long parentId);
+
+    @org.apache.ibatis.annotations.Select("SELECT * FROM file WHERE parent_id = #{parentId}")
+    java.util.List<File> selectAllChildrenByParentId(@org.apache.ibatis.annotations.Param("parentId") Long parentId);
 }

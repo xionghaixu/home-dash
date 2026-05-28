@@ -1,5 +1,7 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,8 +19,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class VideoEpisodeDto {
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long episodeId;
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;
 
     private Integer episodeNumber;

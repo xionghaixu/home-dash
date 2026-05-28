@@ -1,5 +1,7 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +21,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class VideoListDto {
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;
 
     private String fileName;
@@ -37,6 +40,7 @@ public class VideoListDto {
 
     private String coverUrl;
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long seriesId;
 
     private String seriesName;

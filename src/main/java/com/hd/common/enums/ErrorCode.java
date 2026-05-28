@@ -81,6 +81,7 @@ public enum ErrorCode {
     DOWNLOAD_SPEED_LIMITED(1507, "下载速度受限"),
 
     // ========== 业务错误 5xx (1600-1699: 媒体中心相关) ==========
+    TASK_NOT_FOUND(1600, "任务不存在"),
     MEDIA_SCAN_TASK_NOT_FOUND(1601, "媒体扫描任务不存在"),
     MEDIA_SCAN_TASK_FAILED(1602, "媒体扫描任务执行失败"),
     THUMBNAIL_GENERATE_FAILED(1603, "缩略图生成失败"),

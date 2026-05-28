@@ -305,16 +305,19 @@ public class ResourceBizImpl implements ResourceBiz {
                 deleteTempFiles(mergeFileDto);
                 deleteMergedFile(relativePath);
                 createFileWithExistingResource(mergeFileDto, existingResource);
+                mergeFileDto.setInstantUpload(true);
             } else {
                 log.info("未发现相同MD5的资源，创建新资源 [identifier={}, fileName={}, md5={}]",
                         mergeFileDto.getIdentifier(), mergeFileDto.getFileName(), md5);
                 generateRecord(mergeFileDto, md5, relativePath);
+                mergeFileDto.setInstantUpload(false);
             }
 
             markCompleted(mergeFileDto);
             long elapsedTime = System.currentTimeMillis() - startTime;
-            log.info("文件分块合并成功 [identifier={}, fileName={}, resourceId={}, 总耗时={}ms]",
-                    mergeFileDto.getIdentifier(), mergeFileDto.getFileName(), mergeFileDto.getResourceId(), elapsedTime);
+            log.info("文件分块合并成功 [identifier={}, fileName={}, resourceId={}, isInstantUpload={}, 总耗时={}ms]",
+                    mergeFileDto.getIdentifier(), mergeFileDto.getFileName(), mergeFileDto.getResourceId(),
+                    mergeFileDto.isInstantUpload(), elapsedTime);
         } catch (RuntimeException e) {
             markFailed(mergeFileDto.getIdentifier(), mergeFileDto.getFileName(),
                     String.format("分块合并失败：%s", e.getMessage()));
@@ -490,7 +493,16 @@ public class ResourceBizImpl implements ResourceBiz {
 
         fileDto.setResourceId(resource.getId());
         fileDto.setType(FileUtils.getFileType(fileDto.getFileName()).toString());
-        fileDto.setParentId(resolveValidParentId(fileDto.getParentId()));
+        Long validParentId = resolveValidParentId(fileDto.getParentId());
+        fileDto.setParentId(validParentId);
+
+        // 检查文件名冲突，如果存在则自动重命名
+        String uniqueFileName = ensureUniqueFileName(validParentId, fileDto.getFileName());
+        if (!uniqueFileName.equals(fileDto.getFileName())) {
+            log.info("文件名冲突，自动重命名 [originalName={}, uniqueName={}, parentId={}]",
+                    fileDto.getFileName(), uniqueFileName, validParentId);
+            fileDto.setFileName(uniqueFileName);
+        }
 
         fileDataService.save(fileDto);
 
@@ -558,7 +570,16 @@ public class ResourceBizImpl implements ResourceBiz {
 
         fileDto.setResourceId(resource.getId());
         fileDto.setType(FileUtils.getFileType(fileDto.getFileName()).toString());
-        fileDto.setParentId(resolveValidParentId(fileDto.getParentId()));
+        Long validParentId = resolveValidParentId(fileDto.getParentId());
+        fileDto.setParentId(validParentId);
+
+        // 检查文件名冲突，如果存在则自动重命名
+        String uniqueFileName = ensureUniqueFileName(validParentId, fileDto.getFileName());
+        if (!uniqueFileName.equals(fileDto.getFileName())) {
+            log.info("文件名冲突，自动重命名 [originalName={}, uniqueName={}, parentId={}]",
+                    fileDto.getFileName(), uniqueFileName, validParentId);
+            fileDto.setFileName(uniqueFileName);
+        }
 
         fileDataService.save(fileDto);
 
@@ -650,6 +671,51 @@ public class ResourceBizImpl implements ResourceBiz {
             throw new DataFormatException(String.format("目标父级不是文件夹 [parentId=%d]", safeParentId));
         }
         return safeParentId;
+    }
+
+    /**
+     * 确保文件名在指定目录下唯一，如果冲突则自动添加序号
+     * @param parentId 父目录ID
+     * @param fileName 原始文件名
+     * @return 唯一的文件名
+     */
+    private String ensureUniqueFileName(Long parentId, String fileName) {
+        long count = fileDataService.lambdaQuery()
+                .eq(com.hd.dao.entity.File::getParentId, parentId)
+                .eq(com.hd.dao.entity.File::getFileName, fileName)
+                .eq(com.hd.dao.entity.File::getIsDeleted, 0)
+                .count();
+
+        if (count == 0) {
+            return fileName;
+        }
+
+        // 文件名冲突，添加序号
+        String baseName = fileName;
+        String extension = "";
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            baseName = fileName.substring(0, lastDotIndex);
+            extension = fileName.substring(lastDotIndex);
+        }
+
+        int counter = 1;
+        String newFileName;
+        do {
+            newFileName = baseName + "(" + counter + ")" + extension;
+            long existingCount = fileDataService.lambdaQuery()
+                    .eq(com.hd.dao.entity.File::getParentId, parentId)
+                    .eq(com.hd.dao.entity.File::getFileName, newFileName)
+                    .eq(com.hd.dao.entity.File::getIsDeleted, 0)
+                    .count();
+            if (existingCount == 0) {
+                return newFileName;
+            }
+            counter++;
+        } while (counter < 100); // 防止无限循环
+
+        // 如果循环了100次还是冲突，使用UUID
+        return baseName + "_" + UUID.randomUUID().toString().substring(0, 8) + extension;
     }
 
         @Transactional(rollbackFor = Exception.class)

@@ -1,5 +1,8 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -56,6 +59,7 @@ public class HomeMediaSummaryDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class VideoPlayItem {
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long fileId;
         private String fileName;
         private String coverUrl;
@@ -68,6 +72,7 @@ public class HomeMediaSummaryDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class AudioPlayItem {
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long fileId;
         private String fileName;
         private String coverUrl;

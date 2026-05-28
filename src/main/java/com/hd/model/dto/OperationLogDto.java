@@ -1,5 +1,8 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -47,6 +50,7 @@ public class OperationLogDto {
     /**
      * 操作记录唯一标识符。
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private String id;
 
     /**
@@ -64,6 +68,7 @@ public class OperationLogDto {
     /**
      * 关联的文件ID。
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;
 
     /**

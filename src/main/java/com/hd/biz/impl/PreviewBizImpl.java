@@ -85,7 +85,7 @@ public class PreviewBizImpl implements PreviewBiz {
         }
 
         try {
-            Path filePath = Paths.get(homeDir, resource.getPath());
+            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
             if (!Files.exists(filePath)) {
                 log.warn("文件不存在 [path={}]", filePath);
                 return null;
@@ -179,7 +179,7 @@ public class PreviewBizImpl implements PreviewBiz {
         }
 
         try {
-            Path filePath = Paths.get(homeDir, resource.getPath());
+            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
             if (!Files.exists(filePath)) {
                 log.warn("文件不存在 [path={}]", filePath);
                 return null;
@@ -204,7 +204,7 @@ public class PreviewBizImpl implements PreviewBiz {
         Map<String, Object> exifData = new LinkedHashMap<>();
 
         try {
-            Path filePath = Paths.get(homeDir, resource.getPath());
+            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
             if (!Files.exists(filePath)) {
                 throw new DataNotFoundException("文件不存在");
             }
@@ -244,7 +244,7 @@ public class PreviewBizImpl implements PreviewBiz {
         imageInfo.put("size", resource.getSize());
 
         try {
-            Path filePath = Paths.get(homeDir, resource.getPath());
+            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
             if (!Files.exists(filePath)) {
                 throw new DataNotFoundException("文件不存在");
             }
@@ -295,7 +295,7 @@ public class PreviewBizImpl implements PreviewBiz {
         previewInfo.put("resourceId", resource.getId());
 
         try {
-            Path filePath = Paths.get(homeDir, resource.getPath());
+            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
             if (!Files.exists(filePath)) {
                 throw new DataNotFoundException("文件不存在");
             }
@@ -367,7 +367,7 @@ public class PreviewBizImpl implements PreviewBiz {
         summary.put("resourceId", resource.getId());
 
         try {
-            Path filePath = Paths.get(homeDir, resource.getPath());
+            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
             if (!Files.exists(filePath)) {
                 throw new DataNotFoundException("文件不存在");
             }
@@ -427,7 +427,7 @@ public class PreviewBizImpl implements PreviewBiz {
         metadata.put("size", resource.getSize());
 
         try {
-            Path filePath = Paths.get(homeDir, resource.getPath());
+            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
             if (!Files.exists(filePath)) {
                 throw new DataNotFoundException("文件不存在");
             }
@@ -473,7 +473,7 @@ public class PreviewBizImpl implements PreviewBiz {
         }
 
         try {
-            Path filePath = Paths.get(homeDir, resource.getPath());
+            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
             if (!Files.exists(filePath)) {
                 log.warn("文件不存在 [path={}]", filePath);
                 return null;
@@ -504,7 +504,7 @@ public class PreviewBizImpl implements PreviewBiz {
         }
 
         try {
-            Path filePath = Paths.get(homeDir, resource.getPath());
+            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
             if (!Files.exists(filePath)) {
                 fallback.put("errorCode", "FILE_NOT_FOUND");
                 fallback.put("errorMessage", "文件不存在");

@@ -28,6 +28,7 @@ CREATE TABLE `file` (
   `resource_id` int(11) DEFAULT NULL,
   `create_time` datetime NOT NULL,
   `update_time` datetime NOT NULL,
+  `is_deleted` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=127 DEFAULT CHARSET=utf8;
 
@@ -320,7 +321,7 @@ CREATE TABLE `media_audio_metadata` (
     `genre` varchar(100) DEFAULT NULL,
     `track_number` int(11) DEFAULT NULL,
     `disc_number` int(11) DEFAULT '1',
-    `year` int(11) DEFAULT NULL,
+    `audio_year` int(11) DEFAULT NULL,
     `duration` bigint(20) DEFAULT NULL,
     `bitrate` bigint(20) DEFAULT NULL,
     `sample_rate` int(11) DEFAULT NULL,
@@ -449,4 +450,51 @@ CREATE TABLE `media_summary_cache` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_media_summary_cache_key` (`cache_key`),
     KEY `idx_media_summary_cache_expire` (`expire_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ============================================
+-- 阶段四：数据治理与任务中心 - 表结构 (MySQL)
+-- ============================================
+
+CREATE TABLE `recycle_bin` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT,
+    `file_id` bigint(20) NOT NULL,
+    `original_parent_id` bigint(20) NOT NULL,
+    `original_path` varchar(1000) DEFAULT NULL,
+    `delete_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `expire_time` datetime DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `sys_task` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT,
+    `task_type` varchar(50) NOT NULL,
+    `status` varchar(20) NOT NULL DEFAULT 'PENDING',
+    `progress_percent` int(11) DEFAULT '0',
+    `error_msg` varchar(1000) DEFAULT NULL,
+    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `end_time` datetime DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `duplicate_group` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT,
+    `md5` varchar(32) NOT NULL,
+    `size` bigint(20) NOT NULL,
+    `file_count` int(11) NOT NULL DEFAULT '0',
+    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_duplicate_group_md5` (`md5`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `duplicate_record` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT,
+    `group_id` bigint(20) NOT NULL,
+    `file_id` bigint(20) NOT NULL,
+    `file_name` varchar(200) NOT NULL,
+    `path` varchar(1000) NOT NULL,
+    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_duplicate_record_group` (`group_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

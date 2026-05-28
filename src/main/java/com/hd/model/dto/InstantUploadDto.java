@@ -1,5 +1,8 @@
 package com.hd.model.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -21,5 +24,6 @@ public class InstantUploadDto {
     private String fileName;
 
     @NotNull(message = "父文件夹ID不能为空")
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long parentId;
 }
