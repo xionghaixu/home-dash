@@ -1,9 +1,9 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-pid=`ps aux | grep "home-dash.jar" | grep -v grep|awk '{print $2}'`
-if [ -z $pid ]; then
+pid=$(ps aux | grep "home-dash.jar" | grep -v grep | awk '{print $2}')
+if [ -z "$pid" ]; then
     echo "no home-dash server running..."
-    exit -1
+    exit 1
 fi
 
 echo "kill home-dash server..."

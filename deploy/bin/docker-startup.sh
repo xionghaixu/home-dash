@@ -1,13 +1,13 @@
 ﻿#!/usr/bin/env sh
 
-HomeDash_HOME=`cd $(dirname $0)/..; pwd`
+HomeDash_HOME=$(cd $(dirname $0)/..; pwd)
 
 JAVA_OPTS="${JAVA_OPTS} -DHomeDash.homeDir=${HomeDash_HOME}"
 
 #############################################################
 # Mysql configuration
 #############################################################
-if [[ $USE_MYSQL == true ]]; then
+if [ "$USE_MYSQL" = "true" ]; then
     JAVA_OPTS="${JAVA_OPTS} -DHomeDash.useMysql=true"
     JAVA_OPTS="${JAVA_OPTS} -DHomeDash.mysql.url=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DB_NAME}"
     JAVA_OPTS="${JAVA_OPTS} -DHomeDash.mysql.username=${MYSQL_USERNAME}"
