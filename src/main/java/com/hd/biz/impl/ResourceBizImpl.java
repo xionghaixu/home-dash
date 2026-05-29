@@ -244,17 +244,18 @@ public class ResourceBizImpl implements ResourceBiz {
                 throw new UploadException("保存分块过程被中断");
             } catch (Exception e) {
                 lastException = e;
-                
-                if (e.getClass().getName().contains("ClientAbortException")) {
+
+                // 检查是否是客户端主动中断（暂停/取消导致的连接断开）
+                if (isClientAbortException(e)) {
                     log.warn("客户端已主动中断上传连接 [identifier={}, chunkNumber={}]", chunk.getIdentifier(), chunk.getChunkNumber());
                     cleanupFailedChunk(chunkPath);
                     return;
                 }
-                
+
                 retryCount++;
                 log.error("保存文件分块失败 [identifier={}, chunkNumber={}, chunkPath={}, retryCount={}/{}]",
                         chunk.getIdentifier(), chunk.getChunkNumber(), chunkPath, retryCount, MAX_RETRY_COUNT, e);
-                
+
                 cleanupFailedChunk(chunkPath);
 
                 if (retryCount > MAX_RETRY_COUNT) {
@@ -860,8 +861,6 @@ public class ResourceBizImpl implements ResourceBiz {
         TransferTaskState state = transferTaskCache.computeIfAbsent(chunk.getIdentifier(), this::newTransferTaskState);
         state.fileName = chunk.getFilename();
         state.operationType = "upload";
-        state.status = HomeDashConstants.TransferStatus.UPLOADING;
-        state.errorMessage = null;
         state.totalSize = chunk.getTotalSize();
         state.totalChunks = chunk.getTotalChunks();
         state.uploadedChunks = resourceChunkDataService.lambdaQuery()
@@ -872,6 +871,14 @@ public class ResourceBizImpl implements ResourceBiz {
         if (state.createTime == null) {
             state.createTime = new Date();
         }
+        // 如果状态是 paused 或 cancelled，仅更新进度计数，不覆盖状态
+        if (HomeDashConstants.TransferStatus.PAUSED.equalsIgnoreCase(state.status) ||
+                HomeDashConstants.TransferStatus.CANCELLED.equalsIgnoreCase(state.status)) {
+            log.debug("任务处于{}状态，仅更新分块计数 [identifier={}]", state.status, chunk.getIdentifier());
+            return;
+        }
+        state.status = HomeDashConstants.TransferStatus.UPLOADING;
+        state.errorMessage = null;
     }
 
     private void markCompleted(MergeFileDto fileDto) {
@@ -1019,6 +1026,33 @@ public class ResourceBizImpl implements ResourceBiz {
         } catch (Exception cleanupException) {
             log.warn("清理失败的分块文件时出错 [chunkPath={}]", chunkPath, cleanupException);
         }
+    }
+
+    /**
+     * 递归检查异常链，判断是否是客户端主动中断连接导致的异常。
+     * 匹配以下模式：ClientAbortException, EOFException, Broken pipe, Connection reset
+     */
+    private boolean isClientAbortException(Throwable e) {
+        Throwable current = e;
+        while (current != null) {
+            String className = current.getClass().getName();
+            String message = current.getMessage();
+            if (className.contains("ClientAbortException")) {
+                return true;
+            }
+            if (current instanceof java.io.EOFException) {
+                return true;
+            }
+            if (current instanceof java.io.IOException && message != null) {
+                String lowerMsg = message.toLowerCase();
+                if (lowerMsg.contains("broken pipe") || lowerMsg.contains("connection reset")
+                        || lowerMsg.contains("连接被对方重置")) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
         private String sanitizeFileName(String fileName) {
