@@ -34,5 +34,7 @@ public interface ResourceBiz {
     int clearTransferTasks(String status);
 
     boolean clearTransferTask(String identifier);
+
+    void updateTransferStatus(String identifier, String fileName, String status, Long totalSize, Long parentId);
 }
 

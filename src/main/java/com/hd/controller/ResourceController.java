@@ -333,6 +333,28 @@ public class ResourceController {
     }
 
     /**
+     * 更新传输任务状态。
+     *
+     * @param params 包含 identifier, fileName, status, totalSize, parentId 的参数映射
+     * @return 成功响应
+     */
+    @PostMapping("/resource/transfer/status")
+    public ResponseEntity<ResponseDto> updateTransferStatus(@RequestBody Map<String, Object> params) {
+        log.info("更新传输任务状态请求 [params={}]", params);
+        if (params == null) {
+            return ResponseEntity.badRequest().body(ResponseDto.fail("参数不能为空"));
+        }
+        String identifier = (String) params.get("identifier");
+        String fileName = (String) params.get("fileName");
+        String status = (String) params.get("status");
+        Long totalSize = params.get("totalSize") != null ? Long.valueOf(params.get("totalSize").toString()) : null;
+        Long parentId = params.get("parentId") != null ? Long.valueOf(params.get("parentId").toString()) : null;
+
+        resourceBiz.updateTransferStatus(identifier, fileName, status, totalSize, parentId);
+        return ResponseEntity.ok(ResponseDto.success());
+    }
+
+    /**
      * 处理EOF异常。
      * 当客户端中断上传连接时，记录警告日志。
      *

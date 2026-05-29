@@ -884,7 +884,18 @@ public class ResourceBizImpl implements ResourceBiz {
     }
 
     private void markFailed(String identifier, String fileName, String errorMessage) {
-        TransferTaskState state = transferTaskCache.computeIfAbsent(identifier, this::newTransferTaskState);
+        TransferTaskState state = transferTaskCache.get(identifier);
+        if (state != null && (
+                HomeDashConstants.TransferStatus.PAUSED.equalsIgnoreCase(state.status) ||
+                HomeDashConstants.TransferStatus.CANCELLED.equalsIgnoreCase(state.status)
+        )) {
+            log.info("任务已暂停或取消，忽略分块上传失败标志 [identifier={}]", identifier);
+            return;
+        }
+        if (state == null) {
+            state = newTransferTaskState(identifier);
+            transferTaskCache.put(identifier, state);
+        }
         state.fileName = fileName;
         state.status = HomeDashConstants.TransferStatus.FAILED;
         state.errorMessage = errorMessage;
@@ -1023,6 +1034,31 @@ public class ResourceBizImpl implements ResourceBiz {
         } catch (Exception e) {
             log.error("定时清理超时任务失败 [error={}]", e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void updateTransferStatus(String identifier, String fileName, String status, Long totalSize, Long parentId) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return;
+        }
+        TransferTaskState state = transferTaskCache.computeIfAbsent(identifier, this::newTransferTaskState);
+        if (fileName != null) {
+            state.fileName = fileName;
+        }
+        if (status != null) {
+            state.status = status;
+            // 当状态被更新为非失败状态时，清除历史错误信息
+            if (!HomeDashConstants.TransferStatus.FAILED.equalsIgnoreCase(status)) {
+                state.errorMessage = null;
+            }
+        }
+        if (totalSize != null) {
+            state.totalSize = totalSize;
+        }
+        if (parentId != null) {
+            state.parentId = parentId;
+        }
+        state.updateTime = new Date();
     }
 }
 

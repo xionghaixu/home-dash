@@ -28,6 +28,7 @@ public class HomeDashConstants {
         public static final String COMPLETED = "completed";
         public static final String FAILED = "failed";
         public static final String CANCELLED = "cancelled";
+        public static final String PAUSED = "paused";
 
         private TransferStatus() {
         }
