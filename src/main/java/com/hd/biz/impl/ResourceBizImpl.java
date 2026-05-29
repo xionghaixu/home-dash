@@ -244,10 +244,17 @@ public class ResourceBizImpl implements ResourceBiz {
                 throw new UploadException("保存分块过程被中断");
             } catch (Exception e) {
                 lastException = e;
+                
+                if (e.getClass().getName().contains("ClientAbortException")) {
+                    log.warn("客户端已主动中断上传连接 [identifier={}, chunkNumber={}]", chunk.getIdentifier(), chunk.getChunkNumber());
+                    cleanupFailedChunk(chunkPath);
+                    return;
+                }
+                
                 retryCount++;
                 log.error("保存文件分块失败 [identifier={}, chunkNumber={}, chunkPath={}, retryCount={}/{}]",
                         chunk.getIdentifier(), chunk.getChunkNumber(), chunkPath, retryCount, MAX_RETRY_COUNT, e);
-
+                
                 cleanupFailedChunk(chunkPath);
 
                 if (retryCount > MAX_RETRY_COUNT) {
