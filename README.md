@@ -2,7 +2,7 @@
 
 # home-dash
 
-家庭媒体中心与文件管理系统，支持文件管理、媒体播放、数据治理等功能。
+个人媒体中心与文件管理系统，支持文件管理、媒体播放、数据治理等功能。
 
 ## 功能特性
 
@@ -49,7 +49,7 @@ cd home-dash
 ### 方式一：下载发布包（推荐）
 
 从 [Releases](https://github.com/xionghaixu/home-dash/releases) 下载部署包：
-- `home-dash-x.x.x.tar.gz` - Linux/macOS
+- `home-dash-x.x.x.tar.gz` - Linux/macOS/WSL
 - `home-dash-x.x.x.zip` - Windows
 
 部署包已包含前端文件，无需单独构建前端。
@@ -58,8 +58,8 @@ cd home-dash
 
 ```bash
 # 解压
-tar -zxvf home-dash-1.0.0.tar.gz
-cd home-dash-1.0.0
+tar -zxvf home-dash-1.0.0-alpha.tar.gz
+cd home-dash-1.0.0-alpha
 
 # 启动
 sh bin/startup.sh
@@ -75,8 +75,7 @@ sh bin/shutdown.sh
 
 ```cmd
 REM 解压 zip 文件
-REM 进入目录
-cd home-dash-1.0.0
+cd home-dash-1.0.0-alpha
 
 REM 启动
 bin\startup.bat
@@ -87,31 +86,10 @@ bin\shutdown.bat
 
 启动后访问 http://localhost:8190
 
-### 方式二：源码构建
-
-```bash
-# 克隆代码
-git clone https://github.com/xionghaixu/home-dash.git
-cd home-dash
-
-# 构建前端
-cd ../home-dash-web
-npm install
-npm run build
-cp -r dist/* ../home-dash/src/main/resources/static/
-
-# 打包后端
-cd ../home-dash
-mvn clean package -DskipTests
-
-# 运行
-java -jar target/home-dash.jar
-```
-
 **目录结构：**
 
 ```
-home-dash-1.0.0/
+home-dash-1.0.0-alpha/
 ├── bin/                    # 启动/停止脚本
 │   ├── startup.sh          # Linux/macOS/WSL 启动
 │   ├── startup.bat         # Windows 启动
@@ -122,85 +100,179 @@ home-dash-1.0.0/
 │   └── application.yml
 ├── lib/                    # JAR 包（已包含前端）
 │   └── home-dash.jar
-├── data/                   # 数据目录（自动创建）
-│   ├── resources/          # 上传文件
-│   └── logs/               # 日志文件
-└── Dockerfile              # Docker 构建文件
+└── data/                   # 数据目录（自动创建）
+    ├── resources/          # 上传文件
+    └── logs/               # 日志文件
 ```
 
 ### 方式二：源码构建
 
+如需自定义修改代码，可从源码构建。
+
 ```bash
-# 克隆代码
+# 1. 克隆后端代码
 git clone https://github.com/xionghaixu/home-dash.git
 cd home-dash
 
-# Maven 打包
+# 2. 克隆前端代码（需要在 home-dash 同级目录）
+git clone https://github.com/xionghaixu/home-dash-web.git
+
+# 3. 构建前端
+cd ../home-dash-web
+npm install
+npm run build
+
+# 4. 将前端产物复制到后端 static 目录
+cp -r dist/* ../home-dash/src/main/resources/static/
+
+# 5. 打包后端
+cd ../home-dash
 mvn clean package -DskipTests
 
-# 运行
-java -jar target/home-dash-1.0-SNAPSHOT.jar
+# 6. 运行
+java -jar target/home-dash.jar
 ```
 
-## 脚本说明
+访问 http://localhost:8190
 
-| 脚本 | 用途 | 平台 |
-|------|------|------|
-| `startup.sh` | 后台启动服务 | Linux/macOS/WSL |
-| `startup.bat` | 后台启动服务 | Windows |
-| `shutdown.sh` | 停止服务 | Linux/macOS/WSL |
-| `shutdown.bat` | 停止服务 | Windows |
-| `docker-startup.sh` | Docker 容器启动 | Docker |
+### 方式三：前后端分离部署（Nginx）
 
-### Linux / macOS / WSL
+适用于需要独立部署前后端的场景，前端通过 Nginx 提供服务，后端独立运行。
+
+**1. 部署后端**
 
 ```bash
-# 启动
+# 打包后端（不含前端）
+cd home-dash
+mvn clean package -DskipTests
+
+# 运行后端
+java -jar target/home-dash.jar
+```
+
+后端运行在 http://localhost:8190
+
+**2. 部署前端**
+
+```bash
+# 构建前端
+cd home-dash-web
+npm install
+npm run build
+```
+
+将 `dist` 目录部署到 Nginx。
+
+**3. Nginx 配置**
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # 前端静态文件
+    root /path/to/home-dash-web/dist;
+    index index.html;
+
+    # Vue Router history 模式
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 后端 API 代理
+    location /v1/ {
+        proxy_pass http://localhost:8190;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+**4. 前端代理配置（开发模式）**
+
+开发模式下，前端已配置代理到后端，无需额外配置：
+
+```javascript
+// vite.config.js
+target: 'http://localhost:8190'
+```
+
+**部署架构：**
+
+```
+用户浏览器
+    ↓
+Nginx (80)
+    ├── 静态文件 → /path/to/dist
+    └── /v1/* → 后端 (8190)
+```
+
+### 方式四：Linux 命令行快速部署
+
+适用于 Linux 服务器，一行命令完成部署。
+
+**环境要求：**
+- JDK 21+
+
+**一键部署命令：**
+
+```bash
+# 下载并解压
+curl -L https://github.com/xionghaixu/home-dash/releases/download/v1.0.0-alpha/home-dash-1.0.0-alpha.tar.gz | tar -xz
+
+# 进入目录
+cd home-dash-1.0-SNAPSHOT
+
+# 启动服务
+sh bin/startup.sh
+```
+
+**完整部署脚本（保存为 deploy.sh）：**
+
+```bash
+#!/bin/bash
+# Home-Dash 快速部署脚本
+set -e
+
+VERSION="1.0.0-alpha"
+PACKAGE="home-dash-${VERSION}.tar.gz"
+DOWNLOAD_URL="https://github.com/xionghaixu/home-dash/releases/download/v1.0.0-alpha/${PACKAGE}"
+
+echo "=== Home-Dash 部署脚本 ==="
+
+# 1. 检查 JDK
+if ! command -v java &> /dev/null; then
+    echo "错误: 未安装 JDK，请先安装 JDK 21+"
+    exit 1
+fi
+
+# 2. 下载最新版本
+echo "下载最新版本..."
+curl -L -o "${PACKAGE}" "${DOWNLOAD_URL}" || wget -O "${PACKAGE}" "${DOWNLOAD_URL}"
+
+# 3. 解压
+echo "解压中..."
+tar -zxf "${PACKAGE}"
+rm -f "${PACKAGE}"
+
+# 4. 启动服务
+echo "启动服务..."
+cd "home-dash-${VERSION}"
 sh bin/startup.sh
 
-# 查看日志
-tail -f data/logs/home-dash.log
-
-# 停止
-sh bin/shutdown.sh
+echo "=== 部署完成 ==="
+echo "访问: http://localhost:8190"
+echo "日志: tail -f data/logs/home-dash.log"
 ```
 
-### Windows
-
-```cmd
-REM 启动
-bin\startup.bat
-
-REM 停止
-bin\shutdown.bat
-```
-
-### Docker
+**使用方法：**
 
 ```bash
-docker run -d \
-  -p 8190:8190 \
-  -e USE_MYSQL=true \
-  -e MYSQL_HOST=localhost \
-  -e MYSQL_PORT=3306 \
-  -e MYSQL_DB_NAME=home_dash \
-  -e MYSQL_USERNAME=root \
-  -e MYSQL_PASSWORD=password \
-  -v /path/to/data:/app/data \
-  home-dash
-```
-
-## 平台兼容性
-
-| 平台 | 脚本 | 说明 |
-|------|------|------|
-| Linux | `startup.sh` / `shutdown.sh` | 推荐部署环境 |
-| macOS | `startup.sh` / `shutdown.sh` | 开发测试 |
-| WSL/WSL2 | `startup.sh` / `shutdown.sh` | Windows 下的 Linux 环境 |
-| Windows | `startup.bat` / `shutdown.bat` | 原生批处理脚本 |
-| Docker | `docker-startup.sh` | 容器化部署 |
-# Windows CMD 直接运行
-java -jar lib/home-dash.jar --spring.config.location=conf/application.yml
+# 下载并运行部署脚本
+curl -L https://raw.githubusercontent.com/xionghaixu/home-dash/master/deploy.sh -o deploy.sh
+chmod +x deploy.sh
+./deploy.sh
 ```
 
 ## 配置说明
@@ -250,6 +322,26 @@ home-dash:
 home-dash:
   homeDir: /path/to/storage
 ```
+
+## 脚本说明
+
+| 脚本 | 用途 | 平台 |
+|------|------|------|
+| `startup.sh` | 后台启动服务 | Linux/macOS/WSL |
+| `startup.bat` | 后台启动服务 | Windows |
+| `shutdown.sh` | 停止服务 | Linux/macOS/WSL |
+| `shutdown.bat` | 停止服务 | Windows |
+| `docker-startup.sh` | Docker 容器启动 | Docker |
+
+## 平台兼容性
+
+| 平台 | 脚本 | 说明 |
+|------|------|------|
+| Linux | `startup.sh` / `shutdown.sh` | 推荐部署环境 |
+| macOS | `startup.sh` / `shutdown.sh` | 开发测试 |
+| WSL/WSL2 | `startup.sh` / `shutdown.sh` | Windows 下的 Linux 环境 |
+| Windows | `startup.bat` / `shutdown.bat` | 原生批处理脚本 |
+| Docker | `docker-startup.sh` | 容器化部署 |
 
 ## 技术栈
 
