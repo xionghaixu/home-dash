@@ -14,10 +14,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.hd.biz.FileBiz;
 import com.hd.common.HomeDashConstants;
-import com.hd.model.dto.InstantUploadDto;
-import com.hd.model.dto.MoveAndCopyFileDto;
-import com.hd.model.dto.ResponseDto;
-import com.hd.dao.entity.File;
+import com.hd.model.dto.CreateFileDTO;
+import com.hd.model.dto.InstantUploadDTO;
+import com.hd.model.dto.MoveAndCopyFileDTO;
+import com.hd.model.dto.RenameFileDTO;
+import com.hd.model.dto.ResponseDTO;
 import com.hd.common.exception.DataFormatException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,10 +52,10 @@ public class FileController {
      * @return 文本内容响应
      */
     @GetMapping("/file/{fileId}/content")
-    public ResponseEntity<ResponseDto> getTextFileContent(@PathVariable Long fileId) {
+    public ResponseEntity<ResponseDTO> getTextFileContent(@PathVariable Long fileId) {
         log.info("获取文本文件内容请求 [fileId={}]", fileId);
         String content = fileBiz.getTextFileContent(fileId);
-        return ResponseEntity.ok(ResponseDto.success(content));
+        return ResponseEntity.ok(ResponseDTO.success(content));
     }
 
     /**
@@ -64,10 +65,10 @@ public class FileController {
      * @return 音频播放URL响应
      */
     @GetMapping("/file/{fileId}/audio-url")
-    public ResponseEntity<ResponseDto> getAudioFileUrl(@PathVariable Long fileId) {
+    public ResponseEntity<ResponseDTO> getAudioFileUrl(@PathVariable Long fileId) {
         log.info("获取音频文件播放URL请求 [fileId={}]", fileId);
         String audioUrl = fileBiz.getAudioFileUrl(fileId);
-        return ResponseEntity.ok(ResponseDto.success(audioUrl));
+        return ResponseEntity.ok(ResponseDTO.success(audioUrl));
     }
 
     /**
@@ -80,12 +81,12 @@ public class FileController {
      * @return 包含文件列表和文件夹路径的响应对象
      */
     @GetMapping("/file/parent/{parentId}")
-    public ResponseEntity<ResponseDto> getFiles(
+    public ResponseEntity<ResponseDTO> getFiles(
             @PathVariable Long parentId,
             @RequestParam(defaultValue = "name") String sortBy,
             @RequestParam(defaultValue = "asc") String sortOrder) {
         log.info("获取文件列表请求 [parentId={}, sortBy={}, sortOrder={}]", parentId, sortBy, sortOrder);
-        ResponseEntity<ResponseDto> response = ResponseEntity.ok(fileBiz.findByParentId(parentId, sortBy, sortOrder));
+        ResponseEntity<ResponseDTO> response = ResponseEntity.ok(fileBiz.findByParentId(parentId, sortBy, sortOrder));
         log.info("获取文件列表成功 [parentId={}, sortBy={}, sortOrder={}]", parentId, sortBy, sortOrder);
         return response;
     }
@@ -97,7 +98,7 @@ public class FileController {
      * @return 最近上传文件列表
      */
     @GetMapping("/file/recent")
-    public ResponseEntity<ResponseDto> getRecentFiles(@RequestParam(required = false) Integer limit) {
+    public ResponseEntity<ResponseDTO> getRecentFiles(@RequestParam(required = false) Integer limit) {
         log.info("获取最近上传文件列表请求 [limit={}]", limit);
         return ResponseEntity.ok(fileBiz.findRecentFiles(limit));
     }
@@ -110,7 +111,7 @@ public class FileController {
      * @return 最近上传摘要统计
      */
     @GetMapping("/file/recent-summary")
-    public ResponseEntity<ResponseDto> getRecentUploadSummary(
+    public ResponseEntity<ResponseDTO> getRecentUploadSummary(
             @RequestParam(required = false, defaultValue = "20") Integer limit) {
         log.info("获取最近上传摘要统计请求 [limit={}]", limit);
         return ResponseEntity.ok(fileBiz.getRecentUploadSummary(limit));
@@ -123,7 +124,7 @@ public class FileController {
      * @return 文件夹聚合大小
      */
     @GetMapping("/file/folder/{folderId}/size")
-    public ResponseEntity<ResponseDto> getFolderSize(@PathVariable Long folderId) {
+    public ResponseEntity<ResponseDTO> getFolderSize(@PathVariable Long folderId) {
         log.info("获取文件夹大小请求 [folderId={}]", folderId);
         return ResponseEntity.ok(fileBiz.getFolderSize(folderId));
     }
@@ -137,7 +138,7 @@ public class FileController {
      * @return 分类文件列表
      */
     @GetMapping("/file/category/{category}")
-    public ResponseEntity<ResponseDto> getFilesByCategory(@PathVariable String category,
+    public ResponseEntity<ResponseDTO> getFilesByCategory(@PathVariable String category,
             @RequestParam(defaultValue = "updateTime") String sortBy,
             @RequestParam(defaultValue = "desc") String sortOrder) {
         log.info("获取分类文件列表请求 [category={}, sortBy={}, sortOrder={}]",
@@ -151,7 +152,7 @@ public class FileController {
      * @return 分类数量摘要
      */
     @GetMapping("/file/category-summary")
-    public ResponseEntity<ResponseDto> getCategorySummary() {
+    public ResponseEntity<ResponseDTO> getCategorySummary() {
         log.info("获取分类摘要请求");
         return ResponseEntity.ok(fileBiz.categorySummary());
     }
@@ -163,9 +164,9 @@ public class FileController {
      * @return 包含文件详情的响应对象
      */
     @GetMapping("/file/{fileId}")
-    public ResponseEntity<ResponseDto> getFile(@PathVariable Long fileId) {
+    public ResponseEntity<ResponseDTO> getFile(@PathVariable Long fileId) {
         log.info("获取文件详情请求 [fileId={}]", fileId);
-        ResponseEntity<ResponseDto> response = ResponseEntity.ok(fileBiz.findByFileId(fileId));
+        ResponseEntity<ResponseDTO> response = ResponseEntity.ok(fileBiz.findByFileId(fileId));
         log.debug("获取文件详情成功 [fileId={}]", fileId);
         return response;
     }
@@ -173,31 +174,31 @@ public class FileController {
     /**
      * 创建新文件或文件夹。
      *
-     * @param file   文件信息对象
+     * @param dto    创建文件请求DTO
      * @param result 数据验证结果
      * @return 创建成功的响应对象
      * @throws DataFormatException 当数据验证失败时抛出
      */
-    @PostMapping("/file")
-    public ResponseEntity<ResponseDto> createFile(@Valid @RequestBody File file, BindingResult result) {
+    @PostMapping("/file/create")
+    public ResponseEntity<ResponseDTO> createFile(@Valid @RequestBody CreateFileDTO dto, BindingResult result) {
         log.info("创建文件请求 [fileName={}, parentId={}, type={}]",
-                file.getFileName(), file.getParentId(), file.getType());
+                dto.getFileName(), dto.getParentId(), dto.getType());
 
         if (result.hasErrors()) {
             String errors = result.getFieldErrors().stream()
                     .map(FieldError::getDefaultMessage)
                     .collect(Collectors.joining("; "));
             log.warn("文件创建参数验证失败 [fileName={}, parentId={}, errors={}]",
-                    file.getFileName(), file.getParentId(), errors);
+                    dto.getFileName(), dto.getParentId(), errors);
             throw new DataFormatException(
                     String.format("文件创建参数验证失败 [fileName=%s, parentId=%d, errors=%s]",
-                            file.getFileName(), file.getParentId(), errors));
+                            dto.getFileName(), dto.getParentId(), errors));
         }
 
-        fileBiz.createFile(file);
-        log.info("文件创建成功 [fileId={}, fileName={}]", file.getId(), file.getFileName());
+        fileBiz.createFile(dto);
+        log.info("文件创建成功 [fileName={}]", dto.getFileName());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ResponseDto.success());
+                .body(ResponseDTO.success());
     }
 
     /**
@@ -208,7 +209,7 @@ public class FileController {
      * @return 上传结果
      */
     @PostMapping("/file/upload")
-    public ResponseEntity<ResponseDto> uploadFile(@RequestParam("file") MultipartFile file,
+    public ResponseEntity<ResponseDTO> uploadFile(@RequestParam("file") MultipartFile file,
             @RequestParam("parentId") Long parentId) {
         log.info("单文件上传请求 [fileName={}, parentId={}, size={}]",
                 file != null ? file.getOriginalFilename() : null,
@@ -225,7 +226,7 @@ public class FileController {
      * @return 是否可秒传
      */
     @GetMapping("/file/md5/check")
-    public ResponseEntity<ResponseDto> checkFileByMd5(@RequestParam("md5") String md5) {
+    public ResponseEntity<ResponseDTO> checkFileByMd5(@RequestParam("md5") String md5) {
         log.info("MD5预检请求 [md5={}]", md5);
         return ResponseEntity.ok(fileBiz.checkFileByMD5(md5));
     }
@@ -237,7 +238,7 @@ public class FileController {
      * @return 秒传结果
      */
     @PostMapping("/file/instant-upload")
-    public ResponseEntity<ResponseDto> instantUpload(@RequestBody InstantUploadDto dto) {
+    public ResponseEntity<ResponseDTO> instantUpload(@RequestBody InstantUploadDTO dto) {
         if (Objects.isNull(dto)) {
             throw new DataFormatException("秒传参数不能为空");
         }
@@ -254,7 +255,7 @@ public class FileController {
      * @return 完整性校验结果
      */
     @GetMapping("/file/{fileId}/verify-md5")
-    public ResponseEntity<ResponseDto> verifyFileMd5(@PathVariable Long fileId) {
+    public ResponseEntity<ResponseDTO> verifyFileMd5(@PathVariable Long fileId) {
         log.info("文件MD5校验请求 [fileId={}]", fileId);
         return ResponseEntity.ok(fileBiz.verifyFileMD5(fileId));
     }
@@ -263,27 +264,27 @@ public class FileController {
      * 重命名文件或文件夹。
      *
      * @param fileId 文件ID
-     * @param file   包含新文件名的文件对象
+     * @param dto    包含新文件名的DTO对象
      * @return 重命名成功的响应对象
      */
-    @PutMapping("/file/{fileId}/rename")
-    public ResponseEntity<ResponseDto> renameFile(@PathVariable Long fileId,
-            @RequestBody File file) {
+    @PostMapping("/file/{fileId}/rename")
+    public ResponseEntity<ResponseDTO> renameFile(@PathVariable Long fileId,
+            @Valid @RequestBody RenameFileDTO dto) {
         log.info("重命名文件请求 [fileId={}, newFileName={}]", fileId,
-                file != null ? file.getFileName() : null);
+                dto != null ? dto.getFileName() : null);
 
         // 参数校验
-        if (Objects.isNull(file)) {
+        if (Objects.isNull(dto)) {
             throw new DataFormatException("文件信息不能为空");
         }
-        if (Objects.isNull(file.getFileName()) || file.getFileName().trim().isEmpty()) {
+        if (Objects.isNull(dto.getFileName()) || dto.getFileName().trim().isEmpty()) {
             throw new DataFormatException("新文件名不能为空");
         }
 
-        fileBiz.renameFile(file.getFileName(), fileId);
-        log.info("文件重命名成功 [fileId={}, newFileName={}]", fileId, file.getFileName());
+        fileBiz.renameFile(dto.getFileName(), fileId);
+        log.info("文件重命名成功 [fileId={}, newFileName={}]", fileId, dto.getFileName());
         return ResponseEntity.status(HttpStatus.OK)
-                .body(ResponseDto.success());
+                .body(ResponseDTO.success());
     }
 
     /**
@@ -294,8 +295,8 @@ public class FileController {
      * @return 操作结果响应
      * @throws DataFormatException 当操作类型不正确或参数无效时抛出
      */
-    @PutMapping("/file")
-    public ResponseEntity<ResponseDto> copyOrMoveFiles(@Valid @RequestBody MoveAndCopyFileDto dto) {
+    @PostMapping("/file/copy-or-move")
+    public ResponseEntity<ResponseDTO> copyOrMoveFiles(@Valid @RequestBody MoveAndCopyFileDTO dto) {
         log.info("文件操作请求 [fileIds={}, targetIds={}, type={}]",
                 dto != null ? dto.getFileIds() : null,
                 dto != null ? dto.getTargetIds() : null,
@@ -306,7 +307,7 @@ public class FileController {
         }
 
         // 判断操作类型
-        if (MoveAndCopyFileDto.MOVE_TYPE.equals(dto.getType())) {
+        if (MoveAndCopyFileDTO.MOVE_TYPE.equals(dto.getType())) {
             // 移动操作：验证targetIds必须只有一个值
             if (dto.getTargetIds().size() != 1) {
                 log.warn("移动操作参数错误 [fileIds={}, targetIds={}, type={}]",
@@ -318,7 +319,7 @@ public class FileController {
             // 执行移动操作
             fileBiz.moveFiles(dto.getFileIds(), dto.getTargetIds().getFirst());
             log.info("文件移动成功 [fileIds={}, targetId={}]", dto.getFileIds(), dto.getTargetIds().getFirst());
-        } else if (MoveAndCopyFileDto.COPY_TYPE.equals(dto.getType())) {
+        } else if (MoveAndCopyFileDTO.COPY_TYPE.equals(dto.getType())) {
             // 复制操作：允许复制到多个目标文件夹
             fileBiz.copyFiles(dto.getFileIds(), dto.getTargetIds());
             log.info("文件复制成功 [fileIds={}, targetIds={}]", dto.getFileIds(), dto.getTargetIds());
@@ -331,7 +332,7 @@ public class FileController {
                              dto.getFileIds(), dto.getTargetIds(), dto.getType()));
         }
         return ResponseEntity.status(HttpStatus.OK)
-                .body(ResponseDto.success());
+                .body(ResponseDTO.success());
     }
 
     /**
@@ -340,8 +341,8 @@ public class FileController {
      * @param fileIds 要删除的文件ID列表
      * @return 删除成功的响应对象
      */
-    @DeleteMapping("/file")
-    public ResponseEntity<ResponseDto> deleteFiles(@RequestBody List<Long> fileIds) {
+    @PostMapping("/file/delete")
+    public ResponseEntity<ResponseDTO> deleteFiles(@RequestBody List<Long> fileIds) {
         log.info("删除文件请求 [fileIds={}]", fileIds);
 
         // 参数校验
@@ -352,7 +353,7 @@ public class FileController {
         fileBiz.deleteFiles(fileIds);
         log.info("文件删除成功 [fileIds={}]", fileIds);
         return ResponseEntity.status(HttpStatus.OK)
-                .body(ResponseDto.success());
+                .body(ResponseDTO.success());
     }
 
     /**
@@ -363,7 +364,7 @@ public class FileController {
      * @return 文件资源响应实体
      */
     @GetMapping("/file/{fileId}/download")
-    public org.springframework.http.ResponseEntity<Resource> downloadFile(@PathVariable Long fileId,
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long fileId,
             HttpServletRequest request) {
         log.info("下载文件请求 [fileId={}]", fileId);
 

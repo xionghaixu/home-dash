@@ -10,14 +10,14 @@ import java.math.BigDecimal;
 /**
  * 观看进度DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WatchProgressDto {
+public class WatchProgressDTO {
 
     private Long currentPosition;
 

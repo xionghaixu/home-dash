@@ -6,6 +6,8 @@ import com.hd.dao.mapper.FileMapper;
 import com.hd.dao.service.FileDataService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * @author xhx
  * @version 1.0
@@ -15,6 +17,30 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class FileDataServiceImpl extends ServiceImpl<FileMapper, File> implements FileDataService {
-    
+
+    @Override
+    public File selectByIdWithDeleted(Long id) {
+        return getBaseMapper().selectByIdWithDeleted(id);
+    }
+
+    @Override
+    public void permanentlyDelete(Long id) {
+        getBaseMapper().permanentlyDelete(id);
+    }
+
+    @Override
+    public List<File> selectAllChildrenByParentId(Long parentId) {
+        return getBaseMapper().selectAllChildrenByParentId(parentId);
+    }
+
+    @Override
+    public List<File> selectDeletedFilesByParentId(Long parentId) {
+        return getBaseMapper().selectDeletedFilesByParentId(parentId);
+    }
+
+    @Override
+    public void restoreFile(Long id, Long parentId) {
+        getBaseMapper().restoreFile(id, parentId);
+    }
 }
 

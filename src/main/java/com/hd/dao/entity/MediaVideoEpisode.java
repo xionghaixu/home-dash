@@ -11,7 +11,7 @@ import java.io.Serializable;
  * 视频集数关联实体类
  * 关联视频系列和具体的视频文件
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

@@ -59,7 +59,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BatchOperationResultDto {
+public class BatchOperationResultDTO {
 
     /**
      * 操作是否全部成功。
@@ -200,8 +200,8 @@ public class BatchOperationResultDto {
     /**
      * 创建全部成功的结果。
      */
-    public static BatchOperationResultDto allSuccess(List<ItemResult> results) {
-        return BatchOperationResultDto.builder()
+    public static BatchOperationResultDTO allSuccess(List<ItemResult> results) {
+        return BatchOperationResultDTO.builder()
                 .success(true)
                 .totalCount(results.size())
                 .successCount(results.size())
@@ -214,13 +214,13 @@ public class BatchOperationResultDto {
      * 根据结果列表创建结果。
      * 自动计算成功/失败数量。
      */
-    public static BatchOperationResultDto of(List<ItemResult> results) {
+    public static BatchOperationResultDTO of(List<ItemResult> results) {
         int successCount = (int) results.stream()
                 .filter(r -> "success".equals(r.getStatus()))
                 .count();
         int failCount = results.size() - successCount;
 
-        return BatchOperationResultDto.builder()
+        return BatchOperationResultDTO.builder()
                 .success(failCount == 0)
                 .totalCount(results.size())
                 .successCount(successCount)

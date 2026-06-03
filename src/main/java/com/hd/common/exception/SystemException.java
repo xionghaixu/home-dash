@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -12,52 +12,32 @@ import com.hd.common.enums.ErrorCode;
 public class SystemException extends HomeDashException {
     private static final long serialVersionUID = -455084301379506107L;
 
-    private final ErrorCode errorCode;
-
     /**
      * 指定错误码。
      */
-    public SystemException(ErrorCode errorCode) {
-        super(errorCode.getMessage());
-        this.errorCode = errorCode;
+    public SystemException(ErrorCodeEnum errorCode) {
+        super(errorCode);
     }
 
     /**
      * 指定错误码和消息。
      */
-    public SystemException(ErrorCode errorCode, String message) {
-        super(message);
-        this.errorCode = errorCode;
+    public SystemException(ErrorCodeEnum errorCode, String message) {
+        super(errorCode, message);
     }
 
     /**
      * 指定错误码、消息和原因。
      */
-    public SystemException(ErrorCode errorCode, String message, Throwable cause) {
-        super(message, cause);
-        this.errorCode = errorCode;
+    public SystemException(ErrorCodeEnum errorCode, String message, Throwable cause) {
+        super(errorCode, message, cause);
     }
 
     /**
      * 指定错误码和原因。
      */
-    public SystemException(ErrorCode errorCode, Throwable cause) {
-        super(errorCode.getMessage(), cause);
-        this.errorCode = errorCode;
-    }
-
-    /**
-     * 获取错误码。
-     */
-    public ErrorCode getErrorCode() {
-        return errorCode;
-    }
-
-    /**
-     * 获取错误码数值。
-     */
-    public int getCode() {
-        return errorCode.getCode();
+    public SystemException(ErrorCodeEnum errorCode, Throwable cause) {
+        super(errorCode, cause);
     }
 }
 

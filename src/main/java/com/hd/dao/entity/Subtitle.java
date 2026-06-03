@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * 字幕关联实体类
  * 存储视频的外挂字幕信息
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

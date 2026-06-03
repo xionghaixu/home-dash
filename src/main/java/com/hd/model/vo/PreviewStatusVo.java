@@ -6,7 +6,7 @@ import lombok.*;
  * 预览状态VO。
  * 描述文件的预览能力及状态。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -15,7 +15,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PreviewStatusVo {
+public class PreviewStatusVO {
 
     /** 是否可预览。 */
     private Boolean canPreview;

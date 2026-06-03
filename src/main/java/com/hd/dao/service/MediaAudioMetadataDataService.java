@@ -6,7 +6,7 @@ import com.hd.dao.entity.MediaAudioMetadata;
 /**
  * 音频元数据数据服务
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface MediaAudioMetadataDataService extends IService<MediaAudioMetadata> {

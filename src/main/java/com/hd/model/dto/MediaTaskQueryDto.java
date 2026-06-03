@@ -6,12 +6,12 @@ import lombok.EqualsAndHashCode;
 /**
  * 媒体任务查询DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class MediaTaskQueryDto extends PageRequestDto {
+public class MediaTaskQueryDTO extends PageRequestDTO {
 
     private String status;
 

@@ -1,16 +1,18 @@
 package com.hd.controller;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.hd.biz.ResourceBiz;
 import com.hd.common.HomeDashConstants;
-import com.hd.model.dto.MergeFileDto;
-import com.hd.model.dto.ResponseDto;
-import com.hd.dao.entity.ResourceChunk;
+import com.hd.model.dto.MergeFileDTO;
+import com.hd.model.dto.ResponseDTO;
+import com.hd.model.dto.ResourceChunkDTO;
+import com.hd.model.dto.TransferStatusDTO;
 import com.hd.common.exception.DataFormatException;
+import jakarta.validation.Valid;
 
 import java.io.EOFException;
 import java.util.HashMap;
@@ -35,19 +37,10 @@ import java.util.Objects;
 @Slf4j
 @RestController
 @RequestMapping(HomeDashConstants.API_VERSION)
+@RequiredArgsConstructor
 public class ResourceController {
 
     private final ResourceBiz resourceBiz;
-
-    /**
-     * 构造函数，注入ResourceBiz依赖。
-     *
-     * @param resourceBiz 资源业务接口
-     */
-    @Autowired
-    public ResourceController(ResourceBiz resourceBiz) {
-        this.resourceBiz = resourceBiz;
-    }
 
     /**
      * 检查文件分块是否已上传。
@@ -57,7 +50,7 @@ public class ResourceController {
      * @return 如果分块已上传返回成功响应，否则返回304状态码
      */
     @GetMapping("/resource/chunk")
-    public ResponseEntity<ResponseDto> checkChunk(ResourceChunk chunk) {
+    public ResponseEntity<ResponseDTO> checkChunk(ResourceChunkDTO chunk) {
         log.debug("检查文件分块请求 [identifier={}, chunkNumber={}]",
                 chunk != null ? chunk.getIdentifier() : null,
                 chunk != null ? chunk.getChunkNumber() : null);
@@ -66,23 +59,23 @@ public class ResourceController {
         if (Objects.isNull(chunk)) {
             log.warn("检查分块失败：分块信息为空");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ResponseDto.fail("分块信息不能为空"));
+                    .body(ResponseDTO.fail("分块信息不能为空"));
         }
         if (Objects.isNull(chunk.getIdentifier()) || chunk.getIdentifier().trim().isEmpty()) {
             log.warn("检查分块失败：文件标识符为空");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ResponseDto.fail("文件标识符不能为空"));
+                    .body(ResponseDTO.fail("文件标识符不能为空"));
         }
 
         if (resourceBiz.checkChunk(chunk)) {
             log.debug("文件分块已存在 [identifier={}, chunkNumber={}]",
                     chunk.getIdentifier(), chunk.getChunkNumber());
-            return ResponseEntity.ok(ResponseDto.success("该文件块已经上传"));
+            return ResponseEntity.ok(ResponseDTO.success("该文件块已经上传"));
         }
         log.debug("文件分块不存在 [identifier={}, chunkNumber={}]",
                 chunk.getIdentifier(), chunk.getChunkNumber());
         return ResponseEntity.status(HttpStatus.NOT_MODIFIED)
-                .body(ResponseDto.success());
+                .body(ResponseDTO.success());
     }
 
     /**
@@ -93,21 +86,21 @@ public class ResourceController {
      * @return 已上传的分块列表
      */
     @GetMapping("/resource/chunks/{identifier}")
-    public ResponseEntity<ResponseDto> getUploadedChunks(@PathVariable String identifier) {
+    public ResponseEntity<ResponseDTO> getUploadedChunks(@PathVariable String identifier) {
         log.debug("获取已上传分块列表请求 [identifier={}]", identifier);
 
         // 参数校验
         if (Objects.isNull(identifier) || identifier.trim().isEmpty()) {
             log.warn("获取已上传分块失败：文件标识符为空");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ResponseDto.fail("文件标识符不能为空"));
+                    .body(ResponseDTO.fail("文件标识符不能为空"));
         }
 
-        List<ResourceChunk> chunks = resourceBiz.getUploadedChunks(identifier);
+        List<ResourceChunkDTO> chunks = resourceBiz.getUploadedChunks(identifier);
 
         log.info("已上传分块列表返回成功 [identifier={}, uploadedChunks={}]",
                 identifier, chunks.size());
-        return ResponseEntity.ok(ResponseDto.success(chunks));
+        return ResponseEntity.ok(ResponseDTO.success(chunks));
     }
 
     /**
@@ -119,7 +112,7 @@ public class ResourceController {
      * @return 上传成功的响应对象
      */
     @PostMapping("/resource/chunk")
-    public ResponseEntity<ResponseDto> uploadChunk(ResourceChunk chunk) {
+    public ResponseEntity<ResponseDTO> uploadChunk(ResourceChunkDTO chunk) {
         log.info("上传文件分块请求 [identifier={}, chunkNumber={}, fileName={}, fileSize={}]",
                 chunk != null ? chunk.getIdentifier() : null,
                 chunk != null ? chunk.getChunkNumber() : null,
@@ -138,7 +131,7 @@ public class ResourceController {
 
         log.info("文件分块上传成功 [identifier={}, chunkNumber={}]",
                 chunk.getIdentifier(), chunk.getChunkNumber());
-        return ResponseEntity.ok(ResponseDto.success());
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
     /**
@@ -151,7 +144,7 @@ public class ResourceController {
      * @return 包含验证结果的响应对象
      */
     @GetMapping("/resource/chunk/verify")
-    public ResponseEntity<ResponseDto> verifyChunkIntegrity(
+    public ResponseEntity<ResponseDTO> verifyChunkIntegrity(
             @RequestParam String identifier,
             @RequestParam Integer chunkNumber,
             @RequestParam(required = false) String expectedMd5) {
@@ -163,12 +156,12 @@ public class ResourceController {
         if (Objects.isNull(identifier) || identifier.trim().isEmpty()) {
             log.warn("验证分块完整性失败：文件标识符为空");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ResponseDto.fail("文件标识符不能为空"));
+                    .body(ResponseDTO.fail("文件标识符不能为空"));
         }
         if (Objects.isNull(chunkNumber)) {
             log.warn("验证分块完整性失败：分块编号为空");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ResponseDto.fail("分块编号不能为空"));
+                    .body(ResponseDTO.fail("分块编号不能为空"));
         }
 
         boolean isIntact = resourceBiz.verifyChunkIntegrity(identifier, chunkNumber, expectedMd5);
@@ -181,11 +174,11 @@ public class ResourceController {
         if (isIntact) {
             log.info("分块完整性验证通过 [identifier={}, chunkNumber={}]",
                     identifier, chunkNumber);
-            return ResponseEntity.ok(ResponseDto.success(resultData));
+            return ResponseEntity.ok(ResponseDTO.success(resultData));
         } else {
             log.warn("分块完整性验证失败 [identifier={}, chunkNumber={}]",
                     identifier, chunkNumber);
-            return ResponseEntity.ok(ResponseDto.success(resultData));
+            return ResponseEntity.ok(ResponseDTO.success(resultData));
         }
     }
 
@@ -197,21 +190,21 @@ public class ResourceController {
      * @param identifier 文件唯一标识符
      * @return 取消成功的响应对象
      */
-    @DeleteMapping("/resource/upload/{identifier}")
-    public ResponseEntity<ResponseDto> cancelUpload(@PathVariable String identifier) {
+    @PostMapping("/resource/upload/{identifier}/cancel")
+    public ResponseEntity<ResponseDTO> cancelUpload(@PathVariable String identifier) {
         log.info("取消文件上传请求 [identifier={}]", identifier);
 
         // 参数校验
         if (Objects.isNull(identifier) || identifier.trim().isEmpty()) {
             log.warn("取消上传失败：文件标识符为空");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ResponseDto.fail("文件标识符不能为空"));
+                    .body(ResponseDTO.fail("文件标识符不能为空"));
         }
 
         resourceBiz.cancelUpload(identifier);
 
         log.info("文件上传取消成功 [identifier={}]", identifier);
-        return ResponseEntity.ok(ResponseDto.success("上传任务已取消"));
+        return ResponseEntity.ok(ResponseDTO.success("上传任务已取消"));
     }
 
     /**
@@ -222,7 +215,7 @@ public class ResourceController {
      * @return 包含清理任务数量的响应对象
      */
     @PostMapping("/resource/cleanup")
-    public ResponseEntity<ResponseDto> cleanupTimeoutUploads(
+    public ResponseEntity<ResponseDTO> cleanupTimeoutUploads(
             @RequestParam(required = false, defaultValue = "60") int timeoutMinutes) {
 
         log.info("手动触发清理超时上传任务请求 [timeoutMinutes={}]", timeoutMinutes);
@@ -235,7 +228,7 @@ public class ResourceController {
 
         log.info("超时上传任务清理完成 [cleanedCount={}, timeoutMinutes={}]",
                 cleanedCount, timeoutMinutes);
-        return ResponseEntity.ok(ResponseDto.success(resultData));
+        return ResponseEntity.ok(ResponseDTO.success(resultData));
     }
 
     /**
@@ -244,7 +237,7 @@ public class ResourceController {
      * @return 传输任务及摘要
      */
     @GetMapping("/resource/transfers")
-    public ResponseEntity<ResponseDto> getTransferTasks() {
+    public ResponseEntity<ResponseDTO> getTransferTasks() {
         log.info("获取传输任务列表请求");
         return ResponseEntity.ok(resourceBiz.transferTasks());
     }
@@ -255,8 +248,8 @@ public class ResourceController {
      * @param status 需要清理的状态，默认completed
      * @return 清理结果
      */
-    @DeleteMapping("/resource/transfers")
-    public ResponseEntity<ResponseDto> clearTransferTasks(
+    @PostMapping("/resource/transfers/clear")
+    public ResponseEntity<ResponseDTO> clearTransferTasks(
             @RequestParam(required = false, defaultValue = "completed") String status) {
         log.info("清理传输任务记录请求 [status={}]", status);
 
@@ -265,7 +258,7 @@ public class ResourceController {
         resultData.put("status", status);
         resultData.put("clearedCount", clearedCount);
 
-        return ResponseEntity.ok(ResponseDto.success(resultData));
+        return ResponseEntity.ok(ResponseDTO.success(resultData));
     }
 
     /**
@@ -274,13 +267,13 @@ public class ResourceController {
      * @param identifier 文件唯一标识符
      * @return 清除结果
      */
-    @DeleteMapping("/resource/transfer/{identifier}")
-    public ResponseEntity<ResponseDto> clearTransferTask(@PathVariable String identifier) {
+    @PostMapping("/resource/transfer/{identifier}/clear")
+    public ResponseEntity<ResponseDTO> clearTransferTask(@PathVariable String identifier) {
         log.info("清除单条传输任务记录请求 [identifier={}]", identifier);
 
         if (identifier == null || identifier.trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ResponseDto.fail("文件标识符不能为空"));
+                    .body(ResponseDTO.fail("文件标识符不能为空"));
         }
 
         boolean success = resourceBiz.clearTransferTask(identifier);
@@ -289,9 +282,9 @@ public class ResourceController {
         resultData.put("cleared", success);
 
         if (success) {
-            return ResponseEntity.ok(ResponseDto.success(resultData, "传输任务记录已清除"));
+            return ResponseEntity.ok(ResponseDTO.success(resultData, "传输任务记录已清除"));
         } else {
-            return ResponseEntity.ok(ResponseDto.success(resultData, "传输任务记录不存在"));
+            return ResponseEntity.ok(ResponseDTO.success(resultData, "传输任务记录不存在"));
         }
     }
 
@@ -303,7 +296,7 @@ public class ResourceController {
      * @return 合并成功的响应对象
      */
     @PostMapping("/resource/merge")
-    public ResponseEntity<ResponseDto> mergeResource(@RequestBody MergeFileDto fileDto) {
+    public ResponseEntity<ResponseDTO> mergeResource(@RequestBody MergeFileDTO fileDto) {
         log.info("合并文件分块请求 [identifier={}, fileName={}, fileSize={}]",
                 fileDto != null ? fileDto.getIdentifier() : null,
                 fileDto != null ? fileDto.getFileName() : null,
@@ -329,7 +322,7 @@ public class ResourceController {
         result.put("resourceId", fileDto.getResourceId());
         result.put("isInstantUpload", fileDto.isInstantUpload());
 
-        return ResponseEntity.ok(ResponseDto.success(result));
+        return ResponseEntity.ok(ResponseDTO.success(result));
     }
 
     /**
@@ -339,19 +332,19 @@ public class ResourceController {
      * @return 成功响应
      */
     @PostMapping("/resource/transfer/status")
-    public ResponseEntity<ResponseDto> updateTransferStatus(@RequestBody Map<String, Object> params) {
-        log.info("更新传输任务状态请求 [params={}]", params);
-        if (params == null) {
-            return ResponseEntity.badRequest().body(ResponseDto.fail("参数不能为空"));
+    public ResponseEntity<ResponseDTO> updateTransferStatus(@Valid @RequestBody TransferStatusDTO dto) {
+        log.info("更新传输任务状态请求 [dto={}]", dto);
+        if (dto == null) {
+            return ResponseEntity.badRequest().body(ResponseDTO.fail("参数不能为空"));
         }
-        String identifier = (String) params.get("identifier");
-        String fileName = (String) params.get("fileName");
-        String status = (String) params.get("status");
-        Long totalSize = params.get("totalSize") != null ? Long.valueOf(params.get("totalSize").toString()) : null;
-        Long parentId = params.get("parentId") != null ? Long.valueOf(params.get("parentId").toString()) : null;
+        String identifier = dto.getIdentifier();
+        String fileName = dto.getFileName();
+        String status = dto.getStatus();
+        Long totalSize = dto.getTotalSize();
+        Long parentId = dto.getParentId();
 
         resourceBiz.updateTransferStatus(identifier, fileName, status, totalSize, parentId);
-        return ResponseEntity.ok(ResponseDto.success());
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
     /**

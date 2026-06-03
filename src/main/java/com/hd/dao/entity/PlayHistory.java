@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * 播放历史实体类
  * 记录视频和音频的播放历史
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

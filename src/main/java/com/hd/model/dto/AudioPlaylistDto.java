@@ -13,14 +13,14 @@ import java.time.LocalDateTime;
 /**
  * 播放列表DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AudioPlaylistDto {
+public class AudioPlaylistDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long playlistId;

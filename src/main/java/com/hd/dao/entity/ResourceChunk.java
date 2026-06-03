@@ -1,6 +1,7 @@
 package com.hd.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.IdType;
 import lombok.*;
 import org.apache.ibatis.type.Alias;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,7 +27,7 @@ public class ResourceChunk {
     public static final String ALIAS = "resourceChunk";
 
     /** 主键ID。 */
-    @TableId
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     /** 当前分块的编号（从1开始）。 */

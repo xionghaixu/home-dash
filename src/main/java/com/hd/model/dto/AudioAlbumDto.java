@@ -8,14 +8,14 @@ import lombok.NoArgsConstructor;
 /**
  * 专辑聚合DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AudioAlbumDto {
+public class AudioAlbumDTO {
 
     private String album;
 

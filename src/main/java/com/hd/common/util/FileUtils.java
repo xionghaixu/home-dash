@@ -1,8 +1,11 @@
 package com.hd.common.util;
 
-import com.hd.common.enums.FileType;
+import com.hd.common.enums.FileTypeEnum;
 import com.hd.common.exception.DataFormatException;
+import com.hd.common.exception.InvalidFilePathException;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,14 +50,14 @@ public class FileUtils {
      * </ul>
      *
      * @param fileName 文件名
-     * @return FileType 文件类型枚举
+     * @return FileTypeEnum 文件类型枚举
      */
-    public static FileType getFileType(String fileName) {
+    public static FileTypeEnum getFileType(String fileName) {
         if (fileName == null || fileName.isEmpty()) {
-            return FileType.DEFAULT;
+            return FileTypeEnum.DEFAULT;
         }
         String extensionName = extractFileExtensionName(fileName).toLowerCase();
-        return fileTypeMap.getOrDefault(extensionName, FileType.DEFAULT);
+        return fileTypeMap.getOrDefault(extensionName, FileTypeEnum.DEFAULT);
     }
 
     /**
@@ -63,7 +66,7 @@ public class FileUtils {
      * @param fileType 文件类型
      * @return 显示名称
      */
-    public static String getTypeDisplayName(FileType fileType) {
+    public static String getTypeDisplayName(FileTypeEnum fileType) {
         if (fileType == null) {
             return "未知";
         }
@@ -81,7 +84,7 @@ public class FileUtils {
             return "未知";
         }
         try {
-            FileType fileType = FileType.valueOf(typeName.toUpperCase());
+            FileTypeEnum fileType = FileTypeEnum.valueOf(typeName.toUpperCase());
             return getTypeDisplayName(fileType);
         } catch (IllegalArgumentException e) {
             return "未知";
@@ -95,11 +98,11 @@ public class FileUtils {
      * @param category 分类名称：video, audio, picture, document, compress, other
      * @return true表示属于该分类
      */
-    public static boolean isInCategory(FileType fileType, String category) {
+    public static boolean isInCategory(FileTypeEnum fileType, String category) {
         if (fileType == null || category == null) {
             return false;
         }
-        Set<FileType> categoryTypes = categoryFileTypes.get(category.toLowerCase());
+        Set<FileTypeEnum> categoryTypes = categoryFileTypes.get(category.toLowerCase());
         return categoryTypes != null && categoryTypes.contains(fileType);
     }
 
@@ -115,7 +118,7 @@ public class FileUtils {
             return false;
         }
         try {
-            FileType fileType = FileType.valueOf(typeName.toUpperCase());
+            FileTypeEnum fileType = FileTypeEnum.valueOf(typeName.toUpperCase());
             return isInCategory(fileType, category);
         } catch (IllegalArgumentException e) {
             return false;
@@ -133,15 +136,15 @@ public class FileUtils {
         if (fileType == null || fileType.trim().isEmpty()) {
             throw new DataFormatException(
                     String.format("文件类型不能为空 [有效类型=%s]",
-                            Arrays.toString(FileType.values())));
+                            Arrays.toString(FileTypeEnum.values())));
         }
 
         try {
-            FileType.valueOf(fileType.toUpperCase());
+            FileTypeEnum.valueOf(fileType.toUpperCase());
         } catch (Exception e) {
             throw new DataFormatException(
                     String.format("文件类型不正确 [fileType=%s, 有效类型=%s]",
-                            fileType, Arrays.toString(FileType.values())));
+                            fileType, Arrays.toString(FileTypeEnum.values())));
         }
     }
 
@@ -152,7 +155,7 @@ public class FileUtils {
      * @param fileType FileType枚举
      * @return true表示相等，false表示不相等
      */
-    public static boolean equals(String type, FileType fileType) {
+    public static boolean equals(String type, FileTypeEnum fileType) {
         return fileType.toString().equals(type);
     }
 
@@ -239,198 +242,215 @@ public class FileUtils {
     }
 
     /**
+     * 安全地解析文件路径，防止路径遍历攻击。
+     * 将相对路径基于基础路径解析后，验证结果路径是否仍在基础路径内。
+     *
+     * @param basePath     基础路径（允许的根目录）
+     * @param relativePath 相对路径
+     * @return 解析后的安全绝对路径
+     * @throws InvalidFilePathException 当解析后的路径超出基础路径范围时抛出
+     */
+    public static Path resolveSecurePath(String basePath, String relativePath) {
+        Path base = Paths.get(basePath).toAbsolutePath().normalize();
+        Path resolved = base.resolve(relativePath).normalize();
+        if (!resolved.startsWith(base)) {
+            throw new InvalidFilePathException("非法文件路径: " + relativePath);
+        }
+        return resolved;
+    }
+
+    /**
      * 文件类型映射表。
      * 键为扩展名（包含点号，小写），值为FileType枚举。
      */
-    private static final Map<String, FileType> fileTypeMap = new HashMap<>();
+    private static final Map<String, FileTypeEnum> fileTypeMap = new HashMap<>();
 
     /**
      * 文件类型显示名称映射。
      */
-    private static final Map<FileType, String> typeDisplayNames = new HashMap<>();
+    private static final Map<FileTypeEnum, String> typeDisplayNames = new HashMap<>();
 
     /**
      * 分类与文件类型映射。
      */
-    private static final Map<String, Set<FileType>> categoryFileTypes = new HashMap<>();
+    private static final Map<String, Set<FileTypeEnum>> categoryFileTypes = new HashMap<>();
 
     static {
         // ========== 初始化文件类型映射 ==========
 
         // PDF文档
-        fileTypeMap.put(".pdf", FileType.PDF);
+        fileTypeMap.put(".pdf", FileTypeEnum.PDF);
 
         // 压缩文件
-        fileTypeMap.put(".zip", FileType.COMPRESS_FILE);
-        fileTypeMap.put(".7z", FileType.COMPRESS_FILE);
-        fileTypeMap.put(".rar", FileType.COMPRESS_FILE);
-        fileTypeMap.put(".tar", FileType.COMPRESS_FILE);
-        fileTypeMap.put(".tar.gz", FileType.COMPRESS_FILE);
-        fileTypeMap.put(".tgz", FileType.COMPRESS_FILE);
-        fileTypeMap.put(".tar.bz2", FileType.COMPRESS_FILE);
-        fileTypeMap.put(".bz2", FileType.COMPRESS_FILE);
-        fileTypeMap.put(".gz", FileType.COMPRESS_FILE);
-        fileTypeMap.put(".xz", FileType.COMPRESS_FILE);
+        fileTypeMap.put(".zip", FileTypeEnum.COMPRESS_FILE);
+        fileTypeMap.put(".7z", FileTypeEnum.COMPRESS_FILE);
+        fileTypeMap.put(".rar", FileTypeEnum.COMPRESS_FILE);
+        fileTypeMap.put(".tar", FileTypeEnum.COMPRESS_FILE);
+        fileTypeMap.put(".tar.gz", FileTypeEnum.COMPRESS_FILE);
+        fileTypeMap.put(".tgz", FileTypeEnum.COMPRESS_FILE);
+        fileTypeMap.put(".tar.bz2", FileTypeEnum.COMPRESS_FILE);
+        fileTypeMap.put(".bz2", FileTypeEnum.COMPRESS_FILE);
+        fileTypeMap.put(".gz", FileTypeEnum.COMPRESS_FILE);
+        fileTypeMap.put(".xz", FileTypeEnum.COMPRESS_FILE);
 
         // 视频文件
-        fileTypeMap.put(".mp4", FileType.VIDEO);
-        fileTypeMap.put(".flv", FileType.VIDEO);
-        fileTypeMap.put(".rmvb", FileType.VIDEO);
-        fileTypeMap.put(".avi", FileType.VIDEO);
-        fileTypeMap.put(".mkv", FileType.VIDEO);
-        fileTypeMap.put(".mov", FileType.VIDEO);
-        fileTypeMap.put(".wmv", FileType.VIDEO);
-        fileTypeMap.put(".webm", FileType.VIDEO);
-        fileTypeMap.put(".m4v", FileType.VIDEO);
-        fileTypeMap.put(".3gp", FileType.VIDEO);
-        fileTypeMap.put(".mpg", FileType.VIDEO);
-        fileTypeMap.put(".mpeg", FileType.VIDEO);
-        fileTypeMap.put(".vob", FileType.VIDEO);
+        fileTypeMap.put(".mp4", FileTypeEnum.VIDEO);
+        fileTypeMap.put(".flv", FileTypeEnum.VIDEO);
+        fileTypeMap.put(".rmvb", FileTypeEnum.VIDEO);
+        fileTypeMap.put(".avi", FileTypeEnum.VIDEO);
+        fileTypeMap.put(".mkv", FileTypeEnum.VIDEO);
+        fileTypeMap.put(".mov", FileTypeEnum.VIDEO);
+        fileTypeMap.put(".wmv", FileTypeEnum.VIDEO);
+        fileTypeMap.put(".webm", FileTypeEnum.VIDEO);
+        fileTypeMap.put(".m4v", FileTypeEnum.VIDEO);
+        fileTypeMap.put(".3gp", FileTypeEnum.VIDEO);
+        fileTypeMap.put(".mpg", FileTypeEnum.VIDEO);
+        fileTypeMap.put(".mpeg", FileTypeEnum.VIDEO);
+        fileTypeMap.put(".vob", FileTypeEnum.VIDEO);
 
         // 音频文件
-        fileTypeMap.put(".mp3", FileType.AUDIO);
-        fileTypeMap.put(".wav", FileType.AUDIO);
-        fileTypeMap.put(".flac", FileType.AUDIO);
-        fileTypeMap.put(".aac", FileType.AUDIO);
-        fileTypeMap.put(".ogg", FileType.AUDIO);
-        fileTypeMap.put(".wma", FileType.AUDIO);
-        fileTypeMap.put(".m4a", FileType.AUDIO);
-        fileTypeMap.put(".ape", FileType.AUDIO);
+        fileTypeMap.put(".mp3", FileTypeEnum.AUDIO);
+        fileTypeMap.put(".wav", FileTypeEnum.AUDIO);
+        fileTypeMap.put(".flac", FileTypeEnum.AUDIO);
+        fileTypeMap.put(".aac", FileTypeEnum.AUDIO);
+        fileTypeMap.put(".ogg", FileTypeEnum.AUDIO);
+        fileTypeMap.put(".wma", FileTypeEnum.AUDIO);
+        fileTypeMap.put(".m4a", FileTypeEnum.AUDIO);
+        fileTypeMap.put(".ape", FileTypeEnum.AUDIO);
 
         // 图片文件
-        fileTypeMap.put(".png", FileType.PICTURE);
-        fileTypeMap.put(".jpg", FileType.PICTURE);
-        fileTypeMap.put(".jpeg", FileType.PICTURE);
-        fileTypeMap.put(".gif", FileType.PICTURE);
-        fileTypeMap.put(".ico", FileType.PICTURE);
-        fileTypeMap.put(".bmp", FileType.PICTURE);
-        fileTypeMap.put(".webp", FileType.PICTURE);
-        fileTypeMap.put(".svg", FileType.PICTURE);
-        fileTypeMap.put(".tiff", FileType.PICTURE);
-        fileTypeMap.put(".tif", FileType.PICTURE);
-        fileTypeMap.put(".psd", FileType.PICTURE);
-        fileTypeMap.put(".raw", FileType.PICTURE);
+        fileTypeMap.put(".png", FileTypeEnum.PICTURE);
+        fileTypeMap.put(".jpg", FileTypeEnum.PICTURE);
+        fileTypeMap.put(".jpeg", FileTypeEnum.PICTURE);
+        fileTypeMap.put(".gif", FileTypeEnum.PICTURE);
+        fileTypeMap.put(".ico", FileTypeEnum.PICTURE);
+        fileTypeMap.put(".bmp", FileTypeEnum.PICTURE);
+        fileTypeMap.put(".webp", FileTypeEnum.PICTURE);
+        fileTypeMap.put(".svg", FileTypeEnum.PICTURE);
+        fileTypeMap.put(".tiff", FileTypeEnum.PICTURE);
+        fileTypeMap.put(".tif", FileTypeEnum.PICTURE);
+        fileTypeMap.put(".psd", FileTypeEnum.PICTURE);
+        fileTypeMap.put(".raw", FileTypeEnum.PICTURE);
 
         // Word文档
-        fileTypeMap.put(".doc", FileType.DOC);
-        fileTypeMap.put(".docx", FileType.DOC);
-        fileTypeMap.put(".xls", FileType.DOC);
-        fileTypeMap.put(".xlsx", FileType.DOC);
-        fileTypeMap.put(".pages", FileType.DOC);
-        fileTypeMap.put(".numbers", FileType.DOC);
-        fileTypeMap.put(".key", FileType.DOC);
-        fileTypeMap.put(".odt", FileType.DOC);
-        fileTypeMap.put(".ods", FileType.DOC);
+        fileTypeMap.put(".doc", FileTypeEnum.DOC);
+        fileTypeMap.put(".docx", FileTypeEnum.DOC);
+        fileTypeMap.put(".xls", FileTypeEnum.DOC);
+        fileTypeMap.put(".xlsx", FileTypeEnum.DOC);
+        fileTypeMap.put(".pages", FileTypeEnum.DOC);
+        fileTypeMap.put(".numbers", FileTypeEnum.DOC);
+        fileTypeMap.put(".key", FileTypeEnum.DOC);
+        fileTypeMap.put(".odt", FileTypeEnum.DOC);
+        fileTypeMap.put(".ods", FileTypeEnum.DOC);
 
         // 纯文本文件
-        fileTypeMap.put(".txt", FileType.TXT);
-        fileTypeMap.put(".md", FileType.TXT);
-        fileTypeMap.put(".markdown", FileType.TXT);
-        fileTypeMap.put(".json", FileType.TXT);
-        fileTypeMap.put(".xml", FileType.TXT);
-        fileTypeMap.put(".yaml", FileType.TXT);
-        fileTypeMap.put(".yml", FileType.TXT);
-        fileTypeMap.put(".log", FileType.TXT);
-        fileTypeMap.put(".ini", FileType.TXT);
-        fileTypeMap.put(".cfg", FileType.TXT);
-        fileTypeMap.put(".conf", FileType.TXT);
-        fileTypeMap.put(".properties", FileType.TXT);
+        fileTypeMap.put(".txt", FileTypeEnum.TXT);
+        fileTypeMap.put(".md", FileTypeEnum.TXT);
+        fileTypeMap.put(".markdown", FileTypeEnum.TXT);
+        fileTypeMap.put(".json", FileTypeEnum.TXT);
+        fileTypeMap.put(".xml", FileTypeEnum.TXT);
+        fileTypeMap.put(".yaml", FileTypeEnum.TXT);
+        fileTypeMap.put(".yml", FileTypeEnum.TXT);
+        fileTypeMap.put(".log", FileTypeEnum.TXT);
+        fileTypeMap.put(".ini", FileTypeEnum.TXT);
+        fileTypeMap.put(".cfg", FileTypeEnum.TXT);
+        fileTypeMap.put(".conf", FileTypeEnum.TXT);
+        fileTypeMap.put(".properties", FileTypeEnum.TXT);
 
         // PPT演示文稿
-        fileTypeMap.put(".ppt", FileType.PPT);
-        fileTypeMap.put(".pptx", FileType.PPT);
-        fileTypeMap.put(".keynote", FileType.PPT);
+        fileTypeMap.put(".ppt", FileTypeEnum.PPT);
+        fileTypeMap.put(".pptx", FileTypeEnum.PPT);
+        fileTypeMap.put(".keynote", FileTypeEnum.PPT);
 
         // 种子文件
-        fileTypeMap.put(".torrent", FileType.TORRENT);
+        fileTypeMap.put(".torrent", FileTypeEnum.TORRENT);
 
         // 网页文件
-        fileTypeMap.put(".html", FileType.WEB);
-        fileTypeMap.put(".htm", FileType.WEB);
-        fileTypeMap.put(".css", FileType.WEB);
-        fileTypeMap.put(".scss", FileType.WEB);
-        fileTypeMap.put(".sass", FileType.WEB);
-        fileTypeMap.put(".less", FileType.WEB);
+        fileTypeMap.put(".html", FileTypeEnum.WEB);
+        fileTypeMap.put(".htm", FileTypeEnum.WEB);
+        fileTypeMap.put(".css", FileTypeEnum.WEB);
+        fileTypeMap.put(".scss", FileTypeEnum.WEB);
+        fileTypeMap.put(".sass", FileTypeEnum.WEB);
+        fileTypeMap.put(".less", FileTypeEnum.WEB);
 
         // 代码文件
-        fileTypeMap.put(".js", FileType.CODE);
-        fileTypeMap.put(".ts", FileType.CODE);
-        fileTypeMap.put(".tsx", FileType.CODE);
-        fileTypeMap.put(".jsx", FileType.CODE);
-        fileTypeMap.put(".json", FileType.CODE);
-        fileTypeMap.put(".java", FileType.CODE);
-        fileTypeMap.put(".c", FileType.CODE);
-        fileTypeMap.put(".cpp", FileType.CODE);
-        fileTypeMap.put(".h", FileType.CODE);
-        fileTypeMap.put(".hpp", FileType.CODE);
-        fileTypeMap.put(".cs", FileType.CODE);
-        fileTypeMap.put(".py", FileType.CODE);
-        fileTypeMap.put(".go", FileType.CODE);
-        fileTypeMap.put(".rs", FileType.CODE);
-        fileTypeMap.put(".rb", FileType.CODE);
-        fileTypeMap.put(".php", FileType.CODE);
-        fileTypeMap.put(".swift", FileType.CODE);
-        fileTypeMap.put(".kt", FileType.CODE);
-        fileTypeMap.put(".kts", FileType.CODE);
-        fileTypeMap.put(".scala", FileType.CODE);
-        fileTypeMap.put(".vue", FileType.CODE);
-        fileTypeMap.put(".jsx", FileType.CODE);
-        fileTypeMap.put(".tsx", FileType.CODE);
-        fileTypeMap.put(".sh", FileType.CODE);
-        fileTypeMap.put(".bash", FileType.CODE);
-        fileTypeMap.put(".zsh", FileType.CODE);
-        fileTypeMap.put(".bat", FileType.CODE);
-        fileTypeMap.put(".ps1", FileType.CODE);
-        fileTypeMap.put(".sql", FileType.CODE);
-        fileTypeMap.put(".r", FileType.CODE);
-        fileTypeMap.put(".lua", FileType.CODE);
-        fileTypeMap.put(".pl", FileType.CODE);
-        fileTypeMap.put(".pm", FileType.CODE);
+        fileTypeMap.put(".js", FileTypeEnum.CODE);
+        fileTypeMap.put(".ts", FileTypeEnum.CODE);
+        fileTypeMap.put(".tsx", FileTypeEnum.CODE);
+        fileTypeMap.put(".jsx", FileTypeEnum.CODE);
+        fileTypeMap.put(".java", FileTypeEnum.CODE);
+        fileTypeMap.put(".c", FileTypeEnum.CODE);
+        fileTypeMap.put(".cpp", FileTypeEnum.CODE);
+        fileTypeMap.put(".h", FileTypeEnum.CODE);
+        fileTypeMap.put(".hpp", FileTypeEnum.CODE);
+        fileTypeMap.put(".cs", FileTypeEnum.CODE);
+        fileTypeMap.put(".py", FileTypeEnum.CODE);
+        fileTypeMap.put(".go", FileTypeEnum.CODE);
+        fileTypeMap.put(".rs", FileTypeEnum.CODE);
+        fileTypeMap.put(".rb", FileTypeEnum.CODE);
+        fileTypeMap.put(".php", FileTypeEnum.CODE);
+        fileTypeMap.put(".swift", FileTypeEnum.CODE);
+        fileTypeMap.put(".kt", FileTypeEnum.CODE);
+        fileTypeMap.put(".kts", FileTypeEnum.CODE);
+        fileTypeMap.put(".scala", FileTypeEnum.CODE);
+        fileTypeMap.put(".vue", FileTypeEnum.CODE);
+        fileTypeMap.put(".jsx", FileTypeEnum.CODE);
+        fileTypeMap.put(".tsx", FileTypeEnum.CODE);
+        fileTypeMap.put(".sh", FileTypeEnum.CODE);
+        fileTypeMap.put(".bash", FileTypeEnum.CODE);
+        fileTypeMap.put(".zsh", FileTypeEnum.CODE);
+        fileTypeMap.put(".bat", FileTypeEnum.CODE);
+        fileTypeMap.put(".ps1", FileTypeEnum.CODE);
+        fileTypeMap.put(".sql", FileTypeEnum.CODE);
+        fileTypeMap.put(".r", FileTypeEnum.CODE);
+        fileTypeMap.put(".lua", FileTypeEnum.CODE);
+        fileTypeMap.put(".pl", FileTypeEnum.CODE);
+        fileTypeMap.put(".pm", FileTypeEnum.CODE);
 
         // ========== 初始化显示名称 ==========
-        typeDisplayNames.put(FileType.DEFAULT, "未知");
-        typeDisplayNames.put(FileType.FOLDER, "文件夹");
-        typeDisplayNames.put(FileType.VIDEO, "视频");
-        typeDisplayNames.put(FileType.AUDIO, "音频");
-        typeDisplayNames.put(FileType.PICTURE, "图片");
-        typeDisplayNames.put(FileType.DOC, "文档");
-        typeDisplayNames.put(FileType.PDF, "PDF");
-        typeDisplayNames.put(FileType.TXT, "文本");
-        typeDisplayNames.put(FileType.PPT, "演示");
-        typeDisplayNames.put(FileType.CODE, "代码");
-        typeDisplayNames.put(FileType.WEB, "网页");
-        typeDisplayNames.put(FileType.COMPRESS_FILE, "压缩");
-        typeDisplayNames.put(FileType.TORRENT, "种子");
+        typeDisplayNames.put(FileTypeEnum.DEFAULT, "未知");
+        typeDisplayNames.put(FileTypeEnum.FOLDER, "文件夹");
+        typeDisplayNames.put(FileTypeEnum.VIDEO, "视频");
+        typeDisplayNames.put(FileTypeEnum.AUDIO, "音频");
+        typeDisplayNames.put(FileTypeEnum.PICTURE, "图片");
+        typeDisplayNames.put(FileTypeEnum.DOC, "文档");
+        typeDisplayNames.put(FileTypeEnum.PDF, "PDF");
+        typeDisplayNames.put(FileTypeEnum.TXT, "文本");
+        typeDisplayNames.put(FileTypeEnum.PPT, "演示");
+        typeDisplayNames.put(FileTypeEnum.CODE, "代码");
+        typeDisplayNames.put(FileTypeEnum.WEB, "网页");
+        typeDisplayNames.put(FileTypeEnum.COMPRESS_FILE, "压缩");
+        typeDisplayNames.put(FileTypeEnum.TORRENT, "种子");
 
         // ========== 初始化分类映射 ==========
-        Set<FileType> videoTypes = new HashSet<>();
-        videoTypes.add(FileType.VIDEO);
+        Set<FileTypeEnum> videoTypes = new HashSet<>();
+        videoTypes.add(FileTypeEnum.VIDEO);
         categoryFileTypes.put("video", videoTypes);
 
-        Set<FileType> audioTypes = new HashSet<>();
-        audioTypes.add(FileType.AUDIO);
+        Set<FileTypeEnum> audioTypes = new HashSet<>();
+        audioTypes.add(FileTypeEnum.AUDIO);
         categoryFileTypes.put("audio", audioTypes);
 
-        Set<FileType> pictureTypes = new HashSet<>();
-        pictureTypes.add(FileType.PICTURE);
+        Set<FileTypeEnum> pictureTypes = new HashSet<>();
+        pictureTypes.add(FileTypeEnum.PICTURE);
         categoryFileTypes.put("picture", pictureTypes);
 
-        Set<FileType> documentTypes = new HashSet<>();
-        documentTypes.add(FileType.DOC);
-        documentTypes.add(FileType.PDF);
-        documentTypes.add(FileType.TXT);
-        documentTypes.add(FileType.PPT);
-        documentTypes.add(FileType.CODE);
-        documentTypes.add(FileType.WEB);
+        Set<FileTypeEnum> documentTypes = new HashSet<>();
+        documentTypes.add(FileTypeEnum.DOC);
+        documentTypes.add(FileTypeEnum.PDF);
+        documentTypes.add(FileTypeEnum.TXT);
+        documentTypes.add(FileTypeEnum.PPT);
+        documentTypes.add(FileTypeEnum.CODE);
+        documentTypes.add(FileTypeEnum.WEB);
         categoryFileTypes.put("document", documentTypes);
 
-        Set<FileType> compressTypes = new HashSet<>();
-        compressTypes.add(FileType.COMPRESS_FILE);
+        Set<FileTypeEnum> compressTypes = new HashSet<>();
+        compressTypes.add(FileTypeEnum.COMPRESS_FILE);
         categoryFileTypes.put("compress", compressTypes);
 
-        Set<FileType> otherTypes = new HashSet<>();
-        otherTypes.add(FileType.TORRENT);
-        otherTypes.add(FileType.DEFAULT);
+        Set<FileTypeEnum> otherTypes = new HashSet<>();
+        otherTypes.add(FileTypeEnum.TORRENT);
+        otherTypes.add(FileTypeEnum.DEFAULT);
         categoryFileTypes.put("other", otherTypes);
     }
 

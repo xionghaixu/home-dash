@@ -12,7 +12,7 @@ import java.util.Date;
  * 最近使用记录实体类。
  * 记录用户最近访问或操作的文件，包括预览、播放、编辑等场景。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */

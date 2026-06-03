@@ -5,11 +5,11 @@ import lombok.Data;
 /**
  * 更新播放进度DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
-public class UpdateProgressDto {
+public class UpdateProgressDTO {
 
     private Long currentPosition;
 

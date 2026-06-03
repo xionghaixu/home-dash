@@ -4,16 +4,22 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.hd.biz.FileBiz;
 import com.hd.common.config.HomeDashProperties;
-import com.hd.common.enums.ErrorCode;
-import com.hd.common.enums.FileType;
+import com.hd.common.enums.ErrorCodeEnum;
+import com.hd.common.enums.FileTypeEnum;
+import com.hd.common.enums.FileCategoryEnum;
 import com.hd.common.exception.*;
 import com.hd.common.util.FileUtils;
 import com.hd.common.util.MD5Utils;
 import com.hd.dao.entity.File;
+import com.hd.dao.entity.Favorite;
+import com.hd.dao.entity.FileRemark;
+import com.hd.dao.entity.FileTagRelation;
 import com.hd.dao.entity.Resource;
+import com.hd.dao.service.FavoriteDataService;
 import com.hd.dao.service.FileDataService;
+import com.hd.dao.service.FileRemarkDataService;
+import com.hd.dao.service.FileTagRelationDataService;
 import com.hd.dao.service.ResourceDataService;
-import com.hd.dao.mapper.FileMapper;
 import com.hd.biz.RecycleBinBiz;
 import com.hd.model.dto.*;
 import lombok.RequiredArgsConstructor;
@@ -52,20 +58,20 @@ public class FileBizImpl implements FileBiz {
     private static final int MAX_RECENT_LIMIT = 100;
     private static final List<String> SYSTEM_INITIALIZED_FOLDERS = List.of("图片", "视频", "音频", "文档", "压缩包", "其他");
     private static final List<String> DOCUMENT_TYPES = List.of(
-            FileType.PDF.toString(),
-            FileType.DOC.toString(),
-            FileType.TXT.toString(),
-            FileType.PPT.toString(),
-            FileType.CODE.toString(),
-            FileType.WEB.toString());
-    private static final List<String> COMPRESS_TYPES = List.of(FileType.COMPRESS_FILE.toString());
+            FileTypeEnum.PDF.toString(),
+            FileTypeEnum.DOC.toString(),
+            FileTypeEnum.TXT.toString(),
+            FileTypeEnum.PPT.toString(),
+            FileTypeEnum.CODE.toString(),
+            FileTypeEnum.WEB.toString());
+    private static final List<String> COMPRESS_TYPES = List.of(FileTypeEnum.COMPRESS_FILE.toString());
 
     private final FileDataService fileDataService;
     private final ResourceDataService resourceDataService;
+    private final FavoriteDataService favoriteDataService;
+    private final FileTagRelationDataService fileTagRelationDataService;
+    private final FileRemarkDataService fileRemarkDataService;
     private final HomeDashProperties homeDashProperties;
-
-    @org.springframework.beans.factory.annotation.Autowired
-    private FileMapper fileMapper;
 
     @org.springframework.beans.factory.annotation.Autowired
     @org.springframework.context.annotation.Lazy
@@ -82,44 +88,44 @@ public class FileBizImpl implements FileBiz {
      */
     @Transactional(readOnly = true)
     @Override
-    public ResponseDto findByParentId(Long parentId, String sortBy, String sortOrder) {
+    public ResponseDTO findByParentId(Long parentId, String sortBy, String sortOrder) {
         boolean isAsc = "asc".equalsIgnoreCase(normalizeSortOrder(sortOrder));
         List<File> files = fileDataService.lambdaQuery()
                 .eq(File::getParentId, parentId)
                 .orderBy(true, isAsc, getSortColumn(sortBy))
                 .list();
-        files.forEach(this::fillFolderSizeIfNecessary);
-        List<FolderPathDto> folderPaths = getFolderTree(parentId);
-        return ResponseDto.success(files, folderPaths);
+        fillFolderSizes(files);
+        List<FolderPathDTO> folderPaths = getFolderTree(parentId);
+        return ResponseDTO.success(files, folderPaths);
     }
 
     @Override
-    public ResponseDto getFolderSize(Long folderId) {
+    public ResponseDTO getFolderSize(Long folderId) {
         File folder = findById(folderId)
                 .orElseThrow(() -> new DataNotFoundException(String.format("文件夹不存在 [folderId=%d]", folderId)));
-        if (!FileType.FOLDER.toString().equals(folder.getType())) {
+        if (!FileTypeEnum.FOLDER.toString().equals(folder.getType())) {
             throw new DataFormatException(String.format("目标不是文件夹 [folderId=%d]", folderId));
         }
-        return ResponseDto.success(Map.of("size", calculateFolderSize(folderId)));
+        return ResponseDTO.success(Map.of("size", calculateFolderSize(folderId)));
     }
 
     @Override
-    public ResponseDto findRecentFiles(Integer limit) {
+    public ResponseDTO findRecentFiles(Integer limit) {
         int safeLimit = normalizeLimit(limit);
         LambdaQueryWrapper<File> wrapper = new LambdaQueryWrapper<>();
-        wrapper.and(w -> w.ne(File::getType, FileType.FOLDER.toString())
-                .or(sub -> sub.eq(File::getType, FileType.FOLDER.toString())
+        wrapper.and(w -> w.ne(File::getType, FileTypeEnum.FOLDER.toString())
+                .or(sub -> sub.eq(File::getType, FileTypeEnum.FOLDER.toString())
                         .and(cond -> cond.ne(File::getParentId, File.ROOT_FILE.getId())
                                 .or().notIn(File::getFileName, SYSTEM_INITIALIZED_FOLDERS)))
         );
         wrapper.orderByDesc(File::getCreateTime);
         wrapper.last("LIMIT " + safeLimit);
         List<File> recentFiles = fileDataService.list(wrapper);
-        return ResponseDto.success(recentFiles, Map.of("limit", safeLimit));
+        return ResponseDTO.success(recentFiles, Map.of("limit", safeLimit));
     }
 
     @Override
-    public ResponseDto getRecentUploadSummary(Integer limit) {
+    public ResponseDTO getRecentUploadSummary(Integer limit) {
         int safeLimit = normalizeLimit(limit);
 
         final LocalDateTime now = LocalDateTime.now();
@@ -136,8 +142,8 @@ public class FileBizImpl implements FileBiz {
         long monthSize = monthFiles.stream().mapToLong(f -> f.getSize() != null ? f.getSize() : 0).sum();
 
         LambdaQueryWrapper<File> wrapper = new LambdaQueryWrapper<>();
-        wrapper.and(w -> w.ne(File::getType, FileType.FOLDER.toString())
-                .or(sub -> sub.eq(File::getType, FileType.FOLDER.toString())
+        wrapper.and(w -> w.ne(File::getType, FileTypeEnum.FOLDER.toString())
+                .or(sub -> sub.eq(File::getType, FileTypeEnum.FOLDER.toString())
                         .and(cond -> cond.ne(File::getParentId, File.ROOT_FILE.getId())
                                 .or().notIn(File::getFileName, SYSTEM_INITIALIZED_FOLDERS)))
         );
@@ -145,8 +151,8 @@ public class FileBizImpl implements FileBiz {
         wrapper.last("LIMIT " + safeLimit);
         List<File> recentFiles = fileDataService.list(wrapper);
 
-        List<RecentUploadSummaryDto.File> recentFileList = recentFiles.stream()
-                .map(f -> RecentUploadSummaryDto.File.builder()
+        List<RecentUploadSummaryDTO.File> recentFileList = recentFiles.stream()
+                .map(f -> RecentUploadSummaryDTO.File.builder()
                         .id(f.getId())
                         .fileName(f.getFileName())
                         .type(f.getType())
@@ -156,7 +162,7 @@ public class FileBizImpl implements FileBiz {
                         .build())
                 .toList();
 
-        RecentUploadSummaryDto summary = RecentUploadSummaryDto.builder()
+        RecentUploadSummaryDTO summary = RecentUploadSummaryDTO.builder()
                 .recentFiles(recentFileList)
                 .todayCount(todayFiles.size())
                 .weekCount(weekFiles.size())
@@ -168,25 +174,25 @@ public class FileBizImpl implements FileBiz {
                 .querySummary(Map.of("limit", safeLimit))
                 .build();
 
-        return ResponseDto.success(summary);
+        return ResponseDTO.success(summary);
     }
 
     @Override
-    public ResponseDto findFilesByCategory(String category, String sortBy, String sortOrder) {
+    public ResponseDTO findFilesByCategory(String category, String sortBy, String sortOrder) {
         String normalizedCategory = normalizeCategory(category);
         boolean isAsc = "asc".equalsIgnoreCase(normalizeSortOrder(sortOrder));
 
         LambdaQueryWrapper<File> wrapper = new LambdaQueryWrapper<>();
-        wrapper.ne(File::getType, FileType.FOLDER.toString());
+        wrapper.ne(File::getType, FileTypeEnum.FOLDER.toString());
         switch (normalizedCategory) {
             case "picture":
-                wrapper.eq(File::getType, FileType.PICTURE.toString());
+                wrapper.eq(File::getType, FileTypeEnum.PICTURE.toString());
                 break;
             case "video":
-                wrapper.eq(File::getType, FileType.VIDEO.toString());
+                wrapper.eq(File::getType, FileTypeEnum.VIDEO.toString());
                 break;
             case "audio":
-                wrapper.eq(File::getType, FileType.AUDIO.toString());
+                wrapper.eq(File::getType, FileTypeEnum.AUDIO.toString());
                 break;
             case "document":
                 wrapper.in(File::getType, DOCUMENT_TYPES);
@@ -196,10 +202,10 @@ public class FileBizImpl implements FileBiz {
                 break;
             case "other":
                 List<String> knownTypes = new ArrayList<>();
-                knownTypes.add(FileType.FOLDER.toString());
-                knownTypes.add(FileType.PICTURE.toString());
-                knownTypes.add(FileType.VIDEO.toString());
-                knownTypes.add(FileType.AUDIO.toString());
+                knownTypes.add(FileTypeEnum.FOLDER.toString());
+                knownTypes.add(FileTypeEnum.PICTURE.toString());
+                knownTypes.add(FileTypeEnum.VIDEO.toString());
+                knownTypes.add(FileTypeEnum.AUDIO.toString());
                 knownTypes.addAll(DOCUMENT_TYPES);
                 knownTypes.addAll(COMPRESS_TYPES);
                 wrapper.notIn(File::getType, knownTypes);
@@ -209,21 +215,21 @@ public class FileBizImpl implements FileBiz {
         }
         wrapper.orderBy(true, isAsc, getSortColumn(sortBy));
         List<File> files = fileDataService.list(wrapper);
-        return ResponseDto.success(files, Map.of(
+        return ResponseDTO.success(files, Map.of(
                 "category", normalizedCategory,
                 "count", files.size()));
     }
 
     @Override
-    public ResponseDto categorySummary() {
+    public ResponseDTO categorySummary() {
         long pictureCount = fileDataService.count(
-                new LambdaQueryWrapper<File>().eq(File::getType, FileType.PICTURE.toString())
+                new LambdaQueryWrapper<File>().eq(File::getType, FileTypeEnum.PICTURE.toString())
         );
         long videoCount = fileDataService.count(
-                new LambdaQueryWrapper<File>().eq(File::getType, FileType.VIDEO.toString())
+                new LambdaQueryWrapper<File>().eq(File::getType, FileTypeEnum.VIDEO.toString())
         );
         long audioCount = fileDataService.count(
-                new LambdaQueryWrapper<File>().eq(File::getType, FileType.AUDIO.toString())
+                new LambdaQueryWrapper<File>().eq(File::getType, FileTypeEnum.AUDIO.toString())
         );
         long docCount = fileDataService.count(
                 new LambdaQueryWrapper<File>().in(File::getType, DOCUMENT_TYPES)
@@ -233,24 +239,24 @@ public class FileBizImpl implements FileBiz {
         );
 
         List<String> knownTypes = new ArrayList<>();
-        knownTypes.add(FileType.FOLDER.toString());
-        knownTypes.add(FileType.PICTURE.toString());
-        knownTypes.add(FileType.VIDEO.toString());
-        knownTypes.add(FileType.AUDIO.toString());
+        knownTypes.add(FileTypeEnum.FOLDER.toString());
+        knownTypes.add(FileTypeEnum.PICTURE.toString());
+        knownTypes.add(FileTypeEnum.VIDEO.toString());
+        knownTypes.add(FileTypeEnum.AUDIO.toString());
         knownTypes.addAll(DOCUMENT_TYPES);
         knownTypes.addAll(COMPRESS_TYPES);
         long otherCount = fileDataService.count(
                 new LambdaQueryWrapper<File>().notIn(File::getType, knownTypes)
         );
 
-        List<FileCategorySummaryDto> summaries = List.of(
-                new FileCategorySummaryDto("picture", "图片", (int) pictureCount),
-                new FileCategorySummaryDto("video", "视频", (int) videoCount),
-                new FileCategorySummaryDto("audio", "音频", (int) audioCount),
-                new FileCategorySummaryDto("document", "文档", (int) docCount),
-                new FileCategorySummaryDto("compress", "压缩包", (int) compressCount),
-                new FileCategorySummaryDto("other", "其他", (int) otherCount));
-        return ResponseDto.success(summaries);
+        List<FileCategorySummaryDTO> summaries = List.of(
+                new FileCategorySummaryDTO(FileCategoryEnum.PICTURE.getCode(), FileCategoryEnum.PICTURE.getName(), (int) pictureCount),
+                new FileCategorySummaryDTO(FileCategoryEnum.VIDEO.getCode(), FileCategoryEnum.VIDEO.getName(), (int) videoCount),
+                new FileCategorySummaryDTO(FileCategoryEnum.AUDIO.getCode(), FileCategoryEnum.AUDIO.getName(), (int) audioCount),
+                new FileCategorySummaryDTO(FileCategoryEnum.DOCUMENT.getCode(), FileCategoryEnum.DOCUMENT.getName(), (int) docCount),
+                new FileCategorySummaryDTO(FileCategoryEnum.COMPRESS.getCode(), FileCategoryEnum.COMPRESS.getName(), (int) compressCount),
+                new FileCategorySummaryDTO(FileCategoryEnum.OTHER.getCode(), FileCategoryEnum.OTHER.getName(), (int) otherCount));
+        return ResponseDTO.success(summaries);
     }
 
     /**
@@ -261,15 +267,15 @@ public class FileBizImpl implements FileBiz {
      * @throws DataNotFoundException 当文件不存在时抛出
      */
     @Override
-    public ResponseDto findByFileId(Long fileId) {
+    public ResponseDTO findByFileId(Long fileId) {
         File file = findById(fileId)
                 .orElseThrow(() -> new DataNotFoundException(String.format("文件不存在 [fileId=%d]", fileId)));
 
-        List<FolderPathDto> navigation = FileType.FOLDER.toString().equals(file.getType())
+        List<FolderPathDTO> navigation = FileTypeEnum.FOLDER.toString().equals(file.getType())
                 ? getFolderTree(file.getId())
                 : getFolderTree(file.getParentId());
 
-        FileDetailDto detail = FileDetailDto.builder()
+        FileDetailDTO detail = FileDetailDTO.builder()
                 .id(file.getId())
                 .parentId(file.getParentId())
                 .resourceId(file.getResourceId())
@@ -278,14 +284,14 @@ public class FileBizImpl implements FileBiz {
                 .type(file.getType())
                 .extension(FileUtils.extractFileExtensionName(file.getFileName()))
                 .folderPath(buildFolderPath(navigation))
-                .downloadable(!FileType.FOLDER.toString().equals(file.getType()))
-                .playable(FileType.VIDEO.toString().equals(file.getType()))
+                .downloadable(!FileTypeEnum.FOLDER.toString().equals(file.getType()))
+                .playable(FileTypeEnum.VIDEO.toString().equals(file.getType()))
                 .createTime(file.getCreateTime())
                 .updateTime(file.getUpdateTime())
                 .navigation(navigation)
                 .build();
 
-        return ResponseDto.success(detail);
+        return ResponseDTO.success(detail);
     }
 
     /**
@@ -295,26 +301,33 @@ public class FileBizImpl implements FileBiz {
      * @param file 文件信息对象
      * @throws DataFormatException 当文件名或类型不合法，或父文件夹不存在时抛出
      */
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    public void createFile(File file) {
+    public void createFile(CreateFileDTO dto) {
         log.info("开始创建文件 [fileName={}, parentId={}, type={}]",
-                file.getFileName(), file.getParentId(), file.getType());
+                dto.getFileName(), dto.getParentId(), dto.getType());
 
-        FileUtils.checkFileName(file.getFileName());
-        FileUtils.checkFileType(file.getType());
-        File parentFile = findById(file.getParentId())
+        FileUtils.checkFileName(dto.getFileName());
+        FileUtils.checkFileType(dto.getType());
+        File parentFile = findById(dto.getParentId())
                 .orElseThrow(() -> new DataFormatException(
-                        String.format("父文件夹不存在 [parentId=%d]", file.getParentId())));
+                        String.format("父文件夹不存在 [parentId=%d]", dto.getParentId())));
 
-        if (!FileType.FOLDER.toString().equals(parentFile.getType())) {
+        if (!FileTypeEnum.FOLDER.toString().equals(parentFile.getType())) {
             log.error("父文件夹不是文件夹类型 [parentId={}, fileName={}]",
-                    file.getParentId(), file.getFileName());
+                    dto.getParentId(), dto.getFileName());
             throw new DataFormatException(
                     String.format("父文件夹不是文件夹类型 [parentId=%d, fileName=%s]",
-                            file.getParentId(), file.getFileName()));
+                            dto.getParentId(), dto.getFileName()));
         }
 
-        ensureUniqueFileName(file.getParentId(), file.getFileName(), null);
+        ensureUniqueFileName(dto.getParentId(), dto.getFileName(), null);
+        
+        File file = File.builder()
+                .parentId(dto.getParentId())
+                .fileName(dto.getFileName())
+                .type(dto.getType())
+                .build();
         fileDataService.save(file);
 
         log.info("文件创建成功 [fileId={}, fileName={}, parentId={}]",
@@ -328,6 +341,7 @@ public class FileBizImpl implements FileBiz {
      * @param id       文件ID
      * @throws DataFormatException 当文件名不合法时抛出
      */
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void renameFile(String fileName, Long id) {
         log.info("开始重命名文件 [fileId={}, newFileName={}]", id, fileName);
@@ -363,7 +377,7 @@ public class FileBizImpl implements FileBiz {
         File targetFolder = findById(targetId)
                 .orElseThrow(() -> new DataNotFoundException(
                         String.format("目标文件夹不存在 [targetId=%d]", targetId)));
-        if (!FileType.FOLDER.toString().equals(targetFolder.getType())) {
+        if (!FileTypeEnum.FOLDER.toString().equals(targetFolder.getType())) {
             throw new DataFormatException(
                     String.format("目标不是文件夹类型 [targetId=%d]", targetId));
         }
@@ -386,7 +400,7 @@ public class FileBizImpl implements FileBiz {
             if (file.getId().equals(targetId)) {
                 throw new DataFormatException("不能将文件移动到自身");
             }
-            if (FileType.FOLDER.toString().equals(file.getType()) && isDescendant(targetId, file.getId())) {
+            if (FileTypeEnum.FOLDER.toString().equals(file.getType()) && isDescendant(targetId, file.getId())) {
                 throw new DataFormatException("不能将文件夹移动到其子文件夹中");
             }
             if (targetFilenames.contains(file.getFileName())) {
@@ -427,14 +441,14 @@ public class FileBizImpl implements FileBiz {
             File targetFile = findById(targetId)
                     .orElseThrow(() -> new DataNotFoundException(
                             String.format("目标文件夹不存在 [targetId=%d]", targetId)));
-            if (!FileType.FOLDER.toString().equals(targetFile.getType())) {
+            if (!FileTypeEnum.FOLDER.toString().equals(targetFile.getType())) {
                 throw new DataFormatException(
                         String.format("目标不是文件夹类型 [targetId=%d]", targetId));
             }
 
             Map<Boolean, List<File>> fileGroups = filesToCopy.stream()
                     .collect(Collectors.partitioningBy(
-                            file -> FileType.FOLDER.toString().equals(file.getType())));
+                            file -> FileTypeEnum.FOLDER.toString().equals(file.getType())));
 
             List<File> folders = fileGroups.get(true);
             List<File> commonFiles = fileGroups.get(false);
@@ -444,6 +458,9 @@ public class FileBizImpl implements FileBiz {
             }
 
             for (File folder : folders) {
+                if (isDescendant(targetId, folder.getId())) {
+                    throw new BusinessException("不能将文件夹复制到自身或其子文件夹中");
+                }
                 copyFolder(folder, targetFile);
             }
         }
@@ -456,6 +473,7 @@ public class FileBizImpl implements FileBiz {
     @Override
     public void deleteFiles(List<Long> ids) {
         log.info("开始逻辑删除文件并移入回收站 [fileIds={}]", ids);
+        Objects.requireNonNull(ids, "要逻辑删除的文件ID列表不能为空");
         recycleBinBiz.softDelete(ids);
     }
 
@@ -499,8 +517,8 @@ public class FileBizImpl implements FileBiz {
         }
     }
 
-    private List<FolderPathDto> getFolderTree(Long parentId) {
-        LinkedList<FolderPathDto> path = new LinkedList<>();
+    private List<FolderPathDTO> getFolderTree(Long parentId) {
+        LinkedList<FolderPathDTO> path = new LinkedList<>();
         Long currentId = parentId;
 
         while (currentId != null && !currentId.equals(File.ROOT_FILE.getId())) {
@@ -508,14 +526,14 @@ public class FileBizImpl implements FileBiz {
             File currentFile = findById(idToFind)
                     .orElseThrow(() -> new DataNotFoundException(String.format("Folder with ID %d not found.", idToFind)));
 
-            if (!FileType.FOLDER.toString().equals(currentFile.getType())) {
+            if (!FileTypeEnum.FOLDER.toString().equals(currentFile.getType())) {
                 throw new DataFormatException(String.format("ID %d is not a folder.", currentId));
             }
-            path.addFirst(new FolderPathDto(currentFile.getId(), currentFile.getFileName()));
+            path.addFirst(new FolderPathDTO(currentFile.getId(), currentFile.getFileName()));
             currentId = currentFile.getParentId();
         }
 
-        path.addFirst(new FolderPathDto(File.ROOT_FILE.getId(), File.ROOT_FILE.getFileName()));
+        path.addFirst(new FolderPathDTO(File.ROOT_FILE.getId(), File.ROOT_FILE.getFileName()));
         return path;
     }
 
@@ -527,9 +545,12 @@ public class FileBizImpl implements FileBiz {
 
         Objects.requireNonNull(ids, "要删除的文件ID列表不能为空");
 
+        // Clean up related records (favorites, tags, remarks) before permanent deletion
+        cleanupRelatedRecords(ids);
+
         List<File> filesToDelete = new ArrayList<>();
         for (Long id : ids) {
-            File f = fileMapper.selectByIdWithDeleted(id);
+            File f = fileDataService.selectByIdWithDeleted(id);
             if (f != null) {
                 filesToDelete.add(f);
             }
@@ -537,7 +558,7 @@ public class FileBizImpl implements FileBiz {
 
         Map<Boolean, List<File>> fileGroups = filesToDelete.stream()
                 .collect(Collectors.partitioningBy(
-                        file -> FileType.FOLDER.toString().equals(file.getType())));
+                        file -> FileTypeEnum.FOLDER.toString().equals(file.getType())));
 
         List<File> folders = fileGroups.get(true);
         List<File> commonFiles = fileGroups.get(false);
@@ -564,7 +585,7 @@ public class FileBizImpl implements FileBiz {
         if (deleteCountByResourceId.isEmpty()) {
             if (!fileIdsToDelete.isEmpty()) {
                 for (Long fileId : fileIdsToDelete) {
-                    fileMapper.permanentlyDelete(fileId);
+                    fileDataService.permanentlyDelete(fileId);
                 }
             }
             return;
@@ -581,7 +602,6 @@ public class FileBizImpl implements FileBiz {
                 resourceIdsToDelete.add(resource.getId());
                 physicalFilesToDelete.add(resource);
             } else {
-                resource.setLink(resource.getLink() - (int) count);
                 resourcesToUpdate.add(resource);
             }
         }
@@ -589,7 +609,7 @@ public class FileBizImpl implements FileBiz {
         if (!physicalFilesToDelete.isEmpty()) {
             physicalFilesToDelete.forEach(resource -> {
                 try {
-                    Files.deleteIfExists(Paths.get(homeDashProperties.getBasicResourcePath(), resource.getPath()));
+                    Files.deleteIfExists(FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath()));
                 } catch (IOException e) {
                     log.error("物理文件删除失败 [resourceId={}, resourcePath={}]",
                             resource.getId(), resource.getPath(), e);
@@ -599,12 +619,18 @@ public class FileBizImpl implements FileBiz {
         }
 
         if (!resourcesToUpdate.isEmpty()) {
-            resourceDataService.updateBatchById(resourcesToUpdate);
+            for (Resource resource : resourcesToUpdate) {
+                long count = deleteCountByResourceId.getOrDefault(resource.getId(), 0L);
+                resourceDataService.lambdaUpdate()
+                        .eq(Resource::getId, resource.getId())
+                        .setSql("link = GREATEST(link - " + count + ", 0)")
+                        .update();
+            }
         }
 
         if (!fileIdsToDelete.isEmpty()) {
             for (Long fileId : fileIdsToDelete) {
-                fileMapper.permanentlyDelete(fileId);
+                fileDataService.permanentlyDelete(fileId);
             }
         }
     }
@@ -621,10 +647,10 @@ public class FileBizImpl implements FileBiz {
 
         while (!folderStack.isEmpty()) {
             File currentFolder = folderStack.pop();
-            List<File> children = fileMapper.selectAllChildrenByParentId(currentFolder.getId());
+            List<File> children = fileDataService.selectAllChildrenByParentId(currentFolder.getId());
 
             for (File child : children) {
-                if (FileType.FOLDER.toString().equals(child.getType())) {
+                if (FileTypeEnum.FOLDER.toString().equals(child.getType())) {
                     folderStack.push(child);
                     allFoldersToDelete.add(child);
                 } else {
@@ -639,15 +665,42 @@ public class FileBizImpl implements FileBiz {
 
         Collections.reverse(allFoldersToDelete);
         for (File f : allFoldersToDelete) {
-            fileMapper.permanentlyDelete(f.getId());
+            fileDataService.permanentlyDelete(f.getId());
         }
 
         log.info("迭代物理彻底删除文件夹成功 [folderId={}, folderName={}, 删除文件夹数量={}, 删除文件数量={}]",
                 folder.getId(), folder.getFileName(), allFoldersToDelete.size(), allFilesToDelete.size());
     }
 
+    /**
+     * 清理文件关联的收藏、标签关联和备注记录，防止删除后产生孤立数据。
+     *
+     * @param fileIds 要清理关联记录的文件ID列表
+     */
+    private void cleanupRelatedRecords(List<Long> fileIds) {
+        if (fileIds == null || fileIds.isEmpty()) {
+            return;
+        }
+        for (Long fileId : fileIds) {
+            File file = fileDataService.selectByIdWithDeleted(fileId);
+            if (file == null) {
+                continue;
+            }
+            // Remove tag relations by fileId
+            fileTagRelationDataService.remove(
+                    new LambdaQueryWrapper<FileTagRelation>().eq(FileTagRelation::getFileId, fileId));
+            // Remove favorites and remarks by resourceId
+            if (file.getResourceId() != null) {
+                favoriteDataService.remove(
+                        new LambdaQueryWrapper<Favorite>().eq(Favorite::getResourceId, file.getResourceId()));
+                fileRemarkDataService.remove(
+                        new LambdaQueryWrapper<FileRemark>().eq(FileRemark::getResourceId, file.getResourceId()));
+            }
+        }
+    }
+
     private void copyFolder(File file, File parentFile) {
-        if (parentFile.getParentId() != null && parentFile.getParentId().equals(file.getId())) {
+        if (isDescendant(parentFile.getId(), file.getId())) {
             throw new DataFormatException(
                     String.format("不能复制到子文件夹中 [sourceFolderId=%d, targetFolderId=%d]",
                             file.getId(), parentFile.getId()));
@@ -655,14 +708,14 @@ public class FileBizImpl implements FileBiz {
 
         ensureUniqueFileName(parentFile.getId(), file.getFileName(), null);
         File newFile = File.builder()
-                .type(FileType.FOLDER.toString()).parentId(parentFile.getId())
+                .type(FileTypeEnum.FOLDER.toString()).parentId(parentFile.getId())
                 .fileName(file.getFileName())
                 .build();
         fileDataService.save(newFile);
 
         List<File> children = fileDataService.lambdaQuery().eq(File::getParentId, file.getId()).list();
         for (File f : children) {
-            if (FileType.FOLDER.toString().equals(f.getType())) {
+            if (FileTypeEnum.FOLDER.toString().equals(f.getType())) {
                 copyFolder(f, newFile);
             } else {
                 copyCommonFile(f, newFile);
@@ -695,7 +748,7 @@ public class FileBizImpl implements FileBiz {
 
         resourceDataService.lambdaUpdate()
                 .eq(Resource::getId, resource.getId())
-                .set(Resource::getLink, resource.getLink() + 1)
+                .setSql("link = link + 1")
                 .update();
 
         ensureUniqueFileName(parentFile.getId(), file.getFileName(), null);
@@ -774,10 +827,11 @@ public class FileBizImpl implements FileBiz {
             throw new DataFormatException("分类不能为空");
         }
         String normalized = category.trim().toLowerCase();
-        if (!List.of("picture", "video", "audio", "document", "compress", "other").contains(normalized)) {
+        FileCategoryEnum fileCategory = FileCategoryEnum.fromCode(normalized);
+        if (fileCategory == FileCategoryEnum.OTHER && !"other".equalsIgnoreCase(normalized)) {
             throw new DataFormatException(String.format("不支持的分类 [category=%s]", category));
         }
-        return normalized;
+        return fileCategory.getCode();
     }
 
     private boolean matchesCategory(File file, String category) {
@@ -786,23 +840,23 @@ public class FileBizImpl implements FileBiz {
 
     private String getCategoryForFileType(File file) {
         String type = file.getType();
-        if (FileType.PICTURE.toString().equals(type)) return "picture";
-        if (FileType.VIDEO.toString().equals(type)) return "video";
-        if (FileType.AUDIO.toString().equals(type)) return "audio";
-        if (DOCUMENT_TYPES.contains(type)) return "document";
-        if (COMPRESS_TYPES.contains(type)) return "compress";
-        return "other";
+        if (FileTypeEnum.PICTURE.toString().equals(type)) return FileCategoryEnum.PICTURE.getCode();
+        if (FileTypeEnum.VIDEO.toString().equals(type)) return FileCategoryEnum.VIDEO.getCode();
+        if (FileTypeEnum.AUDIO.toString().equals(type)) return FileCategoryEnum.AUDIO.getCode();
+        if (DOCUMENT_TYPES.contains(type)) return FileCategoryEnum.DOCUMENT.getCode();
+        if (COMPRESS_TYPES.contains(type)) return FileCategoryEnum.COMPRESS.getCode();
+        return FileCategoryEnum.OTHER.getCode();
     }
 
-    private String buildFolderPath(List<FolderPathDto> navigation) {
+    private String buildFolderPath(List<FolderPathDTO> navigation) {
         return navigation.stream()
-                .map(FolderPathDto::getFileName)
+                .map(FolderPathDTO::getFileName)
                 .collect(Collectors.joining(" / "));
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ResponseDto uploadWithMD5(MultipartFile file, Long parentId) {
+    public ResponseDTO uploadWithMD5(MultipartFile file, Long parentId) {
         long startTime = System.currentTimeMillis();
         log.info("开始上传文件（支持秒传）[fileName={}, fileSize={}, parentId={}]",
                 file.getOriginalFilename(), file.getSize(), parentId);
@@ -838,7 +892,7 @@ public class FileBizImpl implements FileBiz {
                 log.info("发现相同MD5的已存在资源，执行秒传 [md5={}, resourceId={}]", md5, existingResource.getId());
                 resourceDataService.lambdaUpdate()
                         .eq(Resource::getId, existingResource.getId())
-                        .set(Resource::getLink, existingResource.getLink() + 1)
+                        .setSql("link = link + 1")
                         .update();
 
                 newFile = File.builder()
@@ -876,7 +930,7 @@ public class FileBizImpl implements FileBiz {
             log.info("文件上传完成 [fileName={}, isInstantUpload={}, 总耗时={}ms]",
                     fileName, isInstantUpload, System.currentTimeMillis() - startTime);
 
-            return ResponseDto.success(resultData);
+            return ResponseDTO.success(resultData);
 
         } catch (IOException e) {
             throw new FileOperationException("文件上传失败", e);
@@ -884,7 +938,7 @@ public class FileBizImpl implements FileBiz {
     }
 
     @Override
-    public ResponseDto checkFileByMD5(String md5) {
+    public ResponseDTO checkFileByMD5(String md5) {
         if (md5 == null || md5.trim().isEmpty()) {
             throw new DataFormatException("MD5值不能为空");
         }
@@ -893,7 +947,7 @@ public class FileBizImpl implements FileBiz {
         return Optional.ofNullable(resourceDataService.lambdaQuery().eq(Resource::getMd5, normalizedMd5).one())
                 .map(resource -> {
                     log.info("发现相同MD5的资源 [md5={}, resourceId={}]", normalizedMd5, resource.getId());
-                    return ResponseDto.success(Map.of(
+                    return ResponseDTO.success(Map.of(
                             "exists", true,
                             "resource", resource,
                             "message", "文件已存在，可以秒传"
@@ -901,7 +955,7 @@ public class FileBizImpl implements FileBiz {
                 })
                 .orElseGet(() -> {
                     log.debug("未发现相同MD5的资源 [md5={}]", normalizedMd5);
-                    return ResponseDto.success(Map.of(
+                    return ResponseDTO.success(Map.of(
                             "exists", false,
                             "message", "文件不存在，需要正常上传"
                     ));
@@ -909,7 +963,7 @@ public class FileBizImpl implements FileBiz {
     }
 
     @Override
-    public ResponseDto verifyFileMD5(Long fileId) {
+    public ResponseDTO verifyFileMD5(Long fileId) {
         Objects.requireNonNull(fileId, "文件ID不能为空");
 
         File file = findById(fileId)
@@ -921,12 +975,12 @@ public class FileBizImpl implements FileBiz {
 
         Resource resource = resourceDataService.getById(file.getResourceId());
         if (Objects.isNull(resource) || Objects.isNull(resource.getMd5())) {
-            return ResponseDto.success(Map.of("valid", false, "message", "资源没有MD5值，无法验证"));
+            return ResponseDTO.success(Map.of("valid", false, "message", "资源没有MD5值，无法验证"));
         }
 
-        Path filePath = Paths.get(homeDashProperties.getBasicResourcePath(), resource.getPath());
+        Path filePath = FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath());
         if (!Files.exists(filePath)) {
-            return ResponseDto.success(Map.of("valid", false, "error", "物理文件不存在"));
+            return ResponseDTO.success(Map.of("valid", false, "error", "物理文件不存在"));
         }
 
         long startTime = System.currentTimeMillis();
@@ -936,7 +990,7 @@ public class FileBizImpl implements FileBiz {
         boolean isValid = resource.getMd5().equalsIgnoreCase(actualMD5);
         log.info("MD5验证完成 [fileId={}, valid={}, 耗时={}ms]", fileId, isValid, duration);
 
-        return ResponseDto.success(Map.of(
+        return ResponseDTO.success(Map.of(
                 "valid", isValid,
                 "expected", resource.getMd5(),
                 "actual", String.valueOf(actualMD5),
@@ -947,7 +1001,7 @@ public class FileBizImpl implements FileBiz {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ResponseDto instantUpload(String md5, String fileName, Long parentId) {
+    public ResponseDTO instantUpload(String md5, String fileName, Long parentId) {
         long startTime = System.currentTimeMillis();
         log.info("开始执行秒传 [md5={}, fileName={}, parentId={}]", md5, fileName, parentId);
 
@@ -963,7 +1017,7 @@ public class FileBizImpl implements FileBiz {
 
         resourceDataService.lambdaUpdate()
                 .eq(Resource::getId, existingResource.getId())
-                .set(Resource::getLink, existingResource.getLink() + 1)
+                .setSql("link = link + 1")
                 .update();
 
         File newFile = File.builder()
@@ -978,7 +1032,7 @@ public class FileBizImpl implements FileBiz {
         log.info("秒传成功 [newFileId={}, resourceId={}, 耗时={}ms]",
                 newFile.getId(), existingResource.getId(), System.currentTimeMillis() - startTime);
 
-        return ResponseDto.success(Map.of(
+        return ResponseDTO.success(Map.of(
                 "file", newFile,
                 "isInstantUpload", true,
                 "md5", md5
@@ -1011,8 +1065,8 @@ public class FileBizImpl implements FileBiz {
     private List<File> queryByTimeRange(LocalDateTime start, LocalDateTime end) {
         LambdaQueryWrapper<File> wrapper = new LambdaQueryWrapper<>();
         wrapper.between(File::getCreateTime, start, end)
-                .and(w -> w.ne(File::getType, FileType.FOLDER.toString())
-                        .or(sub -> sub.eq(File::getType, FileType.FOLDER.toString())
+                .and(w -> w.ne(File::getType, FileTypeEnum.FOLDER.toString())
+                        .or(sub -> sub.eq(File::getType, FileTypeEnum.FOLDER.toString())
                                 .and(cond -> cond.ne(File::getParentId, File.ROOT_FILE.getId())
                                         .or().notIn(File::getFileName, SYSTEM_INITIALIZED_FOLDERS)))
                 )
@@ -1024,29 +1078,99 @@ public class FileBizImpl implements FileBiz {
         if (file == null) {
             return false;
         }
-        return !(FileType.FOLDER.toString().equals(file.getType())
+        return !(FileTypeEnum.FOLDER.toString().equals(file.getType())
                 && Objects.equals(file.getParentId(), File.ROOT_FILE.getId())
                 && SYSTEM_INITIALIZED_FOLDERS.contains(file.getFileName()));
     }
 
     private void fillFolderSizeIfNecessary(File file) {
-        if (file != null && FileType.FOLDER.toString().equals(file.getType())) {
+        if (file != null && FileTypeEnum.FOLDER.toString().equals(file.getType())) {
             file.setFolderSize(calculateFolderSize(file.getId()));
         }
     }
 
-    private long calculateFolderSize(Long folderId) {
-        List<File> children = fileDataService.lambdaQuery()
-                .eq(File::getParentId, folderId)
-                .list();
+    private void fillFolderSizes(List<File> files) {
+        if (files == null || files.isEmpty()) {
+            return;
+        }
+        List<File> folders = files.stream()
+                .filter(f -> f != null && FileTypeEnum.FOLDER.toString().equals(f.getType()))
+                .toList();
+        if (folders.isEmpty()) {
+            return;
+        }
 
-        long totalSize = 0L;
-        for (File child : children) {
-            if (FileType.FOLDER.toString().equals(child.getType())) {
-                totalSize += calculateFolderSize(child.getId());
-            } else {
-                totalSize += child.getSize() != null ? child.getSize() : 0L;
+        Map<Long, Long> childToRootMap = new HashMap<>();
+        Map<Long, Long> rootSizes = new HashMap<>();
+        List<Long> currentLevelFolderIds = new ArrayList<>();
+
+        for (File f : folders) {
+            currentLevelFolderIds.add(f.getId());
+            childToRootMap.put(f.getId(), f.getId());
+            rootSizes.put(f.getId(), 0L);
+        }
+
+        while (!currentLevelFolderIds.isEmpty()) {
+            List<File> children = fileDataService.lambdaQuery()
+                    .in(File::getParentId, currentLevelFolderIds)
+                    .eq(File::getIsDeleted, 0)
+                    .list();
+
+            if (children.isEmpty()) {
+                break;
             }
+
+            List<Long> nextLevelFolderIds = new ArrayList<>();
+            for (File child : children) {
+                Long parentId = child.getParentId();
+                Long rootId = childToRootMap.get(parentId);
+                if (rootId == null) {
+                    continue;
+                }
+
+                if (FileTypeEnum.FOLDER.toString().equals(child.getType())) {
+                    nextLevelFolderIds.add(child.getId());
+                    childToRootMap.put(child.getId(), rootId);
+                } else {
+                    long size = child.getSize() != null ? child.getSize() : 0L;
+                    rootSizes.put(rootId, rootSizes.get(rootId) + size);
+                }
+            }
+            currentLevelFolderIds = nextLevelFolderIds;
+        }
+
+        for (File f : folders) {
+            f.setFolderSize(rootSizes.getOrDefault(f.getId(), 0L));
+        }
+    }
+
+    private long calculateFolderSize(Long folderId) {
+        if (folderId == null) {
+            return 0L;
+        }
+        long totalSize = 0L;
+        List<Long> currentLevelFolderIds = new ArrayList<>();
+        currentLevelFolderIds.add(folderId);
+
+        while (!currentLevelFolderIds.isEmpty()) {
+            List<File> children = fileDataService.lambdaQuery()
+                    .in(File::getParentId, currentLevelFolderIds)
+                    .eq(File::getIsDeleted, 0)
+                    .list();
+
+            if (children.isEmpty()) {
+                break;
+            }
+
+            List<Long> nextLevelFolderIds = new ArrayList<>();
+            for (File child : children) {
+                if (FileTypeEnum.FOLDER.toString().equals(child.getType())) {
+                    nextLevelFolderIds.add(child.getId());
+                } else {
+                    totalSize += child.getSize() != null ? child.getSize() : 0L;
+                }
+            }
+            currentLevelFolderIds = nextLevelFolderIds;
         }
         return totalSize;
     }
@@ -1121,19 +1245,19 @@ public class FileBizImpl implements FileBiz {
     public String getTextFileContent(Long fileId) {
         log.info("获取文本文件内容 [fileId={}]", fileId);
         File file = findById(fileId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCodeEnum.FILE_NOT_FOUND));
 
         if (file.getResourceId() == null) {
-            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.RESOURCE_NOT_FOUND);
         }
 
         Resource resource = resourceDataService.getById(file.getResourceId());
         if (resource == null) {
-            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.RESOURCE_NOT_FOUND);
         }
 
         try {
-            Path filePath = Paths.get(homeDashProperties.getBasicResourcePath(), resource.getPath());
+            Path filePath = FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath());
             return Files.readString(filePath);
         } catch (IOException e) {
             log.error("读取文本文件内容失败 [fileId={}]", fileId, e);
@@ -1145,15 +1269,15 @@ public class FileBizImpl implements FileBiz {
     public String getAudioFileUrl(Long fileId) {
         log.info("获取音频文件播放URL [fileId={}]", fileId);
         File file = findById(fileId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCodeEnum.FILE_NOT_FOUND));
 
         if (file.getResourceId() == null) {
-            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.RESOURCE_NOT_FOUND);
         }
 
         Resource resource = resourceDataService.getById(file.getResourceId());
         if (resource == null) {
-            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.RESOURCE_NOT_FOUND);
         }
 
         return "/v1/resource/" + resource.getId() + "/download";

@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -22,7 +22,7 @@ public class StorageException extends SystemException {
      * 默认构造函数。
      */
     public StorageException() {
-        super(ErrorCode.IO_ERROR);
+        super(ErrorCodeEnum.IO_ERROR);
     }
 
     /**
@@ -31,7 +31,7 @@ public class StorageException extends SystemException {
      * @param message 异常消息
      */
     public StorageException(String message) {
-        super(ErrorCode.IO_ERROR, message);
+        super(ErrorCodeEnum.IO_ERROR, message);
     }
 
     /**
@@ -41,7 +41,7 @@ public class StorageException extends SystemException {
      * @param cause   异常原因
      */
     public StorageException(String message, Throwable cause) {
-        super(ErrorCode.IO_ERROR, message, cause);
+        super(ErrorCodeEnum.IO_ERROR, message, cause);
     }
 
     /**
@@ -50,6 +50,6 @@ public class StorageException extends SystemException {
      * @param cause 异常原因
      */
     public StorageException(Throwable cause) {
-        super(ErrorCode.IO_ERROR, cause);
+        super(ErrorCodeEnum.IO_ERROR, cause);
     }
 }

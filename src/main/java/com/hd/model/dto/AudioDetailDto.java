@@ -12,14 +12,14 @@ import java.util.List;
 /**
  * 音频详情DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AudioDetailDto {
+public class AudioDetailDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;

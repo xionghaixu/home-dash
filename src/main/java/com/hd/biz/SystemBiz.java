@@ -1,6 +1,6 @@
 package com.hd.biz;
 
-import com.hd.model.dto.SystemInfoDto;
+import com.hd.model.dto.SystemInfoDTO;
 
 /**
  * @author xhx
@@ -16,6 +16,6 @@ public interface SystemBiz {
 	 *
 	 * @return 系统信息
 	 */
-	SystemInfoDto systemInfo();
+	SystemInfoDTO systemInfo();
 }
 

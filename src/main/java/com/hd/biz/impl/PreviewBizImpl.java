@@ -2,7 +2,9 @@ package com.hd.biz.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.hd.biz.PreviewBiz;
+import com.hd.common.config.HomeDashProperties;
 import com.hd.common.exception.DataNotFoundException;
+import com.hd.common.util.FileUtils;
 import com.hd.dao.entity.RecentUse;
 import com.hd.dao.entity.Resource;
 import com.hd.dao.service.RecentUseDataService;
@@ -10,6 +12,7 @@ import com.hd.dao.service.ResourceDataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -35,6 +38,8 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -50,7 +55,7 @@ import java.util.regex.Pattern;
  * 实现图片、文本、音频等文件的预览能力。
  * Biz层通过Service访问数据，不直接调用Mapper。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -61,9 +66,7 @@ public class PreviewBizImpl implements PreviewBiz {
 
     private final ResourceDataService resourceDataService;
     private final RecentUseDataService recentUseDataService;
-
-    @Value("${HomeDash.homeDir:./data}")
-    private String homeDir;
+    private final HomeDashProperties homeDashProperties;
 
     @Value("${HomeDash.preview.maxTextPreviewSize:1048576}")
     private long maxTextPreviewSize;
@@ -85,7 +88,7 @@ public class PreviewBizImpl implements PreviewBiz {
         }
 
         try {
-            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
+            Path filePath = FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath());
             if (!Files.exists(filePath)) {
                 log.warn("文件不存在 [path={}]", filePath);
                 return null;
@@ -112,7 +115,7 @@ public class PreviewBizImpl implements PreviewBiz {
     }
 
     private Path getThumbnailCachePath(Resource resource) {
-        String cacheDir = homeDir + "/.cache/thumbnails";
+        String cacheDir = homeDashProperties.getHomeDir() + java.io.File.separator + ".cache" + java.io.File.separator + "thumbnails";
         return Paths.get(cacheDir, resource.getId() + "." + THUMBNAIL_FORMAT);
     }
 
@@ -169,7 +172,7 @@ public class PreviewBizImpl implements PreviewBiz {
     }
 
     @Override
-    public byte[] getOriginalImage(Long resourceId) {
+    public org.springframework.core.io.Resource getOriginalImage(Long resourceId) {
         log.info("获取原始图片 [resourceId={}]", resourceId);
 
         Resource resource = resourceDataService.getById(resourceId);
@@ -179,13 +182,13 @@ public class PreviewBizImpl implements PreviewBiz {
         }
 
         try {
-            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
+            Path filePath = FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath());
             if (!Files.exists(filePath)) {
                 log.warn("文件不存在 [path={}]", filePath);
                 return null;
             }
 
-            return Files.readAllBytes(filePath);
+            return new UrlResource(filePath.toUri());
         } catch (IOException e) {
             log.error("读取原始图片失败 [resourceId={}, error={}]", resourceId, e.getMessage());
             return null;
@@ -204,7 +207,7 @@ public class PreviewBizImpl implements PreviewBiz {
         Map<String, Object> exifData = new LinkedHashMap<>();
 
         try {
-            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
+            Path filePath = FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath());
             if (!Files.exists(filePath)) {
                 throw new DataNotFoundException("文件不存在");
             }
@@ -244,7 +247,7 @@ public class PreviewBizImpl implements PreviewBiz {
         imageInfo.put("size", resource.getSize());
 
         try {
-            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
+            Path filePath = FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath());
             if (!Files.exists(filePath)) {
                 throw new DataNotFoundException("文件不存在");
             }
@@ -295,7 +298,7 @@ public class PreviewBizImpl implements PreviewBiz {
         previewInfo.put("resourceId", resource.getId());
 
         try {
-            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
+            Path filePath = FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath());
             if (!Files.exists(filePath)) {
                 throw new DataNotFoundException("文件不存在");
             }
@@ -315,7 +318,8 @@ public class PreviewBizImpl implements PreviewBiz {
                 }
             }
 
-            long actualLimit = Math.min(limit, fileSize - offset);
+            long actualOffset = Math.min(offset, fileSize);
+            long actualLimit = Math.min(limit, fileSize - actualOffset);
             if (actualLimit <= 0) {
                 previewInfo.put("content", "");
                 previewInfo.put("offset", offset);
@@ -324,14 +328,24 @@ public class PreviewBizImpl implements PreviewBiz {
                 return previewInfo;
             }
 
-            byte[] bytes = Files.readAllBytes(filePath);
-            int start = (int) Math.min(offset, bytes.length);
-            int length = (int) Math.min(actualLimit, bytes.length - start);
-
-            String detectedEncoding = detectEncoding(bytes);
+            // Read only a small prefix for encoding detection instead of the entire file
+            int prefixSize = (int) Math.min(fileSize, 1000);
+            byte[] prefixBytes = new byte[prefixSize];
+            try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "r")) {
+                raf.readFully(prefixBytes);
+            }
+            String detectedEncoding = detectEncoding(prefixBytes);
             Charset charset = getCharsetFromEncoding(detectedEncoding);
 
-            String content = new String(bytes, start, length, charset);
+            // Read only the needed byte range using RandomAccessFile
+            byte[] buffer = new byte[(int) actualLimit];
+            try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "r")) {
+                raf.seek(actualOffset);
+                raf.readFully(buffer);
+            }
+            int length = buffer.length;
+
+            String content = new String(buffer, 0, length, charset);
             previewInfo.put("content", content);
             previewInfo.put("offset", offset);
             previewInfo.put("length", length);
@@ -367,7 +381,7 @@ public class PreviewBizImpl implements PreviewBiz {
         summary.put("resourceId", resource.getId());
 
         try {
-            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
+            Path filePath = FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath());
             if (!Files.exists(filePath)) {
                 throw new DataNotFoundException("文件不存在");
             }
@@ -375,14 +389,16 @@ public class PreviewBizImpl implements PreviewBiz {
             long fileSize = Files.size(filePath);
             summary.put("totalSize", fileSize);
 
-            long readSize = (int) Math.min(fileSize, textSummaryMaxSize);
-            byte[] bytes = Files.readAllBytes(filePath);
+            long readSize = Math.min(fileSize, textSummaryMaxSize);
+            byte[] bytes;
+            try (InputStream is = Files.newInputStream(filePath)) {
+                bytes = is.readNBytes((int) readSize);
+            }
 
             String detectedEncoding = detectEncoding(bytes);
             Charset charset = getCharsetFromEncoding(detectedEncoding);
 
-            int contentLength = (int) Math.min(readSize, bytes.length);
-            String content = new String(bytes, 0, contentLength, charset);
+            String content = new String(bytes, 0, bytes.length, charset);
 
             summary.put("lineCount", content.split("\n").length);
             summary.put("charCount", content.length());
@@ -427,7 +443,7 @@ public class PreviewBizImpl implements PreviewBiz {
         metadata.put("size", resource.getSize());
 
         try {
-            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
+            Path filePath = FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath());
             if (!Files.exists(filePath)) {
                 throw new DataNotFoundException("文件不存在");
             }
@@ -473,7 +489,7 @@ public class PreviewBizImpl implements PreviewBiz {
         }
 
         try {
-            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
+            Path filePath = FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath());
             if (!Files.exists(filePath)) {
                 log.warn("文件不存在 [path={}]", filePath);
                 return null;
@@ -482,6 +498,29 @@ public class PreviewBizImpl implements PreviewBiz {
             return Files.readAllBytes(filePath);
         } catch (IOException e) {
             log.error("读取音频文件失败 [resourceId={}, error={}]", resourceId, e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public Path getAudioFilePath(Long resourceId) {
+        log.info("获取音频文件路径 [resourceId={}]", resourceId);
+
+        Resource resource = resourceDataService.getById(resourceId);
+        if (resource == null || resource.getPath() == null) {
+            log.warn("资源不存在 [resourceId={}]", resourceId);
+            return null;
+        }
+
+        try {
+            Path filePath = FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath());
+            if (!Files.exists(filePath)) {
+                log.warn("文件不存在 [path={}]", filePath);
+                return null;
+            }
+            return filePath;
+        } catch (Exception e) {
+            log.error("获取音频文件路径失败 [resourceId={}, error={}]", resourceId, e.getMessage());
             return null;
         }
     }
@@ -504,7 +543,7 @@ public class PreviewBizImpl implements PreviewBiz {
         }
 
         try {
-            Path filePath = Paths.get(homeDir, "resources", resource.getPath());
+            Path filePath = FileUtils.resolveSecurePath(homeDashProperties.getBasicResourcePath(), resource.getPath());
             if (!Files.exists(filePath)) {
                 fallback.put("errorCode", "FILE_NOT_FOUND");
                 fallback.put("errorMessage", "文件不存在");
@@ -792,10 +831,13 @@ public class PreviewBizImpl implements PreviewBiz {
 
     private void extractMp3Metadata(Path filePath, Map<String, Object> metadata) {
         try {
-            byte[] bytes = Files.readAllBytes(filePath);
-
-            if (bytes.length > 128) {
-                byte[] last128 = Arrays.copyOfRange(bytes, bytes.length - 128, bytes.length);
+            long fileSize = Files.size(filePath);
+            if (fileSize > 128) {
+                byte[] last128 = new byte[128];
+                try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "r")) {
+                    raf.seek(fileSize - 128);
+                    raf.readFully(last128);
+                }
                 if (last128[0] == 'T' && last128[1] == 'A' && last128[2] == 'G') {
                     String title = new String(last128, 3, 30, StandardCharsets.ISO_8859_1).trim();
                     String artist = new String(last128, 33, 30, StandardCharsets.ISO_8859_1).trim();

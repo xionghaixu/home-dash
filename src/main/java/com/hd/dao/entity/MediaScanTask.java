@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * 媒体扫描任务实体类
  * 记录媒体文件的扫描、元数据提取、缩略图生成等任务
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

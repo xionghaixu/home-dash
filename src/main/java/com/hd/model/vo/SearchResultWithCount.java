@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * 搜索结果（带总数）VO。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -18,7 +18,7 @@ import java.util.List;
 public class SearchResultWithCount {
 
     /** 搜索结果列表。 */
-    private List<FileDetailVo> files;
+    private List<FileDetailVO> files;
 
     /** 总数。 */
     private Long total;

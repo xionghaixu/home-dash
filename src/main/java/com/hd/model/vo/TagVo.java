@@ -8,7 +8,7 @@ import lombok.*;
  * 标签VO。
  * 用于返回标签信息。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -17,7 +17,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TagVo {
+public class TagVO {
 
     /** 标签ID。 */
     @JsonSerialize(using = ToStringSerializer.class)

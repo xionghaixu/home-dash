@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -22,7 +22,7 @@ public class FileOperationException extends BusinessException {
      * 默认构造函数。
      */
     public FileOperationException() {
-        super(ErrorCode.FILE_OPERATION_FAILED);
+        super(ErrorCodeEnum.FILE_OPERATION_FAILED);
     }
 
     /**
@@ -31,7 +31,7 @@ public class FileOperationException extends BusinessException {
      * @param message 异常消息
      */
     public FileOperationException(String message) {
-        super(ErrorCode.FILE_OPERATION_FAILED, message);
+        super(ErrorCodeEnum.FILE_OPERATION_FAILED, message);
     }
 
     /**
@@ -41,7 +41,7 @@ public class FileOperationException extends BusinessException {
      * @param cause   异常原因
      */
     public FileOperationException(String message, Throwable cause) {
-        super(ErrorCode.FILE_OPERATION_FAILED, message, cause);
+        super(ErrorCodeEnum.FILE_OPERATION_FAILED, message, cause);
     }
 
     /**
@@ -50,6 +50,6 @@ public class FileOperationException extends BusinessException {
      * @param cause 异常原因
      */
     public FileOperationException(Throwable cause) {
-        super(ErrorCode.FILE_OPERATION_FAILED, cause);
+        super(ErrorCodeEnum.FILE_OPERATION_FAILED, cause);
     }
 }

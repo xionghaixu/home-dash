@@ -3,12 +3,14 @@ package com.hd.biz.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.hd.biz.MediaTaskBiz;
 import com.hd.biz.SysTaskBiz;
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
+import com.hd.common.enums.TaskStatusEnum;
+import com.hd.common.enums.TaskTypeEnum;
 import com.hd.common.exception.BusinessException;
 import com.hd.dao.entity.MediaScanTask;
 import com.hd.dao.entity.SysTask;
-import com.hd.dao.mapper.SysTaskMapper;
 import com.hd.dao.service.MediaScanTaskDataService;
+import com.hd.dao.service.SysTaskDataService;
 import com.hd.model.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,66 +27,69 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SysTaskBizImpl implements SysTaskBiz {
 
-    private final SysTaskMapper sysTaskMapper;
+    private final SysTaskDataService sysTaskDataService;
     private final MediaScanTaskDataService scanTaskDataService;
     private final MediaTaskBiz mediaTaskBiz;
 
-    /** 任务类型显示名称映射 */
-    private static final Map<String, String> TASK_TYPE_NAMES = Map.of(
-            "SCAN_DUPLICATE", "重复文件扫描",
-            "STORAGE_ANALYSIS", "存储分析",
-            "INTEGRITY_CHECK", "完整性检查",
-            "METADATA_EXTRACT", "元数据提取",
-            "THUMBNAIL_GENERATE", "缩略图生成"
-    );
+
 
     @Override
-    public ResponseDto queryTasks() {
-        List<SysTask> tasks = sysTaskMapper.selectList(
+    public ResponseDTO queryTasks() {
+        List<SysTask> tasks = sysTaskDataService.list(
                 new LambdaQueryWrapper<SysTask>().orderByDesc(SysTask::getCreateTime)
         );
-        return ResponseDto.success(tasks);
+        return ResponseDTO.success(tasks);
     }
 
     @Override
-    public PageResponseDto<UnifiedTaskDto> queryUnifiedTasks(TaskQueryDto queryDto) {
+    public PageResponseDTO<UnifiedTaskDTO> queryUnifiedTasks(TaskQueryDTO queryDto) {
         int page = queryDto.getPage() != null && queryDto.getPage() > 0 ? queryDto.getPage() : 1;
         int pageSize = queryDto.getPageSize() != null && queryDto.getPageSize() > 0 ? queryDto.getPageSize() : 20;
         String status = queryDto.getStatus();
         String taskType = queryDto.getTaskType();
         String source = queryDto.getSource();
 
-        List<UnifiedTaskDto> allTasks = new ArrayList<>();
+        long sysCount = 0;
+        long mediaCount = 0;
 
-        // 查询系统任务
+        LambdaQueryWrapper<SysTask> sysWrapper = new LambdaQueryWrapper<>();
+        if (status != null && !status.isEmpty()) {
+            sysWrapper.eq(SysTask::getStatus, status);
+        }
+        if (taskType != null && !taskType.isEmpty()) {
+            sysWrapper.eq(SysTask::getTaskType, taskType);
+        }
+        sysWrapper.orderByDesc(SysTask::getCreateTime);
+
+        LambdaQueryWrapper<MediaScanTask> mediaWrapper = new LambdaQueryWrapper<>();
+        if (status != null && !status.isEmpty()) {
+            mediaWrapper.eq(MediaScanTask::getStatus, status);
+        }
+        if (taskType != null && !taskType.isEmpty()) {
+            mediaWrapper.eq(MediaScanTask::getTaskType, taskType);
+        }
+        mediaWrapper.orderByDesc(MediaScanTask::getCreateTime);
+
+        List<UnifiedTaskDTO> allTasks = new ArrayList<>();
+        int limitAmount = page * pageSize;
+
+        // Query sys tasks with database-level limit
         if (source == null || source.isEmpty() || "sys".equals(source)) {
-            var sysWrapper = new LambdaQueryWrapper<SysTask>();
-            if (status != null && !status.isEmpty()) {
-                sysWrapper.eq(SysTask::getStatus, status);
-            }
-            if (taskType != null && !taskType.isEmpty()) {
-                sysWrapper.eq(SysTask::getTaskType, taskType);
-            }
-            sysWrapper.orderByDesc(SysTask::getCreateTime);
-            List<SysTask> sysTasks = sysTaskMapper.selectList(sysWrapper);
-            allTasks.addAll(sysTasks.stream().map(this::convertSysTask).collect(Collectors.toList()));
+            sysCount = sysTaskDataService.count(sysWrapper);
+            sysWrapper.last("LIMIT " + limitAmount);
+            List<SysTask> sysTasks = sysTaskDataService.list(sysWrapper);
+            allTasks.addAll(sysTasks.stream().map(this::convertSysTask).toList());
         }
 
-        // 查询媒体任务
+        // Query media tasks with database-level limit
         if (source == null || source.isEmpty() || "media".equals(source)) {
-            var mediaWrapper = new LambdaQueryWrapper<MediaScanTask>();
-            if (status != null && !status.isEmpty()) {
-                mediaWrapper.eq(MediaScanTask::getStatus, status);
-            }
-            if (taskType != null && !taskType.isEmpty()) {
-                mediaWrapper.eq(MediaScanTask::getTaskType, taskType);
-            }
-            mediaWrapper.orderByDesc(MediaScanTask::getCreateTime);
+            mediaCount = scanTaskDataService.count(mediaWrapper);
+            mediaWrapper.last("LIMIT " + limitAmount);
             List<MediaScanTask> mediaTasks = scanTaskDataService.list(mediaWrapper);
-            allTasks.addAll(mediaTasks.stream().map(this::convertMediaTask).collect(Collectors.toList()));
+            allTasks.addAll(mediaTasks.stream().map(this::convertMediaTask).toList());
         }
 
-        // 按创建时间倒序排序
+        // Sort combined list in memory
         allTasks.sort((a, b) -> {
             LocalDateTime timeA = a.getCreateTime();
             LocalDateTime timeB = b.getCreateTime();
@@ -94,29 +99,42 @@ public class SysTaskBizImpl implements SysTaskBiz {
             return timeB.compareTo(timeA);
         });
 
-        // 分页
-        long total = allTasks.size();
-        int offset = (page - 1) * pageSize;
-        List<UnifiedTaskDto> pageList = allTasks.stream()
-                .skip(offset)
-                .limit(pageSize)
-                .collect(Collectors.toList());
+        // Determine total count based on source filters
+        long total = 0;
+        if (source == null || source.isEmpty()) {
+            total = sysCount + mediaCount;
+        } else if ("sys".equals(source)) {
+            total = sysCount;
+        } else if ("media".equals(source)) {
+            total = mediaCount;
+        }
 
-        return PageResponseDto.of(pageList, total, page, pageSize);
+        int offset = (page - 1) * pageSize;
+        List<UnifiedTaskDTO> pageList;
+        if (offset >= allTasks.size()) {
+            pageList = Collections.emptyList();
+        } else {
+            pageList = allTasks.stream()
+                    .skip(offset)
+                    .limit(pageSize)
+                    .collect(Collectors.toList());
+        }
+
+        return PageResponseDTO.of(pageList, total, page, pageSize);
     }
 
     @Override
-    public UnifiedTaskDto getTaskDetail(Long taskId, String source) {
+    public UnifiedTaskDTO getTaskDetail(Long taskId, String source) {
         if ("media".equals(source)) {
             MediaScanTask task = scanTaskDataService.getById(taskId);
             if (task == null) {
-                throw new BusinessException(ErrorCode.MEDIA_SCAN_TASK_NOT_FOUND);
+                throw new BusinessException(ErrorCodeEnum.MEDIA_SCAN_TASK_NOT_FOUND);
             }
             return convertMediaTask(task);
         } else {
-            SysTask task = sysTaskMapper.selectById(taskId);
+            SysTask task = sysTaskDataService.getById(taskId);
             if (task == null) {
-                throw new BusinessException(ErrorCode.TASK_NOT_FOUND);
+                throw new BusinessException(ErrorCodeEnum.TASK_NOT_FOUND);
             }
             return convertSysTask(task);
         }
@@ -128,15 +146,15 @@ public class SysTaskBizImpl implements SysTaskBiz {
         if ("media".equals(source)) {
             mediaTaskBiz.retryTask(taskId);
         } else {
-            SysTask task = sysTaskMapper.selectById(taskId);
+            SysTask task = sysTaskDataService.getById(taskId);
             if (task == null) {
-                throw new BusinessException(ErrorCode.TASK_NOT_FOUND);
+                throw new BusinessException(ErrorCodeEnum.TASK_NOT_FOUND);
             }
-            task.setStatus("PENDING");
+            task.setStatus(TaskStatusEnum.PENDING.getCode());
             task.setErrorMsg(null);
             task.setEndTime(null);
             task.setProgressPercent(0);
-            sysTaskMapper.updateById(task);
+            sysTaskDataService.updateById(task);
             log.info("[SysTask] 任务重试 - taskId: {}", taskId);
         }
     }
@@ -156,7 +174,7 @@ public class SysTaskBizImpl implements SysTaskBiz {
         }
     }
 
-    private UnifiedTaskDto convertSysTask(SysTask task) {
+    private UnifiedTaskDTO convertSysTask(SysTask task) {
         LocalDateTime createTime = task.getCreateTime() != null
                 ? task.getCreateTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
                 : null;
@@ -164,7 +182,7 @@ public class SysTaskBizImpl implements SysTaskBiz {
                 ? task.getEndTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
                 : null;
 
-        return UnifiedTaskDto.builder()
+        return UnifiedTaskDTO.builder()
                 .id(task.getId())
                 .source("sys")
                 .taskName(getTaskTypeName(task.getTaskType()))
@@ -179,14 +197,14 @@ public class SysTaskBizImpl implements SysTaskBiz {
                 .build();
     }
 
-    private UnifiedTaskDto convertMediaTask(MediaScanTask task) {
-        return UnifiedTaskDto.builder()
+    private UnifiedTaskDTO convertMediaTask(MediaScanTask task) {
+        return UnifiedTaskDTO.builder()
                 .id(task.getId())
                 .source("media")
                 .taskName(getTaskTypeName(task.getTaskType()))
                 .taskType(task.getTaskType())
                 .status(task.getStatus())
-                .progressPercent("SUCCESS".equals(task.getStatus()) ? 100 : ("RUNNING".equals(task.getStatus()) ? 50 : 0))
+                .progressPercent(TaskStatusEnum.SUCCESS.getCode().equals(task.getStatus()) ? 100 : (TaskStatusEnum.RUNNING.getCode().equals(task.getStatus()) ? 50 : 0))
                 .errorMsg(task.getErrorMessage())
                 .retryCount(task.getRetryCount())
                 .maxRetries(task.getMaxRetries())
@@ -199,6 +217,6 @@ public class SysTaskBizImpl implements SysTaskBiz {
     }
 
     private String getTaskTypeName(String taskType) {
-        return TASK_TYPE_NAMES.getOrDefault(taskType, taskType);
+        return TaskTypeEnum.getNameByCode(taskType);
     }
 }

@@ -12,7 +12,7 @@ import java.util.Date;
  * 文件-标签关联实体类。
  * 表示文件与标签的多对多关系。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */

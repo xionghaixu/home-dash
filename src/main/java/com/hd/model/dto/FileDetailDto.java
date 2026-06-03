@@ -22,7 +22,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FileDetailDto {
+public class FileDetailDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
@@ -37,5 +37,5 @@ public class FileDetailDto {
     private Boolean playable;
     private Date createTime;
     private Date updateTime;
-    private List<FolderPathDto> navigation;
+    private List<FolderPathDTO> navigation;
 }

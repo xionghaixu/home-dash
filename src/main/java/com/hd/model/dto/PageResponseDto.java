@@ -10,14 +10,14 @@ import java.util.List;
 /**
  * 统一分页响应DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PageResponseDto<T> {
+public class PageResponseDTO<T> {
 
     private List<T> list;
 
@@ -29,8 +29,8 @@ public class PageResponseDto<T> {
 
     private Boolean hasMore;
 
-    public static <T> PageResponseDto<T> of(List<T> list, Long total, Integer page, Integer pageSize) {
-        return PageResponseDto.<T>builder()
+    public static <T> PageResponseDTO<T> of(List<T> list, Long total, Integer page, Integer pageSize) {
+        return PageResponseDTO.<T>builder()
                 .list(list)
                 .total(total)
                 .page(page)

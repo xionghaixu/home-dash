@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -21,7 +21,7 @@ public class FileNotFoundException extends BusinessException {
      * 默认构造函数。
      */
     public FileNotFoundException() {
-        super(ErrorCode.FILE_NOT_FOUND);
+        super(ErrorCodeEnum.FILE_NOT_FOUND);
     }
 
     /**
@@ -30,7 +30,7 @@ public class FileNotFoundException extends BusinessException {
      * @param message 异常消息
      */
     public FileNotFoundException(String message) {
-        super(ErrorCode.FILE_NOT_FOUND, message);
+        super(ErrorCodeEnum.FILE_NOT_FOUND, message);
     }
 
     /**
@@ -40,7 +40,7 @@ public class FileNotFoundException extends BusinessException {
      * @param cause   异常原因
      */
     public FileNotFoundException(String message, Throwable cause) {
-        super(ErrorCode.FILE_NOT_FOUND, message, cause);
+        super(ErrorCodeEnum.FILE_NOT_FOUND, message, cause);
     }
 
     /**
@@ -49,6 +49,6 @@ public class FileNotFoundException extends BusinessException {
      * @param cause 异常原因
      */
     public FileNotFoundException(Throwable cause) {
-        super(ErrorCode.FILE_NOT_FOUND, cause);
+        super(ErrorCodeEnum.FILE_NOT_FOUND, cause);
     }
 }

@@ -1,22 +1,22 @@
 package com.hd.biz;
 
-import com.hd.model.dto.MediaTaskDto;
-import com.hd.model.dto.MediaTaskQueryDto;
-import com.hd.model.dto.PageResponseDto;
+import com.hd.model.dto.MediaTaskDTO;
+import com.hd.model.dto.MediaTaskQueryDTO;
+import com.hd.model.dto.PageResponseDTO;
 
 import java.util.List;
 
 /**
  * 媒体任务业务接口
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface MediaTaskBiz {
 
-    PageResponseDto<MediaTaskDto> getTaskList(MediaTaskQueryDto queryDto);
+    PageResponseDTO<MediaTaskDTO> getTaskList(MediaTaskQueryDTO queryDto);
 
-    MediaTaskDto getTaskDetail(Long taskId);
+    MediaTaskDTO getTaskDetail(Long taskId);
 
     void retryTask(Long taskId);
 

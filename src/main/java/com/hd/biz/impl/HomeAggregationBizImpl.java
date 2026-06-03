@@ -1,7 +1,7 @@
 package com.hd.biz.impl;
 
 import com.hd.biz.HomeAggregationBiz;
-import com.hd.common.enums.FileType;
+import com.hd.common.enums.FileTypeEnum;
 import com.hd.common.util.FileSizeFormatter;
 import com.hd.dao.entity.*;
 import com.hd.dao.service.*;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * 首页媒体聚合业务实现类
  * 负责聚合首页媒体工作台所需数据，支持缓存
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Slf4j
@@ -38,7 +38,7 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
     private final FavoriteDataService favoriteDataService;
 
     @Override
-    public HomeMediaSummaryDto getHomeSummary() {
+    public HomeMediaSummaryDTO getHomeSummary() {
         log.info("[HomeAggregation] 开始聚合首页数据");
 
         List<File> recentFiles = fileDataService.lambdaQuery()
@@ -47,31 +47,58 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
                 .list();
 
         List<File> recentImages = recentFiles.stream()
-                .filter(f -> FileType.PICTURE.toString().equals(f.getType()))
+                .filter(f -> FileTypeEnum.PICTURE.toString().equals(f.getType()))
                 .limit(5)
                 .collect(Collectors.toList());
         List<File> recentVideos = recentFiles.stream()
-                .filter(f -> FileType.VIDEO.toString().equals(f.getType()))
+                .filter(f -> FileTypeEnum.VIDEO.toString().equals(f.getType()))
                 .limit(5)
                 .collect(Collectors.toList());
         List<File> recentAudio = recentFiles.stream()
-                .filter(f -> FileType.AUDIO.toString().equals(f.getType()))
+                .filter(f -> FileTypeEnum.AUDIO.toString().equals(f.getType()))
                 .limit(5)
                 .collect(Collectors.toList());
 
         List<File> allPictures = fileDataService.lambdaQuery()
-                .eq(File::getType, FileType.PICTURE.toString())
+                .eq(File::getType, FileTypeEnum.PICTURE.toString())
                 .orderByDesc(File::getCreateTime)
                 .last("LIMIT 4")
                 .list();
 
-        long imageCount = fileDataService.lambdaQuery().eq(File::getType, FileType.PICTURE.toString()).count();
-        long videoCount = fileDataService.lambdaQuery().eq(File::getType, FileType.VIDEO.toString()).count();
-        long audioCount = fileDataService.lambdaQuery().eq(File::getType, FileType.AUDIO.toString()).count();
+        // Batch-load video and audio metadata to avoid N+1 queries in convertToMediaItem
+        List<File> allMediaFiles = new ArrayList<>();
+        allMediaFiles.addAll(recentVideos);
+        allMediaFiles.addAll(recentAudio);
 
-        long imageSize = sumFileSize(FileType.PICTURE.toString());
-        long videoSize = sumFileSize(FileType.VIDEO.toString());
-        long audioSize = sumFileSize(FileType.AUDIO.toString());
+        List<Long> videoFileIds = allMediaFiles.stream()
+                .filter(f -> FileTypeEnum.VIDEO.toString().equals(f.getType()))
+                .map(File::getId)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Long, MediaVideoMetadata> videoMetadataMap = videoFileIds.isEmpty() ? Map.of()
+                : safeMapQuery("video metadata batch", () -> videoMetadataDataService.lambdaQuery()
+                        .in(MediaVideoMetadata::getFileId, videoFileIds)
+                        .list().stream()
+                        .collect(Collectors.toMap(MediaVideoMetadata::getFileId, m -> m, (a, b) -> a)));
+
+        List<Long> audioFileIds = allMediaFiles.stream()
+                .filter(f -> FileTypeEnum.AUDIO.toString().equals(f.getType()))
+                .map(File::getId)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Long, MediaAudioMetadata> audioMetadataMap = audioFileIds.isEmpty() ? Map.of()
+                : safeMapQuery("audio metadata batch", () -> audioMetadataDataService.lambdaQuery()
+                        .in(MediaAudioMetadata::getFileId, audioFileIds)
+                        .list().stream()
+                        .collect(Collectors.toMap(MediaAudioMetadata::getFileId, m -> m, (a, b) -> a)));
+
+        long imageCount = fileDataService.lambdaQuery().eq(File::getType, FileTypeEnum.PICTURE.toString()).count();
+        long videoCount = fileDataService.lambdaQuery().eq(File::getType, FileTypeEnum.VIDEO.toString()).count();
+        long audioCount = fileDataService.lambdaQuery().eq(File::getType, FileTypeEnum.AUDIO.toString()).count();
+
+        long imageSize = sumFileSize(FileTypeEnum.PICTURE.toString());
+        long videoSize = sumFileSize(FileTypeEnum.VIDEO.toString());
+        long audioSize = sumFileSize(FileTypeEnum.AUDIO.toString());
 
         List<MediaScanTask> pendingTasks = safeListQuery("pending media tasks", () -> scanTaskDataService.lambdaQuery()
                 .in(MediaScanTask::getStatus, List.of("PENDING", "RUNNING", "FAILED"))
@@ -79,18 +106,18 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
                 .last("LIMIT 5")
                 .list());
 
-        HomeMediaSummaryDto summary = HomeMediaSummaryDto.builder()
-                .recentUploads(HomeMediaSummaryDto.RecentUploads.builder()
-                        .images(recentImages.stream().map(this::convertToMediaItem).collect(Collectors.toList()))
-                        .videos(recentVideos.stream().map(this::convertToMediaItem).collect(Collectors.toList()))
-                        .audio(recentAudio.stream().map(this::convertToMediaItem).collect(Collectors.toList()))
+        HomeMediaSummaryDTO summary = HomeMediaSummaryDTO.builder()
+                .recentUploads(HomeMediaSummaryDTO.RecentUploads.builder()
+                        .images(recentImages.stream().map(f -> convertToMediaItem(f, videoMetadataMap, audioMetadataMap)).collect(Collectors.toList()))
+                        .videos(recentVideos.stream().map(f -> convertToMediaItem(f, videoMetadataMap, audioMetadataMap)).collect(Collectors.toList()))
+                        .audio(recentAudio.stream().map(f -> convertToMediaItem(f, videoMetadataMap, audioMetadataMap)).collect(Collectors.toList()))
                         .build())
-                .recentPlays(HomeMediaSummaryDto.RecentPlays.builder()
+                .recentPlays(HomeMediaSummaryDTO.RecentPlays.builder()
                         .videos(getRecentVideoPlays())
                         .audio(getRecentAudioPlays())
                         .build())
-                .imageReview(allPictures.stream().map(this::convertToMediaItem).collect(Collectors.toList()))
-                .mediaStats(HomeMediaSummaryDto.MediaStats.builder()
+                .imageReview(allPictures.stream().map(f -> convertToMediaItem(f, videoMetadataMap, audioMetadataMap)).collect(Collectors.toList()))
+                .mediaStats(HomeMediaSummaryDTO.MediaStats.builder()
                         .imageCount(imageCount)
                         .imageCapacity(FileSizeFormatter.format(imageSize))
                         .videoCount(videoCount)
@@ -98,12 +125,12 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
                         .audioCount(audioCount)
                         .audioCapacity(FileSizeFormatter.format(audioSize))
                         .build())
-                .favoriteSummary(HomeMediaSummaryDto.RecentUploads.builder()
+                .favoriteSummary(HomeMediaSummaryDTO.RecentUploads.builder()
                         .images(new ArrayList<>())
                         .videos(new ArrayList<>())
                         .audio(new ArrayList<>())
                         .build())
-                .pendingTasks(pendingTasks.stream().map(t -> MediaTaskDto.builder()
+                .pendingTasks(pendingTasks.stream().map(t -> MediaTaskDTO.builder()
                         .taskId(t.getId())
                         .mediaType(t.getMediaType())
                         .taskType(t.getTaskType())
@@ -117,7 +144,7 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
         return summary;
     }
 
-    private List<HomeMediaSummaryDto.VideoPlayItem> getRecentVideoPlays() {
+    private List<HomeMediaSummaryDTO.VideoPlayItem> getRecentVideoPlays() {
         List<PlayHistory> histories = safeListQuery("recent video plays", () -> playHistoryDataService.lambdaQuery()
                 .eq(PlayHistory::getMediaType, "VIDEO")
                 .orderByDesc(PlayHistory::getPlayTime)
@@ -135,16 +162,18 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
                 .in(WatchProgress::getFileId, fileIds)
                 .list().stream()
                 .collect(Collectors.toMap(WatchProgress::getFileId, p -> p)));
+        Map<Long, MediaVideoMetadata> metadataMap = safeMapQuery("video metadata", () -> videoMetadataDataService.lambdaQuery()
+                .in(MediaVideoMetadata::getFileId, fileIds)
+                .list().stream()
+                .collect(Collectors.toMap(MediaVideoMetadata::getFileId, m -> m)));
 
         return histories.stream()
                 .filter(h -> fileMap.containsKey(h.getFileId()))
                 .map(h -> {
                     File file = fileMap.get(h.getFileId());
                     WatchProgress progress = progressMap.get(h.getFileId());
-                    MediaVideoMetadata metadata = videoMetadataDataService.lambdaQuery()
-                            .eq(MediaVideoMetadata::getFileId, h.getFileId())
-                            .one();
-                    return HomeMediaSummaryDto.VideoPlayItem.builder()
+                    MediaVideoMetadata metadata = metadataMap.get(h.getFileId());
+                    return HomeMediaSummaryDTO.VideoPlayItem.builder()
                             .fileId(h.getFileId())
                             .fileName(file.getFileName())
                             .coverUrl(normalizeAccessibleUrl(metadata != null ? metadata.getCoverPath() : null))
@@ -155,7 +184,7 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
                 .collect(Collectors.toList());
     }
 
-    private List<HomeMediaSummaryDto.AudioPlayItem> getRecentAudioPlays() {
+    private List<HomeMediaSummaryDTO.AudioPlayItem> getRecentAudioPlays() {
         List<PlayHistory> histories = safeListQuery("recent audio plays", () -> playHistoryDataService.lambdaQuery()
                 .eq(PlayHistory::getMediaType, "AUDIO")
                 .orderByDesc(PlayHistory::getPlayTime)
@@ -179,7 +208,7 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
                 .map(h -> {
                     File file = fileMap.get(h.getFileId());
                     MediaAudioMetadata metadata = metadataMap.get(h.getFileId());
-                    return HomeMediaSummaryDto.AudioPlayItem.builder()
+                    return HomeMediaSummaryDTO.AudioPlayItem.builder()
                             .fileId(h.getFileId())
                             .fileName(file.getFileName())
                             .coverUrl(normalizeAccessibleUrl(metadata != null ? metadata.getCoverPath() : null))
@@ -191,24 +220,25 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
                 .collect(Collectors.toList());
     }
 
-    private MediaItemDto convertToMediaItem(File file) {
+    private MediaItemDTO convertToMediaItem(File file) {
+        return convertToMediaItem(file, Map.of(), Map.of());
+    }
+
+    private MediaItemDTO convertToMediaItem(File file, Map<Long, MediaVideoMetadata> videoMetadataMap,
+                                             Map<Long, MediaAudioMetadata> audioMetadataMap) {
         String thumbnailUrl = null;
         String coverUrl = null;
-        if (FileType.PICTURE.toString().equals(file.getType())) {
+        if (FileTypeEnum.PICTURE.toString().equals(file.getType())) {
             thumbnailUrl = buildPictureThumbnailUrl(file.getResourceId());
-        } else if (FileType.VIDEO.toString().equals(file.getType())) {
-            MediaVideoMetadata metadata = videoMetadataDataService.lambdaQuery()
-                    .eq(MediaVideoMetadata::getFileId, file.getId())
-                    .one();
+        } else if (FileTypeEnum.VIDEO.toString().equals(file.getType())) {
+            MediaVideoMetadata metadata = videoMetadataMap.get(file.getId());
             coverUrl = normalizeAccessibleUrl(metadata != null ? metadata.getCoverPath() : null);
-        } else if (FileType.AUDIO.toString().equals(file.getType())) {
-            MediaAudioMetadata metadata = audioMetadataDataService.lambdaQuery()
-                    .eq(MediaAudioMetadata::getFileId, file.getId())
-                    .one();
+        } else if (FileTypeEnum.AUDIO.toString().equals(file.getType())) {
+            MediaAudioMetadata metadata = audioMetadataMap.get(file.getId());
             coverUrl = normalizeAccessibleUrl(metadata != null ? metadata.getCoverPath() : null);
         }
 
-        return MediaItemDto.builder()
+        return MediaItemDTO.builder()
                 .fileId(file.getId())
                 .parentId(file.getParentId())
                 .resourceId(file.getResourceId())
@@ -226,7 +256,8 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
             Map<String, Object> map = fileDataService.getMap(
                     new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<File>()
                             .select("COALESCE(SUM(size), 0) as total_size")
-                            .eq("type", type)
+                            .lambda()
+                            .eq(File::getType, type)
             );
             if (map != null && map.get("total_size") != null) {
                 return ((Number) map.get("total_size")).longValue();

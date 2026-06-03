@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -16,7 +16,7 @@ public class DataNotFoundException extends BusinessException {
      * 默认构造函数。
      */
     public DataNotFoundException() {
-        super(ErrorCode.DATA_NOT_FOUND);
+        super(ErrorCodeEnum.DATA_NOT_FOUND);
     }
 
     /**
@@ -25,7 +25,7 @@ public class DataNotFoundException extends BusinessException {
      * @param message 异常消息
      */
     public DataNotFoundException(String message) {
-        super(ErrorCode.DATA_NOT_FOUND, message);
+        super(ErrorCodeEnum.DATA_NOT_FOUND, message);
     }
 
     /**
@@ -35,7 +35,7 @@ public class DataNotFoundException extends BusinessException {
      * @param cause   异常原因
      */
     public DataNotFoundException(String message, Throwable cause) {
-        super(ErrorCode.DATA_NOT_FOUND, message, cause);
+        super(ErrorCodeEnum.DATA_NOT_FOUND, message, cause);
     }
 
     /**
@@ -44,6 +44,6 @@ public class DataNotFoundException extends BusinessException {
      * @param cause 异常原因
      */
     public DataNotFoundException(Throwable cause) {
-        super(ErrorCode.DATA_NOT_FOUND, cause);
+        super(ErrorCodeEnum.DATA_NOT_FOUND, cause);
     }
 }

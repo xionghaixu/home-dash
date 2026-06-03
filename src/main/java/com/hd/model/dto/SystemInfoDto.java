@@ -34,7 +34,7 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SystemInfoDto {
+public class SystemInfoDTO {
 
     // ========== 容量信息 ==========
 

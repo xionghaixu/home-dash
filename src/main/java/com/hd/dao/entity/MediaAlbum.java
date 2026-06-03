@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * 相册实体类
  * 存储自动或手动创建的相册信息
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

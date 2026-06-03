@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -22,7 +22,7 @@ public class UploadException extends BusinessException {
      * 默认构造函数。
      */
     public UploadException() {
-        super(ErrorCode.UPLOAD_FAILED);
+        super(ErrorCodeEnum.UPLOAD_FAILED);
     }
 
     /**
@@ -31,7 +31,7 @@ public class UploadException extends BusinessException {
      * @param message 异常消息
      */
     public UploadException(String message) {
-        super(ErrorCode.UPLOAD_FAILED, message);
+        super(ErrorCodeEnum.UPLOAD_FAILED, message);
     }
 
     /**
@@ -41,7 +41,7 @@ public class UploadException extends BusinessException {
      * @param cause   异常原因
      */
     public UploadException(String message, Throwable cause) {
-        super(ErrorCode.UPLOAD_FAILED, message, cause);
+        super(ErrorCodeEnum.UPLOAD_FAILED, message, cause);
     }
 
     /**
@@ -50,6 +50,6 @@ public class UploadException extends BusinessException {
      * @param cause 异常原因
      */
     public UploadException(Throwable cause) {
-        super(ErrorCode.UPLOAD_FAILED, cause);
+        super(ErrorCodeEnum.UPLOAD_FAILED, cause);
     }
 }

@@ -13,14 +13,14 @@ import java.util.List;
 /**
  * 视频详情DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VideoDetailDto {
+public class VideoDetailDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;
@@ -52,11 +52,11 @@ public class VideoDetailDto {
 
     private Boolean hasAudio;
 
-    private List<SubtitleDto> subtitleList;
+    private List<SubtitleDTO> subtitleList;
 
-    private WatchProgressDto watchProgress;
+    private WatchProgressDTO watchProgress;
 
-    private List<MediaItemDto> relatedVideos;
+    private List<MediaItemDTO> relatedVideos;
 
     private LocalDateTime lastWatchedAt;
 

@@ -20,12 +20,12 @@
 --
 
 CREATE TABLE `file` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `file_name` varchar(100) NOT NULL,
-  `parent_id` int(11) NOT NULL DEFAULT '0',
+  `parent_id` bigint(20) NOT NULL DEFAULT '0',
   `type` varchar(45) NOT NULL,
   `size` bigint DEFAULT NULL,
-  `resource_id` int(11) DEFAULT NULL,
+  `resource_id` bigint(20) DEFAULT NULL,
   `create_time` datetime NOT NULL,
   `update_time` datetime NOT NULL,
   `is_deleted` int(11) NOT NULL DEFAULT '0',
@@ -37,8 +37,8 @@ CREATE TABLE `file` (
 --
 
 CREATE TABLE `resource` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `size` int(11) NOT NULL DEFAULT '0',
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `size` bigint(20) NOT NULL DEFAULT '0',
   `md5` varchar(32) DEFAULT '',
   `link` int(11) NOT NULL DEFAULT '0',
   `create_time` datetime NOT NULL,
@@ -56,9 +56,9 @@ CREATE TABLE `resource` (
 CREATE TABLE `resource_chunk` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `chunk_number` int(11) NOT NULL,
-  `chunk_size` int(11) NOT NULL,
-  `current_chunk_size` int(11) NOT NULL,
-  `total_size` int(11) NOT NULL,
+  `chunk_size` bigint(20) NOT NULL,
+  `current_chunk_size` bigint(20) NOT NULL,
+  `total_size` bigint(20) NOT NULL,
   `identifier` varchar(100) NOT NULL,
   `filename` varchar(100) NOT NULL,
   `relative_path` varchar(100) NOT NULL,
@@ -98,13 +98,15 @@ CREATE TABLE `file_tag` (
 
 CREATE TABLE `search_history` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) DEFAULT NULL,
   `keyword` varchar(200) NOT NULL,
   `search_type` varchar(20) DEFAULT 'FILE',
   `search_params` varchar(1000) DEFAULT NULL,
   `searched_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_keyword` (`keyword`),
-  KEY `idx_searched_at` (`searched_at`)
+  KEY `idx_searched_at` (`searched_at`),
+  KEY `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --

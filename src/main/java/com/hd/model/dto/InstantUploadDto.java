@@ -15,7 +15,7 @@ import lombok.Data;
  * @description 秒传请求数据传输对象。
  */
 @Data
-public class InstantUploadDto {
+public class InstantUploadDTO {
 
     @NotBlank(message = "文件MD5不能为空")
     private String md5;

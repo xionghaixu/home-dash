@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 /**
  * 视频元数据数据服务实现
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Service

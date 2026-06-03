@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 /**
  * 收藏业务实现类。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -64,7 +64,7 @@ public class FavoriteBizImpl implements FavoriteBiz {
 
     @Override
     @Transactional
-    public BatchOperationResultVo batchAddFavorite(List<Long> resourceIds) {
+    public BatchOperationResultVO batchAddFavorite(List<Long> resourceIds) {
         log.info("批量添加收藏 [count={}]", resourceIds.size());
 
         List<String> errors = new ArrayList<>();
@@ -85,7 +85,7 @@ public class FavoriteBizImpl implements FavoriteBiz {
             }
         }
 
-        return BatchOperationResultVo.builder()
+        return BatchOperationResultVO.builder()
                 .successCount(successCount)
                 .failCount(failCount)
                 .errors(errors)
@@ -94,7 +94,7 @@ public class FavoriteBizImpl implements FavoriteBiz {
 
     @Override
     @Transactional
-    public BatchOperationResultVo batchRemoveFavorite(List<Long> resourceIds) {
+    public BatchOperationResultVO batchRemoveFavorite(List<Long> resourceIds) {
         log.info("批量取消收藏 [count={}]", resourceIds.size());
 
         List<String> errors = new ArrayList<>();
@@ -115,7 +115,7 @@ public class FavoriteBizImpl implements FavoriteBiz {
             }
         }
 
-        return BatchOperationResultVo.builder()
+        return BatchOperationResultVO.builder()
                 .successCount(successCount)
                 .failCount(failCount)
                 .errors(errors)
@@ -130,7 +130,7 @@ public class FavoriteBizImpl implements FavoriteBiz {
     }
 
     @Override
-    public IPage<FileDetailVo> getFavoriteList(Integer page, Integer pageSize) {
+    public IPage<FileDetailVO> getFavoriteList(Integer page, Integer pageSize) {
         log.info("获取收藏列表 [page={}, pageSize={}]", page, pageSize);
 
         int pageNum = page != null ? page : 1;
@@ -141,15 +141,37 @@ public class FavoriteBizImpl implements FavoriteBiz {
                 .orderByDesc(Favorite::getCreatedAt)
                 .page(pageParam);
 
-        List<FileDetailVo> fileDetails = favoritePage.getRecords().stream()
+        // 批量加载当前页所有收藏对应的文件，避免 N+1 查询
+        List<Long> resourceIds = favoritePage.getRecords().stream()
+                .map(Favorite::getResourceId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Long, File> fileMap = Collections.emptyMap();
+        if (!resourceIds.isEmpty()) {
+            fileMap = fileDataService.lambdaQuery()
+                    .in(File::getResourceId, resourceIds)
+                    .list()
+                    .stream()
+                    .collect(Collectors.toMap(File::getResourceId, f -> f, (a, b) -> a));
+        }
+
+        Map<Long, File> finalFileMap = fileMap;
+        List<FileDetailVO> fileDetails = favoritePage.getRecords().stream()
                 .map(fav -> {
-                    File file = findFileByResourceId(fav.getResourceId());
-                    return file != null ? convertToFileDetailVo(file, true) : null;
+                    File file = finalFileMap.get(fav.getResourceId());
+                    return file != null ? convertToFileDetailVO(file, true) : null;
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        IPage<FileDetailVo> resultPage = new Page<>(pageNum, size, favoritePage.getTotal());
+        // 使用过滤后的实际数量作为总数，避免孤立收藏记录导致总数虚高
+        long total = fileDetails.size() < favoritePage.getRecords().size()
+                ? fileDetails.size() + (long) (pageNum - 1) * size
+                : favoritePage.getTotal();
+
+        IPage<FileDetailVO> resultPage = new Page<>(pageNum, size, total);
         resultPage.setRecords(fileDetails);
 
         return resultPage;
@@ -163,12 +185,12 @@ public class FavoriteBizImpl implements FavoriteBiz {
     private File findFileByResourceId(Long resourceId) {
         return fileDataService.lambdaQuery()
                 .eq(File::getResourceId, resourceId)
-                .list()
-                .stream().findFirst().orElse(null);
+                .last("LIMIT 1")
+                .one();
     }
 
-    private FileDetailVo convertToFileDetailVo(File file, boolean isFavorite) {
-        return FileDetailVo.builder()
+    private FileDetailVO convertToFileDetailVO(File file, boolean isFavorite) {
+        return FileDetailVO.builder()
                 .fileId(file.getId())
                 .fileName(file.getFileName())
                 .type(file.getType())

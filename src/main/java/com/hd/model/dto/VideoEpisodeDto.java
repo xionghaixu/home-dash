@@ -10,14 +10,14 @@ import lombok.NoArgsConstructor;
 /**
  * 视频集数DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VideoEpisodeDto {
+public class VideoEpisodeDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long episodeId;
@@ -33,7 +33,9 @@ public class VideoEpisodeDto {
 
     private String coverUrl;
 
+    private String seriesName;
+
     private Long duration;
 
-    private WatchProgressDto watchProgress;
+    private WatchProgressDTO watchProgress;
 }

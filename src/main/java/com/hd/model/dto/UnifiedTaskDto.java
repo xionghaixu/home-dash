@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UnifiedTaskDto {
+public class UnifiedTaskDTO {
 
     /** 任务ID */
     @JsonSerialize(using = ToStringSerializer.class)

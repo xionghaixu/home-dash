@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ public class HomeDashException extends RuntimeException {
     /**
      * 错误码枚举。
      */
-    private final ErrorCode errorCode;
+    private final ErrorCodeEnum errorCode;
 
     /**
      * 上下文数据，用于保存调试信息。
@@ -29,8 +29,8 @@ public class HomeDashException extends RuntimeException {
      * 默认构造函数。
      */
     public HomeDashException() {
-        super(ErrorCode.INTERNAL_SERVER_ERROR.getMessage());
-        this.errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+        super(ErrorCodeEnum.INTERNAL_SERVER_ERROR.getMessage());
+        this.errorCode = ErrorCodeEnum.INTERNAL_SERVER_ERROR;
         this.contextData = new HashMap<>();
     }
 
@@ -41,7 +41,7 @@ public class HomeDashException extends RuntimeException {
      */
     public HomeDashException(String message) {
         super(message);
-        this.errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+        this.errorCode = ErrorCodeEnum.INTERNAL_SERVER_ERROR;
         this.contextData = new HashMap<>();
     }
 
@@ -50,9 +50,9 @@ public class HomeDashException extends RuntimeException {
      *
      * @param errorCode 错误码枚举
      */
-    public HomeDashException(ErrorCode errorCode) {
-        super(errorCode != null ? errorCode.getMessage() : ErrorCode.INTERNAL_SERVER_ERROR.getMessage());
-        this.errorCode = errorCode != null ? errorCode : ErrorCode.INTERNAL_SERVER_ERROR;
+    public HomeDashException(ErrorCodeEnum errorCode) {
+        super(errorCode != null ? errorCode.getMessage() : ErrorCodeEnum.INTERNAL_SERVER_ERROR.getMessage());
+        this.errorCode = errorCode != null ? errorCode : ErrorCodeEnum.INTERNAL_SERVER_ERROR;
         this.contextData = new HashMap<>();
     }
 
@@ -62,9 +62,9 @@ public class HomeDashException extends RuntimeException {
      * @param errorCode 错误码枚举
      * @param message 自定义异常信息
      */
-    public HomeDashException(ErrorCode errorCode, String message) {
+    public HomeDashException(ErrorCodeEnum errorCode, String message) {
         super(message);
-        this.errorCode = errorCode != null ? errorCode : ErrorCode.INTERNAL_SERVER_ERROR;
+        this.errorCode = errorCode != null ? errorCode : ErrorCodeEnum.INTERNAL_SERVER_ERROR;
         this.contextData = new HashMap<>();
     }
 
@@ -76,7 +76,7 @@ public class HomeDashException extends RuntimeException {
      */
     public HomeDashException(String message, Throwable cause) {
         super(message, cause);
-        this.errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+        this.errorCode = ErrorCodeEnum.INTERNAL_SERVER_ERROR;
         this.contextData = new HashMap<>();
     }
 
@@ -87,7 +87,7 @@ public class HomeDashException extends RuntimeException {
      */
     public HomeDashException(Throwable cause) {
         super(cause);
-        this.errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+        this.errorCode = ErrorCodeEnum.INTERNAL_SERVER_ERROR;
         this.contextData = new HashMap<>();
     }
 
@@ -97,9 +97,9 @@ public class HomeDashException extends RuntimeException {
      * @param errorCode 错误码枚举
      * @param cause 异常原因
      */
-    public HomeDashException(ErrorCode errorCode, Throwable cause) {
-        super(errorCode != null ? errorCode.getMessage() : ErrorCode.INTERNAL_SERVER_ERROR.getMessage(), cause);
-        this.errorCode = errorCode != null ? errorCode : ErrorCode.INTERNAL_SERVER_ERROR;
+    public HomeDashException(ErrorCodeEnum errorCode, Throwable cause) {
+        super(errorCode != null ? errorCode.getMessage() : ErrorCodeEnum.INTERNAL_SERVER_ERROR.getMessage(), cause);
+        this.errorCode = errorCode != null ? errorCode : ErrorCodeEnum.INTERNAL_SERVER_ERROR;
         this.contextData = new HashMap<>();
     }
 
@@ -110,9 +110,9 @@ public class HomeDashException extends RuntimeException {
      * @param message 异常信息
      * @param cause 异常原因
      */
-    public HomeDashException(ErrorCode errorCode, String message, Throwable cause) {
+    public HomeDashException(ErrorCodeEnum errorCode, String message, Throwable cause) {
         super(message, cause);
-        this.errorCode = errorCode != null ? errorCode : ErrorCode.INTERNAL_SERVER_ERROR;
+        this.errorCode = errorCode != null ? errorCode : ErrorCodeEnum.INTERNAL_SERVER_ERROR;
         this.contextData = new HashMap<>();
     }
 
@@ -126,7 +126,7 @@ public class HomeDashException extends RuntimeException {
      */
     protected HomeDashException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
-        this.errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+        this.errorCode = ErrorCodeEnum.INTERNAL_SERVER_ERROR;
         this.contextData = new HashMap<>();
     }
 
@@ -135,7 +135,7 @@ public class HomeDashException extends RuntimeException {
      *
      * @return 错误码枚举
      */
-    public ErrorCode getErrorCode() {
+    public ErrorCodeEnum getErrorCode() {
         return errorCode;
     }
 

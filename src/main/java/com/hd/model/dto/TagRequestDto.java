@@ -9,7 +9,7 @@ import lombok.*;
  * 标签请求DTO。
  * 用于创建或更新标签。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -18,7 +18,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TagRequestDto {
+public class TagRequestDTO {
 
     /** 标签ID（更新时需要）。 */
     @JsonSerialize(using = ToStringSerializer.class)

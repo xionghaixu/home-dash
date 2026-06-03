@@ -6,7 +6,7 @@ import com.hd.dao.entity.MediaVideoMetadata;
 /**
  * 视频元数据数据服务
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface MediaVideoMetadataDataService extends IService<MediaVideoMetadata> {

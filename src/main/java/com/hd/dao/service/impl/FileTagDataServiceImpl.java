@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
  * 文件标签数据访问服务实现类。
  * 继承MyBatis-Plus的ServiceImpl，提供通用的CRUD功能。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */

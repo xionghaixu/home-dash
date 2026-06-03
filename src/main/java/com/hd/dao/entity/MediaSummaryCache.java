@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * 首页聚合缓存实体类
  * 缓存首页媒体工作台所需聚合数据
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

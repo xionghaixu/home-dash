@@ -12,7 +12,7 @@ import java.util.Date;
  * 筛选视图实体类。
  * 存储用户保存的常用筛选条件配置。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */

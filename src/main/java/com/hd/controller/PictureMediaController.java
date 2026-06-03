@@ -3,6 +3,7 @@ package com.hd.controller;
 import com.hd.biz.PictureMediaBiz;
 import com.hd.model.dto.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
 /**
  * 图片媒体控制器
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @RestController
@@ -21,7 +22,7 @@ public class PictureMediaController {
     private final PictureMediaBiz pictureMediaBiz;
 
     @GetMapping("/images")
-    public ResponseDto getPictureList(
+    public ResponseEntity<ResponseDTO> getPictureList(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "40") Integer pageSize,
             @RequestParam(defaultValue = "createTime") String sortBy,
@@ -30,64 +31,64 @@ public class PictureMediaController {
             @RequestParam(required = false) Integer month,
             @RequestParam(required = false) Long albumId,
             @RequestParam(required = false) String directory) {
-        PageResponseDto<PictureListDto> result = pictureMediaBiz.getPictureList(page, pageSize, sortBy, sortOrder, year, month, albumId, directory);
-        return ResponseDto.success(result);
+        PageResponseDTO<PictureListDTO> result = pictureMediaBiz.getPictureList(page, pageSize, sortBy, sortOrder, year, month, albumId, directory);
+        return ResponseEntity.ok(ResponseDTO.success(result));
     }
 
     @GetMapping("/images/{fileId}")
-    public ResponseDto getPictureDetail(@PathVariable Long fileId) {
-        PictureDetailDto detail = pictureMediaBiz.getPictureDetail(fileId);
-        return ResponseDto.success(detail);
+    public ResponseEntity<ResponseDTO> getPictureDetail(@PathVariable Long fileId) {
+        PictureDetailDTO detail = pictureMediaBiz.getPictureDetail(fileId);
+        return ResponseEntity.ok(ResponseDTO.success(detail));
     }
 
     @GetMapping("/images/timeline")
-    public ResponseDto getPictureTimeline(@RequestParam String groupBy) {
-        List<PictureTimelineGroupDto> timeline = pictureMediaBiz.getPictureTimeline(groupBy);
-        return ResponseDto.success(timeline);
+    public ResponseEntity<ResponseDTO> getPictureTimeline(@RequestParam String groupBy) {
+        List<PictureTimelineGroupDTO> timeline = pictureMediaBiz.getPictureTimeline(groupBy);
+        return ResponseEntity.ok(ResponseDTO.success(timeline));
     }
 
     @GetMapping("/albums")
-    public ResponseDto getAlbumList(@RequestParam(required = false) String albumType) {
-        List<AlbumDto> albums = pictureMediaBiz.getAlbumList(albumType);
-        return ResponseDto.success(albums);
+    public ResponseEntity<ResponseDTO> getAlbumList(@RequestParam(required = false) String albumType) {
+        List<AlbumDTO> albums = pictureMediaBiz.getAlbumList(albumType);
+        return ResponseEntity.ok(ResponseDTO.success(albums));
     }
 
     @PostMapping("/albums")
-    public ResponseDto createAlbum(@RequestBody AlbumDto albumDto) {
-        AlbumDto album = pictureMediaBiz.createAlbum(albumDto.getAlbumName(), albumDto.getDescription(), albumDto.getCoverFileId());
-        return ResponseDto.success(album);
+    public ResponseEntity<ResponseDTO> createAlbum(@RequestBody AlbumDTO albumDto) {
+        AlbumDTO album = pictureMediaBiz.createAlbum(albumDto.getAlbumName(), albumDto.getDescription(), albumDto.getCoverFileId());
+        return ResponseEntity.ok(ResponseDTO.success(album));
     }
 
-    @PutMapping("/albums/{albumId}")
-    public ResponseDto updateAlbum(@PathVariable Long albumId, @RequestBody AlbumDto albumDto) {
+    @PostMapping("/albums/{albumId}/update")
+    public ResponseEntity<ResponseDTO> updateAlbum(@PathVariable Long albumId, @RequestBody AlbumDTO albumDto) {
         pictureMediaBiz.updateAlbum(albumId, albumDto.getAlbumName(), albumDto.getDescription(), albumDto.getCoverFileId());
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
-    @DeleteMapping("/albums/{albumId}")
-    public ResponseDto deleteAlbum(@PathVariable Long albumId) {
+    @PostMapping("/albums/{albumId}/delete")
+    public ResponseEntity<ResponseDTO> deleteAlbum(@PathVariable Long albumId) {
         pictureMediaBiz.deleteAlbum(albumId);
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
     @PostMapping("/albums/{albumId}/items")
-    public ResponseDto addPictureToAlbum(@PathVariable Long albumId, @RequestParam Long fileId) {
+    public ResponseEntity<ResponseDTO> addPictureToAlbum(@PathVariable Long albumId, @RequestParam Long fileId) {
         pictureMediaBiz.addPictureToAlbum(albumId, fileId);
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
-    @DeleteMapping("/albums/{albumId}/items/{fileId}")
-    public ResponseDto removePictureFromAlbum(@PathVariable Long albumId, @PathVariable Long fileId) {
+    @PostMapping("/albums/{albumId}/items/{fileId}")
+    public ResponseEntity<ResponseDTO> removePictureFromAlbum(@PathVariable Long albumId, @PathVariable Long fileId) {
         pictureMediaBiz.removePictureFromAlbum(albumId, fileId);
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
     @GetMapping("/albums/{albumId}/items")
-    public ResponseDto getAlbumPictures(
+    public ResponseEntity<ResponseDTO> getAlbumPictures(
             @PathVariable Long albumId,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "40") Integer pageSize) {
-        PageResponseDto<PictureListDto> result = pictureMediaBiz.getAlbumPictures(albumId, page, pageSize);
-        return ResponseDto.success(result);
+        PageResponseDTO<PictureListDTO> result = pictureMediaBiz.getAlbumPictures(albumId, page, pageSize);
+        return ResponseEntity.ok(ResponseDTO.success(result));
     }
 }

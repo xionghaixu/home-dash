@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * 相册图片关联实体类
  * 关联相册和图片文件
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

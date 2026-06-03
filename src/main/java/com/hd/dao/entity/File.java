@@ -4,10 +4,11 @@ import lombok.*;
 import org.apache.ibatis.type.Alias;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import com.hd.common.enums.FileType;
+import com.hd.common.enums.FileTypeEnum;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -36,11 +37,11 @@ public class File {
      * 表示文件系统的根目录，ID为0，名称为"全部文件"。
      */
     public static final File ROOT_FILE = File.builder()
-            .id(0L).fileName("全部文件").type(FileType.FOLDER.toString()).parentId(0L)
+            .id(0L).fileName("全部文件").type(FileTypeEnum.FOLDER.toString()).parentId(0L)
             .build();
 
     /** 文件唯一标识符（主键）。 */
-    @TableId
+    @TableId(type = IdType.AUTO)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 

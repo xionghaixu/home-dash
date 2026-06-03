@@ -8,7 +8,7 @@ import org.apache.ibatis.annotations.Mapper;
  * 文件备注Mapper接口。
  * 提供文件备注的数据库访问能力。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */

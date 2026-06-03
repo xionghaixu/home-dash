@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * 音频播放列表实体类
  * 存储用户创建的播放列表信息
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

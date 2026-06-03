@@ -3,10 +3,10 @@ package com.hd.biz.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.hd.biz.SystemBiz;
 import com.hd.common.config.HomeDashProperties;
-import com.hd.common.enums.FileType;
+import com.hd.common.enums.FileTypeEnum;
 import com.hd.dao.entity.File;
 import com.hd.dao.service.FileDataService;
-import com.hd.model.dto.SystemInfoDto;
+import com.hd.model.dto.SystemInfoDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,10 +34,10 @@ public class SystemBizImpl implements SystemBiz {
     }
 
     @Override
-    public SystemInfoDto systemInfo() {
+    public SystemInfoDTO systemInfo() {
         log.info("开始查询系统信息");
 
-        SystemInfoDto.SystemInfoDtoBuilder builder = SystemInfoDto.builder();
+        SystemInfoDTO.SystemInfoDTOBuilder builder = SystemInfoDTO.builder();
 
         java.io.File systemFile = new java.io.File(homeDashProperties.getHomeDashDataDir());
         long totalSpace = systemFile.getTotalSpace();
@@ -67,25 +67,25 @@ public class SystemBizImpl implements SystemBiz {
 
         long totalFileNum = fileDataService.count();
         long folderNum = fileDataService.count(
-                new LambdaQueryWrapper<File>().eq(File::getType, FileType.FOLDER.toString())
+                new LambdaQueryWrapper<File>().eq(File::getType, FileTypeEnum.FOLDER.toString())
         );
         long videoNum = fileDataService.count(
-                new LambdaQueryWrapper<File>().eq(File::getType, FileType.VIDEO.toString())
+                new LambdaQueryWrapper<File>().eq(File::getType, FileTypeEnum.VIDEO.toString())
         );
         long audioNum = fileDataService.count(
-                new LambdaQueryWrapper<File>().eq(File::getType, FileType.AUDIO.toString())
+                new LambdaQueryWrapper<File>().eq(File::getType, FileTypeEnum.AUDIO.toString())
         );
         long pictureNum = fileDataService.count(
-                new LambdaQueryWrapper<File>().eq(File::getType, FileType.PICTURE.toString())
+                new LambdaQueryWrapper<File>().eq(File::getType, FileTypeEnum.PICTURE.toString())
         );
         long docNum = fileDataService.count(
                 new LambdaQueryWrapper<File>().in(File::getType, List.of(
-                        FileType.DOC.toString(), FileType.PDF.toString(), FileType.TXT.toString(),
-                        FileType.PPT.toString(), FileType.CODE.toString(), FileType.WEB.toString()
+                        FileTypeEnum.DOC.toString(), FileTypeEnum.PDF.toString(), FileTypeEnum.TXT.toString(),
+                        FileTypeEnum.PPT.toString(), FileTypeEnum.CODE.toString(), FileTypeEnum.WEB.toString()
                 ))
         );
         long compressNum = fileDataService.count(
-                new LambdaQueryWrapper<File>().eq(File::getType, FileType.COMPRESS_FILE.toString())
+                new LambdaQueryWrapper<File>().eq(File::getType, FileTypeEnum.COMPRESS_FILE.toString())
         );
 
         long normalFileNum = totalFileNum - folderNum;
@@ -93,9 +93,9 @@ public class SystemBizImpl implements SystemBiz {
 
         LambdaQueryWrapper<File> recentWrapper = new LambdaQueryWrapper<>();
         recentWrapper.and(wrapper -> wrapper
-                .ne(File::getType, FileType.FOLDER.toString())
+                .ne(File::getType, FileTypeEnum.FOLDER.toString())
                 .or(sub -> sub
-                        .eq(File::getType, FileType.FOLDER.toString())
+                        .eq(File::getType, FileTypeEnum.FOLDER.toString())
                         .and(cond -> cond.ne(File::getParentId, File.ROOT_FILE.getId())
                                 .or().notIn(File::getFileName, List.of("图片", "视频", "音频", "文档", "压缩包", "其他")))
                 )
@@ -115,7 +115,7 @@ public class SystemBizImpl implements SystemBiz {
                 .otherNum((int) Math.max(otherNum, 0))
                 .recentUploadNum(recentUploadNum);
 
-        SystemInfoDto result = builder.build();
+        SystemInfoDTO result = builder.build();
         log.info("系统信息查询完成 [totalFiles={}, folders={}, videos={}, audios={}, pictures={}, docs={}, compress={}, recent={}]",
                 totalFileNum, folderNum, videoNum, audioNum, pictureNum, docNum, compressNum, recentUploadNum);
         return result;

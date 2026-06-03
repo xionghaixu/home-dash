@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -22,7 +22,7 @@ public class FileAlreadyExistsException extends BusinessException {
      * 默认构造函数。
      */
     public FileAlreadyExistsException() {
-        super(ErrorCode.FILE_ALREADY_EXISTS);
+        super(ErrorCodeEnum.FILE_ALREADY_EXISTS);
         this.parentId = null;
         this.fileName = null;
         this.existingFileId = null;
@@ -35,7 +35,7 @@ public class FileAlreadyExistsException extends BusinessException {
      * @param message 异常消息
      */
     public FileAlreadyExistsException(String message) {
-        super(ErrorCode.FILE_ALREADY_EXISTS, message);
+        super(ErrorCodeEnum.FILE_ALREADY_EXISTS, message);
         this.parentId = null;
         this.fileName = null;
         this.existingFileId = null;
@@ -49,7 +49,7 @@ public class FileAlreadyExistsException extends BusinessException {
      * @param cause   异常原因
      */
     public FileAlreadyExistsException(String message, Throwable cause) {
-        super(ErrorCode.FILE_ALREADY_EXISTS, message, cause);
+        super(ErrorCodeEnum.FILE_ALREADY_EXISTS, message, cause);
         this.parentId = null;
         this.fileName = null;
         this.existingFileId = null;
@@ -62,7 +62,7 @@ public class FileAlreadyExistsException extends BusinessException {
      * @param cause 异常原因
      */
     public FileAlreadyExistsException(Throwable cause) {
-        super(ErrorCode.FILE_ALREADY_EXISTS, cause);
+        super(ErrorCodeEnum.FILE_ALREADY_EXISTS, cause);
         this.parentId = null;
         this.fileName = null;
         this.existingFileId = null;
@@ -79,7 +79,7 @@ public class FileAlreadyExistsException extends BusinessException {
      */
     public FileAlreadyExistsException(Long parentId, String fileName,
             Long existingFileId, String suggestedName) {
-        super(ErrorCode.FILE_ALREADY_EXISTS,
+        super(ErrorCodeEnum.FILE_ALREADY_EXISTS,
                 buildMessage(parentId, fileName, existingFileId, suggestedName));
         this.parentId = parentId;
         this.fileName = fileName;
@@ -98,7 +98,7 @@ public class FileAlreadyExistsException extends BusinessException {
      */
     public FileAlreadyExistsException(String message, Long parentId,
             String fileName, Long existingFileId, String suggestedName) {
-        super(ErrorCode.FILE_ALREADY_EXISTS, message);
+        super(ErrorCodeEnum.FILE_ALREADY_EXISTS, message);
         this.parentId = parentId;
         this.fileName = fileName;
         this.existingFileId = existingFileId;

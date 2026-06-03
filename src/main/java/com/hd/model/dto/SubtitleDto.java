@@ -11,14 +11,14 @@ import lombok.NoArgsConstructor;
 /**
  * 字幕信息DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SubtitleDto {
+public class SubtitleDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long subtitleId;

@@ -2,7 +2,7 @@ package com.hd.controller;
 
 import com.hd.biz.RecycleBinBiz;
 import com.hd.common.HomeDashConstants;
-import com.hd.model.dto.ResponseDto;
+import com.hd.model.dto.ResponseDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -19,19 +19,22 @@ public class RecycleBinController {
 
     private final RecycleBinBiz recycleBinBiz;
 
-    @PostMapping("/list")
-    public ResponseEntity<ResponseDto> list() {
+    @GetMapping("/list")
+    public ResponseEntity<ResponseDTO> list() {
         return ResponseEntity.ok(recycleBinBiz.list());
     }
 
     @PostMapping("/restore")
-    public ResponseEntity<ResponseDto> restore(@RequestBody Map<String, List<Long>> params) {
+    public ResponseEntity<ResponseDTO> restore(@RequestBody Map<String, List<Long>> params) {
         List<Long> fileIds = params.get("fileIds");
+        if (fileIds == null || fileIds.isEmpty()) {
+            return ResponseEntity.badRequest().body(ResponseDTO.fail("缺少fileIds参数"));
+        }
         return ResponseEntity.ok(recycleBinBiz.restore(fileIds));
     }
 
-    @DeleteMapping("/empty")
-    public ResponseEntity<ResponseDto> empty() {
+    @PostMapping("/empty")
+    public ResponseEntity<ResponseDTO> empty() {
         return ResponseEntity.ok(recycleBinBiz.empty());
     }
 }

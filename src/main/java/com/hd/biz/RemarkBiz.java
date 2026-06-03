@@ -1,13 +1,13 @@
 package com.hd.biz;
 
-import com.hd.model.vo.FileRemarkVo;
+import com.hd.model.vo.FileRemarkVO;
 import java.util.List;
 
 /**
  * 文件备注业务接口。
  * 定义文件备注的CRUD操作。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -19,7 +19,7 @@ public interface RemarkBiz {
      * @param resourceId 资源ID
      * @return 文件备注VO
      */
-    FileRemarkVo getFileRemark(Long resourceId);
+    FileRemarkVO getFileRemark(Long resourceId);
 
     /**
      * 保存或更新文件备注。
@@ -28,7 +28,7 @@ public interface RemarkBiz {
      * @param remarkContent 备注内容
      * @return 文件备注VO
      */
-    FileRemarkVo saveFileRemark(Long resourceId, String remarkContent);
+    FileRemarkVO saveFileRemark(Long resourceId, String remarkContent);
 
     /**
      * 删除文件备注。
@@ -52,5 +52,5 @@ public interface RemarkBiz {
      * @param resourceIds 资源ID列表
      * @return 文件备注列表
      */
-    List<FileRemarkVo> getFileRemarks(List<Long> resourceIds);
+    List<FileRemarkVO> getFileRemarks(List<Long> resourceIds);
 }

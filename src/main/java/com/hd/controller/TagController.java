@@ -2,8 +2,8 @@ package com.hd.controller;
 
 import com.hd.biz.TagBiz;
 import com.hd.common.HomeDashConstants;
-import com.hd.model.dto.ResponseDto;
-import com.hd.model.dto.TagRequestDto;
+import com.hd.model.dto.ResponseDTO;
+import com.hd.model.dto.TagRequestDTO;
 import com.hd.model.vo.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ import java.util.ArrayList;
  * 标签控制器。
  * 提供标签CRUD和文件标签关联的REST API接口。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -34,109 +34,112 @@ public class TagController {
      * 创建标签。
      */
     @PostMapping("/tag")
-    public ResponseEntity<ResponseDto> createTag(@Valid @RequestBody TagRequestDto dto) {
+    public ResponseEntity<ResponseDTO> createTag(@Valid @RequestBody TagRequestDTO dto) {
         log.info("创建标签请求 [tagName={}]", dto.getTagName());
-        TagVo tag = tagBiz.createTag(dto);
-        return ResponseEntity.ok(ResponseDto.success(tag));
+        TagVO tag = tagBiz.createTag(dto);
+        return ResponseEntity.ok(ResponseDTO.success(tag));
     }
 
     /**
      * 更新标签。
      */
-    @PutMapping("/tag/{id}")
-    public ResponseEntity<ResponseDto> updateTag(@PathVariable Long id, @RequestBody TagRequestDto dto) {
+    @PostMapping("/tag/{id}/update")
+    public ResponseEntity<ResponseDTO> updateTag(@PathVariable Long id, @RequestBody TagRequestDTO dto) {
         log.info("更新标签请求 [id={}]", id);
-        TagVo tag = tagBiz.updateTag(id, dto);
-        return ResponseEntity.ok(ResponseDto.success(tag));
+        TagVO tag = tagBiz.updateTag(id, dto);
+        return ResponseEntity.ok(ResponseDTO.success(tag));
     }
 
     /**
      * 删除标签。
      */
-    @DeleteMapping("/tag/{id}")
-    public ResponseEntity<ResponseDto> deleteTag(@PathVariable Long id) {
+    @PostMapping("/tag/{id}/delete")
+    public ResponseEntity<ResponseDTO> deleteTag(@PathVariable Long id) {
         log.info("删除标签请求 [id={}]", id);
         boolean result = tagBiz.deleteTag(id);
-        return ResponseEntity.ok(ResponseDto.success(result));
+        return ResponseEntity.ok(ResponseDTO.success(result));
     }
 
     /**
      * 获取标签列表。
      */
     @GetMapping("/tag/list")
-    public ResponseEntity<ResponseDto> getTagList() {
+    public ResponseEntity<ResponseDTO> getTagList() {
         log.info("获取标签列表请求");
-        List<TagVo> tags = tagBiz.getTagList();
-        return ResponseEntity.ok(ResponseDto.success(tags));
+        List<TagVO> tags = tagBiz.getTagList();
+        return ResponseEntity.ok(ResponseDTO.success(tags));
     }
 
     /**
      * 获取标签详情。
      */
     @GetMapping("/tag/{id}")
-    public ResponseEntity<ResponseDto> getTagById(@PathVariable Long id) {
+    public ResponseEntity<ResponseDTO> getTagById(@PathVariable Long id) {
         log.info("获取标签详情请求 [id={}]", id);
-        TagVo tag = tagBiz.getTagById(id);
-        return ResponseEntity.ok(ResponseDto.success(tag));
+        TagVO tag = tagBiz.getTagById(id);
+        return ResponseEntity.ok(ResponseDTO.success(tag));
     }
 
     /**
      * 为文件分配标签。
      */
     @PostMapping("/tag/assign")
-    public ResponseEntity<ResponseDto> assignTags(@RequestBody TagAssignRequest request) {
+    public ResponseEntity<ResponseDTO> assignTags(@RequestBody TagAssignRequest request) {
         log.info("分配标签请求 [fileId={}, tagIds={}]", request.getFileId(), request.getTagIds());
-        BatchOperationResultVo result = tagBiz.assignTagsToFiles(
+        BatchOperationResultVO result = tagBiz.assignTagsToFiles(
                 List.of(request.getFileId()), request.getTagIds());
-        return ResponseEntity.ok(ResponseDto.success(result));
+        return ResponseEntity.ok(ResponseDTO.success(result));
     }
 
     /**
      * 批量为文件添加标签。
      */
     @PostMapping("/tag/batch/add")
-    public ResponseEntity<ResponseDto> batchAddTags(@RequestBody BatchTagRequest request) {
+    public ResponseEntity<ResponseDTO> batchAddTags(@RequestBody BatchTagRequest request) {
         log.info("批量添加标签请求 [fileIds={}, tagIds={}, tagNames={}]", 
                 request.getFileIds(), request.getTagIds(), request.getTagNames());
         
         List<Long> tagIds = request.getTagIds() != null ? new ArrayList<>(request.getTagIds()) : new ArrayList<>();
         if (request.getTagNames() != null && !request.getTagNames().isEmpty()) {
+            List<TagVO> allTags = tagBiz.getTagList();
             for (String name : request.getTagNames()) {
                 if (name == null || name.trim().isEmpty()) {
                     continue;
                 }
                 String trimmedName = name.trim();
-                TagVo tag = tagBiz.getTagList().stream()
+                TagVO tag = allTags.stream()
                         .filter(t -> trimmedName.equalsIgnoreCase(t.getTagName()))
                         .findFirst()
                         .orElse(null);
                 if (tag == null) {
-                    tag = tagBiz.createTag(TagRequestDto.builder().tagName(trimmedName).tagColor("#409EFF").build());
+                    tag = tagBiz.createTag(TagRequestDTO.builder().tagName(trimmedName).tagColor("#409EFF").build());
+                    allTags.add(tag);
                 }
                 tagIds.add(tag.getId());
             }
         }
         
-        BatchOperationResultVo result = tagBiz.addTagsToFiles(request.getFileIds(), tagIds);
-        return ResponseEntity.ok(ResponseDto.success(result));
+        BatchOperationResultVO result = tagBiz.addTagsToFiles(request.getFileIds(), tagIds);
+        return ResponseEntity.ok(ResponseDTO.success(result));
     }
 
     /**
      * 批量移除文件标签。
      */
     @PostMapping("/tag/batch/remove")
-    public ResponseEntity<ResponseDto> batchRemoveTags(@RequestBody BatchTagRequest request) {
+    public ResponseEntity<ResponseDTO> batchRemoveTags(@RequestBody BatchTagRequest request) {
         log.info("批量移除标签请求 [fileIds={}, tagIds={}, tagNames={}]", 
                 request.getFileIds(), request.getTagIds(), request.getTagNames());
         
         List<Long> tagIds = request.getTagIds() != null ? new ArrayList<>(request.getTagIds()) : new ArrayList<>();
         if (request.getTagNames() != null && !request.getTagNames().isEmpty()) {
+            List<TagVO> allTags = tagBiz.getTagList();
             for (String name : request.getTagNames()) {
                 if (name == null || name.trim().isEmpty()) {
                     continue;
                 }
                 String trimmedName = name.trim();
-                TagVo tag = tagBiz.getTagList().stream()
+                TagVO tag = allTags.stream()
                         .filter(t -> trimmedName.equalsIgnoreCase(t.getTagName()))
                         .findFirst()
                         .orElse(null);
@@ -146,30 +149,30 @@ public class TagController {
             }
         }
         
-        BatchOperationResultVo result = tagBiz.removeTagsFromFiles(request.getFileIds(), tagIds);
-        return ResponseEntity.ok(ResponseDto.success(result));
+        BatchOperationResultVO result = tagBiz.removeTagsFromFiles(request.getFileIds(), tagIds);
+        return ResponseEntity.ok(ResponseDTO.success(result));
     }
 
     /**
      * 获取文件的所有标签。
      */
     @GetMapping("/tag/file/{fileId}")
-    public ResponseEntity<ResponseDto> getTagsForFile(@PathVariable Long fileId) {
+    public ResponseEntity<ResponseDTO> getTagsForFile(@PathVariable Long fileId) {
         log.info("获取文件标签请求 [fileId={}]", fileId);
-        List<TagVo> tags = tagBiz.getTagsForFile(fileId);
-        return ResponseEntity.ok(ResponseDto.success(tags));
+        List<TagVO> tags = tagBiz.getTagsForFile(fileId);
+        return ResponseEntity.ok(ResponseDTO.success(tags));
     }
 
     /**
      * 批量操作文件标签。
      */
     @PostMapping("/tag/batch/operate")
-    public ResponseEntity<ResponseDto> batchOperateTags(@RequestBody BatchOperateRequest request) {
+    public ResponseEntity<ResponseDTO> batchOperateTags(@RequestBody BatchOperateRequest request) {
         log.info("批量操作标签请求 [fileId={}, tagIds={}, action={}]",
                 request.getFileId(), request.getTagIds(), request.getAction());
-        BatchOperationResultVo result = tagBiz.batchOperateTags(
+        BatchOperationResultVO result = tagBiz.batchOperateTags(
                 request.getFileId(), request.getTagIds(), request.getAction());
-        return ResponseEntity.ok(ResponseDto.success(result));
+        return ResponseEntity.ok(ResponseDTO.success(result));
     }
 
     /**

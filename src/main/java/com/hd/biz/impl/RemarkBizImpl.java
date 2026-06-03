@@ -1,9 +1,10 @@
 package com.hd.biz.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.hd.biz.RemarkBiz;
 import com.hd.dao.entity.FileRemark;
 import com.hd.dao.service.FileRemarkDataService;
-import com.hd.model.vo.FileRemarkVo;
+import com.hd.model.vo.FileRemarkVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 /**
  * 文件备注业务实现类。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -28,19 +29,19 @@ public class RemarkBizImpl implements RemarkBiz {
     private final FileRemarkDataService fileRemarkDataService;
 
     @Override
-    public FileRemarkVo getFileRemark(Long resourceId) {
+    public FileRemarkVO getFileRemark(Long resourceId) {
         log.info("获取文件备注 [resourceId={}]", resourceId);
 
         FileRemark remark = fileRemarkDataService.lambdaQuery()
                 .eq(FileRemark::getResourceId, resourceId)
                 .one();
 
-        return remark != null ? convertToFileRemarkVo(remark) : null;
+        return remark != null ? convertToFileRemarkVO(remark) : null;
     }
 
     @Override
     @Transactional
-    public FileRemarkVo saveFileRemark(Long resourceId, String remarkContent) {
+    public FileRemarkVO saveFileRemark(Long resourceId, String remarkContent) {
         log.info("保存文件备注 [resourceId={}, content={}]", resourceId, remarkContent);
 
         FileRemark remark = fileRemarkDataService.lambdaQuery()
@@ -62,7 +63,7 @@ public class RemarkBizImpl implements RemarkBiz {
         }
 
         log.info("文件备注已保存 [resourceId={}]", resourceId);
-        return convertToFileRemarkVo(remark);
+        return convertToFileRemarkVO(remark);
     }
 
     @Override
@@ -87,16 +88,15 @@ public class RemarkBizImpl implements RemarkBiz {
             return 0;
         }
 
-        int count = fileRemarkDataService.lambdaUpdate()
-                .in(FileRemark::getResourceId, resourceIds)
-                .remove() ? resourceIds.size() : 0;
+        int count = fileRemarkDataService.getBaseMapper().delete(
+                new LambdaQueryWrapper<FileRemark>().in(FileRemark::getResourceId, resourceIds));
 
         log.info("批量删除文件备注完成 [count={}]", count);
         return count;
     }
 
     @Override
-    public List<FileRemarkVo> getFileRemarks(List<Long> resourceIds) {
+    public List<FileRemarkVO> getFileRemarks(List<Long> resourceIds) {
         log.info("批量获取文件备注 [resourceIds={}]", resourceIds);
 
         if (resourceIds == null || resourceIds.isEmpty()) {
@@ -108,12 +108,12 @@ public class RemarkBizImpl implements RemarkBiz {
                 .list();
 
         return remarks.stream()
-                .map(this::convertToFileRemarkVo)
+                .map(this::convertToFileRemarkVO)
                 .collect(Collectors.toList());
     }
 
-    private FileRemarkVo convertToFileRemarkVo(FileRemark remark) {
-        return FileRemarkVo.builder()
+    private FileRemarkVO convertToFileRemarkVO(FileRemark remark) {
+        return FileRemarkVO.builder()
                 .id(remark.getId())
                 .resourceId(remark.getResourceId())
                 .remarkContent(remark.getRemarkContent())

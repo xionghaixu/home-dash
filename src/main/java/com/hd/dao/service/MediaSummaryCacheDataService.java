@@ -6,7 +6,7 @@ import com.hd.dao.entity.MediaSummaryCache;
 /**
  * 首页聚合缓存数据服务
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface MediaSummaryCacheDataService extends IService<MediaSummaryCache> {

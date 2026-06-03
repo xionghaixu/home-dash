@@ -8,7 +8,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class TaskQueryDto extends PageRequestDto {
+public class TaskQueryDTO extends PageRequestDTO {
 
     /** 状态筛选: PENDING, RUNNING, SUCCESS, FAILED */
     private String status;

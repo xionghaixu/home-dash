@@ -2,16 +2,17 @@ package com.hd.biz.impl;
 
 import com.hd.common.HomeDashConstants;
 import com.hd.common.config.HomeDashProperties;
-import com.hd.common.enums.FileType;
+import com.hd.common.enums.FileTypeEnum;
 import com.hd.common.exception.DataFormatException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.hd.model.dto.MergeFileDto;
-import com.hd.model.dto.ResponseDto;
-import com.hd.model.dto.TransferTaskDto;
+import com.hd.model.dto.MergeFileDTO;
+import com.hd.model.dto.ResourceChunkDTO;
+import com.hd.model.dto.ResponseDTO;
+import com.hd.model.dto.TransferTaskDTO;
 import com.hd.dao.entity.Resource;
 import com.hd.dao.entity.ResourceChunk;
 import com.hd.dao.service.FileDataService;
@@ -104,8 +105,8 @@ public class ResourceBizImpl implements ResourceBiz {
         this.fileDataService = fileDataService;
     }
 
-        @Override
-    public boolean checkChunk(ResourceChunk chunk) {
+    @Override
+    public boolean checkChunk(ResourceChunkDTO chunk) {
         log.debug("检查文件分块 [identifier={}, chunkNumber={}]",
                 chunk != null ? chunk.getIdentifier() : null,
                 chunk != null ? chunk.getChunkNumber() : null);
@@ -131,8 +132,8 @@ public class ResourceBizImpl implements ResourceBiz {
         return exists;
     }
 
-        @Override
-    public List<ResourceChunk> getUploadedChunks(String identifier) {
+    @Override
+    public List<ResourceChunkDTO> getUploadedChunks(String identifier) {
         log.debug("获取已上传分块列表 [identifier={}]", identifier);
 
         try {
@@ -143,16 +144,27 @@ public class ResourceBizImpl implements ResourceBiz {
             log.debug("已上传分块列表查询完成 [identifier={}, uploadedChunks={}, totalChunks={}]",
                     identifier, chunks.size(), chunks.isEmpty() ? 0 : chunks.get(0).getTotalChunks());
 
-            return chunks;
+            return chunks.stream().map(chunk -> {
+                ResourceChunkDTO dto = new ResourceChunkDTO();
+                dto.setChunkNumber(chunk.getChunkNumber());
+                dto.setChunkSize(chunk.getChunkSize());
+                dto.setCurrentChunkSize(chunk.getCurrentChunkSize());
+                dto.setTotalSize(chunk.getTotalSize());
+                dto.setIdentifier(chunk.getIdentifier());
+                dto.setFilename(chunk.getFilename());
+                dto.setRelativePath(chunk.getRelativePath());
+                dto.setTotalChunks(chunk.getTotalChunks());
+                return dto;
+            }).collect(Collectors.toList());
         } catch (Exception e) {
             log.error("查询已上传分块列表失败 [identifier={}, error={}]", identifier, e.getMessage(), e);
             return new ArrayList<>();
         }
     }
 
-        @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    public void saveChunk(ResourceChunk chunk) {
+    public void saveChunk(ResourceChunkDTO chunk) {
         long startTime = System.currentTimeMillis();
         log.info("开始保存文件分块 [identifier={}, chunkNumber={}, fileName={}, size={}]",
                 chunk != null ? chunk.getIdentifier() : null,
@@ -222,8 +234,18 @@ public class ResourceBizImpl implements ResourceBiz {
                             .set(ResourceChunk::getMd5, calculatedMd5)
                             .update();
                 } else {
-                    chunk.setMd5(calculatedMd5);
-                    resourceChunkDataService.save(chunk);
+                    ResourceChunk entity = ResourceChunk.builder()
+                            .chunkNumber(chunk.getChunkNumber())
+                            .chunkSize(chunk.getChunkSize())
+                            .currentChunkSize(chunk.getCurrentChunkSize())
+                            .totalSize(chunk.getTotalSize())
+                            .identifier(chunk.getIdentifier())
+                            .filename(chunk.getFilename())
+                            .relativePath(chunk.getRelativePath())
+                            .totalChunks(chunk.getTotalChunks())
+                            .md5(calculatedMd5)
+                            .build();
+                    resourceChunkDataService.save(entity);
                     log.debug("分块记录保存成功 [identifier={}, chunkNumber={}, md5={}]",
                             chunk.getIdentifier(), chunk.getChunkNumber(), calculatedMd5);
                 }
@@ -277,7 +299,7 @@ public class ResourceBizImpl implements ResourceBiz {
 
         @Transactional(rollbackFor = Exception.class)
     @Override
-    public void mergeChunk(MergeFileDto mergeFileDto) {
+    public void mergeChunk(MergeFileDTO mergeFileDto) {
         long startTime = System.currentTimeMillis();
         log.info("开始合并文件分块 [identifier={}, fileName={}, fileSize={}]",
                 mergeFileDto != null ? mergeFileDto.getIdentifier() : null,
@@ -306,22 +328,23 @@ public class ResourceBizImpl implements ResourceBiz {
             Resource existingResource = resourceDataService.lambdaQuery()
                     .eq(Resource::getMd5, md5)
                     .one();
+            Long fileId = null;
             if (Objects.nonNull(existingResource)) {
                 log.info("发现相同MD5的资源，启用秒传功能 [identifier={}, fileName={}, md5={}, existingResourceId={}]",
                         mergeFileDto.getIdentifier(), mergeFileDto.getFileName(), md5, existingResource.getId());
 
                 deleteTempFiles(mergeFileDto);
                 deleteMergedFile(relativePath);
-                createFileWithExistingResource(mergeFileDto, existingResource);
+                fileId = createFileWithExistingResource(mergeFileDto, existingResource);
                 mergeFileDto.setInstantUpload(true);
             } else {
                 log.info("未发现相同MD5的资源，创建新资源 [identifier={}, fileName={}, md5={}]",
                         mergeFileDto.getIdentifier(), mergeFileDto.getFileName(), md5);
-                generateRecord(mergeFileDto, md5, relativePath);
+                fileId = generateRecord(mergeFileDto, md5, relativePath);
                 mergeFileDto.setInstantUpload(false);
             }
 
-            markCompleted(mergeFileDto);
+            markCompleted(mergeFileDto, fileId);
             long elapsedTime = System.currentTimeMillis() - startTime;
             log.info("文件分块合并成功 [identifier={}, fileName={}, resourceId={}, isInstantUpload={}, 总耗时={}ms]",
                     mergeFileDto.getIdentifier(), mergeFileDto.getFileName(), mergeFileDto.getResourceId(),
@@ -338,7 +361,7 @@ public class ResourceBizImpl implements ResourceBiz {
                 + identifier;
     }
 
-        private String getChunkTmpPath(ResourceChunk chunk) {
+    private String getChunkTmpPath(ResourceChunkDTO chunk) {
         String fileName = chunk.getFilename();
         String safeFileName = fileName
                 .replaceAll("[\\\\/:*?\"<>|]", "_")
@@ -348,7 +371,7 @@ public class ResourceBizImpl implements ResourceBiz {
                 + safeFileName + "-" + chunk.getChunkNumber();
     }
 
-        private MergeResult mergeChunksAndCalculateMD5(MergeFileDto mergeFileDto) {
+        private MergeResult mergeChunksAndCalculateMD5(MergeFileDTO mergeFileDto) {
         long startTime = System.currentTimeMillis();
         log.debug("开始合并分块文件并计算MD5 [identifier={}, fileName={}]",
                 mergeFileDto.getIdentifier(), mergeFileDto.getFileName());
@@ -429,7 +452,7 @@ public class ResourceBizImpl implements ResourceBiz {
         }
     }
 
-        private List<Path> getSortedChunkPaths(MergeFileDto mergeFileDto) throws IOException {
+        private List<Path> getSortedChunkPaths(MergeFileDTO mergeFileDto) throws IOException {
         List<Path> chunkPaths = new ArrayList<>();
 
         String originalFileName = mergeFileDto.getFileName();
@@ -483,7 +506,7 @@ public class ResourceBizImpl implements ResourceBiz {
         return hexString.toString();
     }
 
-        private void generateRecord(MergeFileDto fileDto, String md5, String relativePath) {
+    private Long generateRecord(MergeFileDTO fileDto, String md5, String relativePath) {
         log.debug("开始生成资源记录和文件记录 [identifier={}, fileName={}, md5={}, relativePath={}]",
                 fileDto.getIdentifier(), fileDto.getFileName(), md5, relativePath);
 
@@ -500,7 +523,6 @@ public class ResourceBizImpl implements ResourceBiz {
                 resource.getId(), resource.getPath(), resource.getSize(), resource.getMd5());
 
         fileDto.setResourceId(resource.getId());
-        fileDto.setType(FileUtils.getFileType(fileDto.getFileName()).toString());
         Long validParentId = resolveValidParentId(fileDto.getParentId());
         fileDto.setParentId(validParentId);
 
@@ -512,13 +534,21 @@ public class ResourceBizImpl implements ResourceBiz {
             fileDto.setFileName(uniqueFileName);
         }
 
-        fileDataService.save(fileDto);
+        com.hd.dao.entity.File file = com.hd.dao.entity.File.builder()
+                .parentId(validParentId)
+                .fileName(fileDto.getFileName())
+                .type(FileUtils.getFileType(fileDto.getFileName()).toString())
+                .size(fileDto.getSize())
+                .resourceId(resource.getId())
+                .build();
+        fileDataService.save(file);
 
         log.debug("文件记录创建完成 [identifier={}, fileName={}, resourceId={}]",
                 fileDto.getIdentifier(), fileDto.getFileName(), resource.getId());
+        return file.getId();
     }
 
-        private void deleteTempFiles(MergeFileDto mergeFileDto) {
+        private void deleteTempFiles(MergeFileDTO mergeFileDto) {
         log.debug("开始删除临时文件和分块记录 [identifier={}, fileName={}]",
                 mergeFileDto.getIdentifier(), mergeFileDto.getFileName());
 
@@ -555,7 +585,7 @@ public class ResourceBizImpl implements ResourceBiz {
         }
     }
 
-        private void createFileWithExistingResource(MergeFileDto fileDto, Resource existingResource) {
+    private Long createFileWithExistingResource(MergeFileDTO fileDto, Resource existingResource) {
         log.debug("开始使用现有资源创建文件记录 [identifier={}, fileName={}, existingResourceId={}]",
                 fileDto.getIdentifier(), fileDto.getFileName(), existingResource.getId());
 
@@ -570,14 +600,13 @@ public class ResourceBizImpl implements ResourceBiz {
 
         resourceDataService.lambdaUpdate()
                 .eq(Resource::getId, resource.getId())
-                .set(Resource::getLink, resource.getLink() + 1)
+                .setSql("link = link + 1")
                 .update();
 
         log.info("资源引用计数增加 [identifier={}, resourceId={}, oldLink={}, newLink={}]",
                 fileDto.getIdentifier(), resource.getId(), resource.getLink(), resource.getLink() + 1);
 
         fileDto.setResourceId(resource.getId());
-        fileDto.setType(FileUtils.getFileType(fileDto.getFileName()).toString());
         Long validParentId = resolveValidParentId(fileDto.getParentId());
         fileDto.setParentId(validParentId);
 
@@ -589,10 +618,18 @@ public class ResourceBizImpl implements ResourceBiz {
             fileDto.setFileName(uniqueFileName);
         }
 
-        fileDataService.save(fileDto);
+        com.hd.dao.entity.File file = com.hd.dao.entity.File.builder()
+                .parentId(validParentId)
+                .fileName(fileDto.getFileName())
+                .type(FileUtils.getFileType(fileDto.getFileName()).toString())
+                .size(fileDto.getSize())
+                .resourceId(resource.getId())
+                .build();
+        fileDataService.save(file);
 
         log.info("秒传文件记录创建成功 [identifier={}, fileName={}, resourceId={}]",
                 fileDto.getIdentifier(), fileDto.getFileName(), resource.getId());
+        return file.getId();
     }
 
         @Override
@@ -675,7 +712,7 @@ public class ResourceBizImpl implements ResourceBiz {
         if (parentFolder == null) {
             throw new DataFormatException(String.format("目标父目录不存在 [parentId=%d]", safeParentId));
         }
-        if (!FileType.FOLDER.toString().equals(parentFolder.getType())) {
+        if (!FileTypeEnum.FOLDER.toString().equals(parentFolder.getType())) {
             throw new DataFormatException(String.format("目标父级不是文件夹 [parentId=%d]", safeParentId));
         }
         return safeParentId;
@@ -811,10 +848,10 @@ public class ResourceBizImpl implements ResourceBiz {
     }
 
     @Override
-    public ResponseDto transferTasks() {
-        List<TransferTaskDto> tasks = transferTaskCache.values().stream()
-                .map(this::toTransferTaskDto)
-                .sorted(Comparator.comparing(TransferTaskDto::getUpdateTime,
+    public ResponseDTO transferTasks() {
+        List<TransferTaskDTO> tasks = transferTaskCache.values().stream()
+                .map(this::toTransferTaskDTO)
+                .sorted(Comparator.comparing(TransferTaskDTO::getUpdateTime,
                         Comparator.nullsLast(Date::compareTo)).reversed())
                 .toList();
 
@@ -828,7 +865,7 @@ public class ResourceBizImpl implements ResourceBiz {
         summary.putIfAbsent("cancelled", 0L);
         summary.put("total", (long) tasks.size());
 
-        return ResponseDto.success(tasks, summary);
+        return ResponseDTO.success(tasks, summary);
     }
 
     @Override
@@ -857,7 +894,7 @@ public class ResourceBizImpl implements ResourceBiz {
         return false;
     }
 
-    private void markUploading(ResourceChunk chunk) {
+    private void markUploading(ResourceChunkDTO chunk) {
         TransferTaskState state = transferTaskCache.computeIfAbsent(chunk.getIdentifier(), this::newTransferTaskState);
         state.fileName = chunk.getFilename();
         state.operationType = "upload";
@@ -881,14 +918,14 @@ public class ResourceBizImpl implements ResourceBiz {
         state.errorMessage = null;
     }
 
-    private void markCompleted(MergeFileDto fileDto) {
+    private void markCompleted(MergeFileDTO fileDto, Long fileId) {
         TransferTaskState state = transferTaskCache.computeIfAbsent(fileDto.getIdentifier(), this::newTransferTaskState);
         state.fileName = fileDto.getFileName();
         state.status = HomeDashConstants.TransferStatus.COMPLETED;
         state.errorMessage = null;
         state.totalSize = fileDto.getSize();
         state.parentId = fileDto.getParentId();
-        state.fileId = fileDto.getId();
+        state.fileId = fileId;
         state.uploadedChunks = state.totalChunks;
         state.updateTime = new Date();
         if (state.createTime == null) {
@@ -939,7 +976,7 @@ public class ResourceBizImpl implements ResourceBiz {
         return state;
     }
 
-    private TransferTaskDto toTransferTaskDto(TransferTaskState state) {
+    private TransferTaskDTO toTransferTaskDTO(TransferTaskState state) {
         int progress = 0;
         if (state.totalChunks != null && state.totalChunks > 0 && state.uploadedChunks != null) {
             progress = Math.min(100, (int) Math.round(state.uploadedChunks * 100.0 / state.totalChunks));
@@ -947,7 +984,7 @@ public class ResourceBizImpl implements ResourceBiz {
         if (HomeDashConstants.TransferStatus.COMPLETED.equals(state.status)) {
             progress = 100;
         }
-        return TransferTaskDto.builder()
+        return TransferTaskDTO.builder()
                 .identifier(state.identifier)
                 .fileName(state.fileName)
                 .fileType(state.fileType)

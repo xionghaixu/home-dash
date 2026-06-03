@@ -45,7 +45,7 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OperationLogDto {
+public class OperationLogDTO {
 
     /**
      * 操作记录唯一标识符。

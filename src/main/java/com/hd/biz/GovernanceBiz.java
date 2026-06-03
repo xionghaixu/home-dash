@@ -2,7 +2,7 @@ package com.hd.biz;
 
 import com.hd.dao.entity.DuplicateGroup;
 import com.hd.dao.entity.File;
-import com.hd.model.dto.StorageAnalysisDto;
+import com.hd.model.dto.StorageAnalysisDTO;
 
 import java.util.List;
 
@@ -37,5 +37,5 @@ public interface GovernanceBiz {
     /**
      * 获取存储分析数据
      */
-    StorageAnalysisDto getStorageAnalysis();
+    StorageAnalysisDTO getStorageAnalysis();
 }

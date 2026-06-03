@@ -12,7 +12,7 @@ import java.util.Date;
  * 文件标签实体类。
  * 用于管理和存储文件的分类标签信息。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */

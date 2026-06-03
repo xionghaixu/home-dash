@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import com.hd.dao.entity.File;
+import lombok.EqualsAndHashCode;
 
 import java.util.Date;
 
@@ -45,8 +46,9 @@ import java.util.Date;
  * }
  * </pre>
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class MergeFileDto extends File {
+public class MergeFileDTO extends File {
 
     /**
      * 文件唯一标识符。

@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -22,7 +22,7 @@ public class NetworkException extends SystemException {
      * 默认构造函数。
      */
     public NetworkException() {
-        super(ErrorCode.NETWORK_ERROR);
+        super(ErrorCodeEnum.NETWORK_ERROR);
     }
 
     /**
@@ -31,7 +31,7 @@ public class NetworkException extends SystemException {
      * @param message 异常消息
      */
     public NetworkException(String message) {
-        super(ErrorCode.NETWORK_ERROR, message);
+        super(ErrorCodeEnum.NETWORK_ERROR, message);
     }
 
     /**
@@ -41,7 +41,7 @@ public class NetworkException extends SystemException {
      * @param cause   异常原因
      */
     public NetworkException(String message, Throwable cause) {
-        super(ErrorCode.NETWORK_ERROR, message, cause);
+        super(ErrorCodeEnum.NETWORK_ERROR, message, cause);
     }
 
     /**
@@ -50,6 +50,6 @@ public class NetworkException extends SystemException {
      * @param cause 异常原因
      */
     public NetworkException(Throwable cause) {
-        super(ErrorCode.NETWORK_ERROR, cause);
+        super(ErrorCodeEnum.NETWORK_ERROR, cause);
     }
 }

@@ -3,9 +3,11 @@ package com.hd.biz;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 import com.hd.dao.entity.File;
-import com.hd.model.dto.ResponseDto;
+import com.hd.model.dto.ResponseDTO;
 
 import java.util.List;
+
+import com.hd.model.dto.CreateFileDTO;
 
 /**
  * @author xhx
@@ -16,21 +18,21 @@ import java.util.List;
  */
 public interface FileBiz {
 
-    ResponseDto findByParentId(Long parentId, String sortBy, String sortOrder);
+    ResponseDTO findByParentId(Long parentId, String sortBy, String sortOrder);
 
-    ResponseDto findRecentFiles(Integer limit);
+    ResponseDTO findRecentFiles(Integer limit);
 
-    ResponseDto getRecentUploadSummary(Integer limit);
+    ResponseDTO getRecentUploadSummary(Integer limit);
 
-    ResponseDto findFilesByCategory(String category, String sortBy, String sortOrder);
+    ResponseDTO findFilesByCategory(String category, String sortBy, String sortOrder);
 
-    ResponseDto categorySummary();
+    ResponseDTO categorySummary();
 
-    ResponseDto findByFileId(Long fileId);
+    ResponseDTO findByFileId(Long fileId);
 
-    ResponseDto getFolderSize(Long folderId);
+    ResponseDTO getFolderSize(Long folderId);
 
-    void createFile(File file);
+    void createFile(CreateFileDTO dto);
 
     void renameFile(String fileName, Long id);
 
@@ -44,13 +46,13 @@ public interface FileBiz {
 
     ResourceWrapper loadResource(Long fileId);
 
-    ResponseDto uploadWithMD5(MultipartFile file, Long parentId);
+    ResponseDTO uploadWithMD5(MultipartFile file, Long parentId);
 
-    ResponseDto checkFileByMD5(String md5);
+    ResponseDTO checkFileByMD5(String md5);
 
-    ResponseDto verifyFileMD5(Long fileId);
+    ResponseDTO verifyFileMD5(Long fileId);
 
-    ResponseDto instantUpload(String md5, String fileName, Long parentId);
+    ResponseDTO instantUpload(String md5, String fileName, Long parentId);
 
     String getTextFileContent(Long fileId);
 

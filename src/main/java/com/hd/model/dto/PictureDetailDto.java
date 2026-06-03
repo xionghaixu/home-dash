@@ -14,14 +14,14 @@ import java.util.Map;
 /**
  * 图片详情DTO（含EXIF）
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PictureDetailDto {
+public class PictureDetailDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;

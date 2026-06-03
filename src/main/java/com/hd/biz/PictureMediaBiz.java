@@ -7,20 +7,20 @@ import java.util.List;
 /**
  * 图片媒体业务接口
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface PictureMediaBiz {
 
-    PageResponseDto<PictureListDto> getPictureList(Integer page, Integer pageSize, String sortBy, String sortOrder, Integer year, Integer month, Long albumId, String directory);
+    PageResponseDTO<PictureListDTO> getPictureList(Integer page, Integer pageSize, String sortBy, String sortOrder, Integer year, Integer month, Long albumId, String directory);
 
-    PictureDetailDto getPictureDetail(Long fileId);
+    PictureDetailDTO getPictureDetail(Long fileId);
 
-    List<PictureTimelineGroupDto> getPictureTimeline(String groupBy);
+    List<PictureTimelineGroupDTO> getPictureTimeline(String groupBy);
 
-    List<AlbumDto> getAlbumList(String albumType);
+    List<AlbumDTO> getAlbumList(String albumType);
 
-    AlbumDto createAlbum(String albumName, String description, Long coverFileId);
+    AlbumDTO createAlbum(String albumName, String description, Long coverFileId);
 
     void updateAlbum(Long albumId, String albumName, String description, Long coverFileId);
 
@@ -30,5 +30,5 @@ public interface PictureMediaBiz {
 
     void removePictureFromAlbum(Long albumId, Long fileId);
 
-    PageResponseDto<PictureListDto> getAlbumPictures(Long albumId, Integer page, Integer pageSize);
+    PageResponseDTO<PictureListDTO> getAlbumPictures(Long albumId, Integer page, Integer pageSize);
 }

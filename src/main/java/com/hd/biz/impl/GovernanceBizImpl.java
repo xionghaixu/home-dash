@@ -4,19 +4,18 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.hd.biz.GovernanceBiz;
 import com.hd.biz.RecycleBinBiz;
-import com.hd.common.enums.FileType;
+import com.hd.common.enums.FileTypeEnum;
 import com.hd.dao.entity.DuplicateGroup;
 import com.hd.dao.entity.DuplicateRecord;
 import com.hd.dao.entity.File;
 import com.hd.dao.entity.RecycleBin;
 import com.hd.dao.entity.Resource;
-import com.hd.dao.mapper.FileMapper;
 import com.hd.dao.service.DuplicateGroupDataService;
 import com.hd.dao.service.DuplicateRecordDataService;
 import com.hd.dao.service.RecycleBinDataService;
 import com.hd.dao.service.ResourceDataService;
 import com.hd.dao.service.FileDataService;
-import com.hd.model.dto.StorageAnalysisDto;
+import com.hd.model.dto.StorageAnalysisDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -42,9 +41,6 @@ public class GovernanceBizImpl implements GovernanceBiz {
     private DuplicateRecordDataService duplicateRecordDataService;
 
     @Autowired
-    private FileMapper fileMapper;
-
-    @Autowired
     private RecycleBinBiz recycleBinBiz;
 
     @Autowired
@@ -54,18 +50,19 @@ public class GovernanceBizImpl implements GovernanceBiz {
     @Transactional(rollbackFor = Exception.class)
     public List<DuplicateGroup> scanAndGetDuplicates() {
         // Clear previous records
-        duplicateRecordDataService.remove(new QueryWrapper<>());
-        duplicateGroupDataService.remove(new QueryWrapper<>());
+        duplicateRecordDataService.remove(new LambdaQueryWrapper<>());
+        duplicateGroupDataService.remove(new LambdaQueryWrapper<>());
 
         // Group by resource_id having count > 1
         QueryWrapper<File> queryWrapper = new QueryWrapper<>();
-        queryWrapper.select("resource_id", "count(1) as fileCount")
-                .eq("is_deleted", 0)
-                .isNotNull("resource_id")
-                .groupBy("resource_id")
+        queryWrapper.select("resource_id", "count(1) as fileCount");
+        queryWrapper.lambda()
+                .eq(File::getIsDeleted, 0)
+                .isNotNull(File::getResourceId)
+                .groupBy(File::getResourceId)
                 .having("count(1) > 1");
 
-        List<Map<String, Object>> duplicateMaps = fileMapper.selectMaps(queryWrapper);
+        List<Map<String, Object>> duplicateMaps = fileDataService.listMaps(queryWrapper);
         if (duplicateMaps == null || duplicateMaps.isEmpty()) {
             return Collections.emptyList();
         }
@@ -89,9 +86,10 @@ public class GovernanceBizImpl implements GovernanceBiz {
             groups.add(group);
 
             // Find all files with this resource_id
-            List<File> files = fileDataService.list(new QueryWrapper<File>()
-                    .eq("resource_id", resourceId)
-                    .eq("is_deleted", 0));
+            List<File> files = fileDataService.lambdaQuery()
+                    .eq(File::getResourceId, resourceId)
+                    .eq(File::getIsDeleted, 0)
+                    .list();
 
             List<DuplicateRecord> groupRecords = new ArrayList<>();
             for (File file : files) {
@@ -131,21 +129,21 @@ public class GovernanceBizImpl implements GovernanceBiz {
 
     @Override
     public List<File> getLargeFiles() {
-        QueryWrapper<File> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("is_deleted", 0)
-                .isNotNull("size")
-                .ne("type", "FOLDER")
-                .orderByDesc("size")
+        LambdaQueryWrapper<File> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(File::getIsDeleted, 0)
+                .isNotNull(File::getSize)
+                .ne(File::getType, FileTypeEnum.FOLDER.toString())
+                .orderByDesc(File::getSize)
                 .last("LIMIT 100");
         return fileDataService.list(queryWrapper);
     }
 
     @Override
     public List<File> getEmptyDirectories() {
-        QueryWrapper<File> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("type", "FOLDER")
-                .eq("is_deleted", 0)
-                .notInSql("id", "SELECT parent_id FROM file WHERE parent_id IS NOT NULL AND is_deleted = 0");
+        LambdaQueryWrapper<File> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(File::getType, FileTypeEnum.FOLDER.toString())
+                .eq(File::getIsDeleted, 0)
+                .notInSql(File::getId, "SELECT parent_id FROM file WHERE parent_id IS NOT NULL AND is_deleted = 0");
                 
         return fileDataService.list(queryWrapper);
     }
@@ -165,7 +163,7 @@ public class GovernanceBizImpl implements GovernanceBiz {
         DuplicateGroup group = duplicateGroupDataService.getById(groupId);
         if (group != null) {
             List<DuplicateRecord> records = duplicateRecordDataService.list(
-                    new QueryWrapper<DuplicateRecord>().eq("group_id", groupId)
+                    new LambdaQueryWrapper<DuplicateRecord>().eq(DuplicateRecord::getGroupId, groupId)
             );
             group.setFiles(records);
             cleanupDuplicateGroupInternal(group);
@@ -173,30 +171,32 @@ public class GovernanceBizImpl implements GovernanceBiz {
     }
 
     @Override
-    public StorageAnalysisDto getStorageAnalysis() {
+    public StorageAnalysisDTO getStorageAnalysis() {
         // 1. 总已用空间和文件数
         QueryWrapper<File> totalQuery = new QueryWrapper<>();
-        totalQuery.select("COALESCE(SUM(size), 0) as totalSize", "COUNT(*) as totalFileCount")
-                .eq("is_deleted", 0)
-                .ne("type", "FOLDER");
-        Map<String, Object> totalResult = fileMapper.selectMaps(totalQuery).get(0);
+        totalQuery.select("COALESCE(SUM(size), 0) as totalSize", "COUNT(*) as totalFileCount");
+        totalQuery.lambda()
+                .eq(File::getIsDeleted, 0)
+                .ne(File::getType, FileTypeEnum.FOLDER.toString());
+        Map<String, Object> totalResult = fileDataService.listMaps(totalQuery).get(0);
         Long totalSize = ((Number) totalResult.get("totalSize")).longValue();
         Integer totalFileCount = ((Number) totalResult.get("totalFileCount")).intValue();
 
         // 2. 按类型分布
         QueryWrapper<File> typeQuery = new QueryWrapper<>();
-        typeQuery.select("type", "COUNT(*) as count", "COALESCE(SUM(size), 0) as size")
-                .eq("is_deleted", 0)
-                .ne("type", "FOLDER")
-                .groupBy("type");
-        List<Map<String, Object>> typeResults = fileMapper.selectMaps(typeQuery);
-        List<StorageAnalysisDto.TypeBreakdown> typeBreakdown = new ArrayList<>();
+        typeQuery.select("type", "COUNT(*) as count", "COALESCE(SUM(size), 0) as size");
+        typeQuery.lambda()
+                .eq(File::getIsDeleted, 0)
+                .ne(File::getType, FileTypeEnum.FOLDER.toString())
+                .groupBy(File::getType);
+        List<Map<String, Object>> typeResults = fileDataService.listMaps(typeQuery);
+        List<StorageAnalysisDTO.TypeBreakdown> typeBreakdown = new ArrayList<>();
         for (Map<String, Object> row : typeResults) {
             String type = (String) row.get("type");
             Long size = ((Number) row.get("size")).longValue();
             Integer count = ((Number) row.get("count")).intValue();
             double percent = totalSize > 0 ? (double) size / totalSize * 100 : 0;
-            typeBreakdown.add(StorageAnalysisDto.TypeBreakdown.builder()
+            typeBreakdown.add(StorageAnalysisDTO.TypeBreakdown.builder()
                     .type(type)
                     .label(getTypeLabel(type))
                     .size(size)
@@ -208,22 +208,23 @@ public class GovernanceBizImpl implements GovernanceBiz {
 
         // 3. 目录占用排行 Top10
         QueryWrapper<File> dirQuery = new QueryWrapper<>();
-        dirQuery.select("parent_id", "SUM(size) as total_size", "COUNT(*) as file_count")
-                .eq("is_deleted", 0)
-                .ne("type", "FOLDER")
-                .isNotNull("parent_id")
-                .groupBy("parent_id")
-                .orderByDesc("total_size")
-                .last("LIMIT 10");
-        List<Map<String, Object>> dirResults = fileMapper.selectMaps(dirQuery);
-        List<StorageAnalysisDto.DirRanking> topDirs = new ArrayList<>();
+        dirQuery.select("parent_id", "SUM(size) as total_size", "COUNT(*) as file_count");
+        dirQuery.lambda()
+                .eq(File::getIsDeleted, 0)
+                .ne(File::getType, FileTypeEnum.FOLDER.toString())
+                .isNotNull(File::getParentId)
+                .groupBy(File::getParentId);
+        dirQuery.orderByDesc("total_size");
+        dirQuery.last("LIMIT 10");
+        List<Map<String, Object>> dirResults = fileDataService.listMaps(dirQuery);
+        List<StorageAnalysisDTO.DirRanking> topDirs = new ArrayList<>();
         for (Map<String, Object> row : dirResults) {
             Long parentId = ((Number) row.get("parent_id")).longValue();
             Long size = ((Number) row.get("total_size")).longValue();
             Integer fileCount = ((Number) row.get("file_count")).intValue();
-            File parentDir = fileMapper.selectById(parentId);
+            File parentDir = fileDataService.getById(parentId);
             String dirName = parentDir != null ? parentDir.getFileName() : "根目录";
-            topDirs.add(StorageAnalysisDto.DirRanking.builder()
+            topDirs.add(StorageAnalysisDTO.DirRanking.builder()
                     .dirId(parentId)
                     .dirName(dirName)
                     .path("/" + dirName)
@@ -234,8 +235,8 @@ public class GovernanceBizImpl implements GovernanceBiz {
 
         // 4. 大文件排行 Top20 (复用已有方法)
         List<File> largeFiles = getLargeFiles().stream().limit(20).collect(Collectors.toList());
-        List<StorageAnalysisDto.FileRanking> topFiles = largeFiles.stream()
-                .map(f -> StorageAnalysisDto.FileRanking.builder()
+        List<StorageAnalysisDTO.FileRanking> topFiles = largeFiles.stream()
+                .map(f -> StorageAnalysisDTO.FileRanking.builder()
                         .fileId(f.getId())
                         .fileName(f.getFileName())
                         .size(f.getSize())
@@ -249,7 +250,7 @@ public class GovernanceBizImpl implements GovernanceBiz {
         List<RecycleBin> recycleBinList = recycleBinDataService.list();
         Long recycleBinSize = 0L;
         for (RecycleBin rb : recycleBinList) {
-            File file = fileMapper.selectByIdWithDeleted(rb.getFileId());
+            File file = fileDataService.selectByIdWithDeleted(rb.getFileId());
             if (file != null && file.getSize() != null) {
                 recycleBinSize += file.getSize();
             }
@@ -267,7 +268,7 @@ public class GovernanceBizImpl implements GovernanceBiz {
         // 空目录数
         Integer emptyDirCount = getEmptyDirectories().size();
 
-        StorageAnalysisDto.CleanableEstimate cleanable = StorageAnalysisDto.CleanableEstimate.builder()
+        StorageAnalysisDTO.CleanableEstimate cleanable = StorageAnalysisDTO.CleanableEstimate.builder()
                 .recycleBinSize(recycleBinSize)
                 .recycleBinCount(recycleBinList.size())
                 .duplicateSize(duplicateSize)
@@ -276,9 +277,9 @@ public class GovernanceBizImpl implements GovernanceBiz {
                 .build();
 
         // 6. 清理建议
-        List<StorageAnalysisDto.CleanupSuggestion> suggestions = new ArrayList<>();
+        List<StorageAnalysisDTO.CleanupSuggestion> suggestions = new ArrayList<>();
         if (recycleBinList.size() > 0) {
-            suggestions.add(StorageAnalysisDto.CleanupSuggestion.builder()
+            suggestions.add(StorageAnalysisDTO.CleanupSuggestion.builder()
                     .type("recycle_bin")
                     .title("回收站有 " + recycleBinList.size() + " 个文件可清理")
                     .description("可释放约 " + formatSize(recycleBinSize) + " 空间")
@@ -287,7 +288,7 @@ public class GovernanceBizImpl implements GovernanceBiz {
                     .build());
         }
         if (duplicateGroups.size() > 0) {
-            suggestions.add(StorageAnalysisDto.CleanupSuggestion.builder()
+            suggestions.add(StorageAnalysisDTO.CleanupSuggestion.builder()
                     .type("duplicate")
                     .title("发现 " + duplicateGroups.size() + " 组重复文件")
                     .description("清理后可释放约 " + formatSize(duplicateSize) + " 空间")
@@ -296,7 +297,7 @@ public class GovernanceBizImpl implements GovernanceBiz {
                     .build());
         }
         if (emptyDirCount > 0) {
-            suggestions.add(StorageAnalysisDto.CleanupSuggestion.builder()
+            suggestions.add(StorageAnalysisDTO.CleanupSuggestion.builder()
                     .type("empty_dir")
                     .title("发现 " + emptyDirCount + " 个空目录")
                     .description("可以安全删除这些空目录")
@@ -305,7 +306,7 @@ public class GovernanceBizImpl implements GovernanceBiz {
                     .build());
         }
 
-        return StorageAnalysisDto.builder()
+        return StorageAnalysisDTO.builder()
                 .totalSize(totalSize)
                 .totalFileCount(totalFileCount)
                 .typeBreakdown(typeBreakdown)

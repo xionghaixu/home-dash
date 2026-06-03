@@ -8,7 +8,7 @@ import lombok.*;
  * 搜索历史VO。
  * 用于返回用户的搜索历史记录。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -17,7 +17,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SearchHistoryVo {
+public class SearchHistoryVO {
 
     /** 记录ID。 */
     @JsonSerialize(using = ToStringSerializer.class)

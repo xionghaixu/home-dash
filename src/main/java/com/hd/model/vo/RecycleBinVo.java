@@ -12,7 +12,7 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RecycleBinVo {
+public class RecycleBinVO {
     /** 映射为fileId，匹配前端 row.id 以正常执行 restore */
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;

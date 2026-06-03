@@ -37,7 +37,7 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TransferTaskDto {
+public class TransferTaskDTO {
 
     /**
      * 文件唯一标识符（MD5或UUID）。

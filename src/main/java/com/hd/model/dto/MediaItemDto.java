@@ -14,14 +14,14 @@ import java.util.Map;
  * 媒体项基础DTO
  * 用于图片、视频、音频列表展示
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MediaItemDto {
+public class MediaItemDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;

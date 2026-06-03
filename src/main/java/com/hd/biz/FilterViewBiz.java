@@ -1,13 +1,13 @@
 package com.hd.biz;
 
-import com.hd.model.vo.FilterViewVo;
+import com.hd.model.vo.FilterViewVO;
 import java.util.List;
 
 /**
  * 筛选视图业务接口。
  * 定义筛选视图的保存、读取和管理操作。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -47,14 +47,14 @@ public interface FilterViewBiz {
      *
      * @return 筛选视图列表
      */
-    List<FilterViewVo> getAllFilterViews();
+    List<FilterViewVO> getAllFilterViews();
 
     /**
      * 获取默认筛选视图。
      *
      * @return 默认视图
      */
-    FilterViewVo getDefaultFilterView();
+    FilterViewVO getDefaultFilterView();
 
     /**
      * 设置默认视图。

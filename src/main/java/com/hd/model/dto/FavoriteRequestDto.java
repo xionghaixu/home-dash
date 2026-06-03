@@ -9,7 +9,7 @@ import lombok.*;
  * 收藏请求DTO。
  * 用于添加或移除收藏。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -18,7 +18,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FavoriteRequestDto {
+public class FavoriteRequestDTO {
 
     /** 资源ID。 */
     @JsonSerialize(using = ToStringSerializer.class)

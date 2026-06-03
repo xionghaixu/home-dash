@@ -7,26 +7,26 @@ import java.util.List;
 /**
  * 音频媒体业务接口
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface AudioMediaBiz {
 
-    PageResponseDto<AudioListDto> getAudioList(Integer page, Integer pageSize, String sortBy, String sortOrder, String album, String artist, String genre);
+    PageResponseDTO<AudioListDTO> getAudioList(Integer page, Integer pageSize, String sortBy, String sortOrder, String album, String artist, String genre);
 
-    AudioDetailDto getAudioDetail(Long fileId);
+    AudioDetailDTO getAudioDetail(Long fileId);
 
-    List<AudioAlbumDto> getAlbumList();
+    List<AudioAlbumDTO> getAlbumList();
 
-    List<AudioListDto> getAlbumTracks(String album);
+    List<AudioListDTO> getAlbumTracks(String album);
 
-    List<AudioArtistDto> getArtistList();
+    List<AudioArtistDTO> getArtistList();
 
-    List<AudioListDto> getArtistTracks(String artist);
+    List<AudioListDTO> getArtistTracks(String artist);
 
-    List<AudioPlaylistDto> getPlaylistList();
+    List<AudioPlaylistDTO> getPlaylistList();
 
-    AudioPlaylistDto createPlaylist(String playlistName, String description);
+    AudioPlaylistDTO createPlaylist(String playlistName, String description);
 
     void updatePlaylist(Long playlistId, String playlistName, String description);
 
@@ -38,7 +38,7 @@ public interface AudioMediaBiz {
 
     void reorderPlaylistTracks(Long playlistId, List<Long> fileIds);
 
-    List<PlaylistItemDto> getPlaylistTracks(Long playlistId);
+    List<PlaylistItemDTO> getPlaylistTracks(Long playlistId);
 
-    List<AudioListDto> getRecentPlays(Integer limit);
+    List<AudioListDTO> getRecentPlays(Integer limit);
 }

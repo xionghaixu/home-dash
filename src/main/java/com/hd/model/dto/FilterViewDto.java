@@ -9,7 +9,7 @@ import lombok.*;
 /**
  * 筛选视图请求DTO。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -18,7 +18,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FilterViewDto {
+public class FilterViewDTO {
 
     /** 视图ID（更新时需要）。 */
     @JsonSerialize(using = ToStringSerializer.class)

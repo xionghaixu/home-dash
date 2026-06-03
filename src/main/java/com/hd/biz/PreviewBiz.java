@@ -1,12 +1,14 @@
 package com.hd.biz;
 
+import org.springframework.core.io.Resource;
+import java.nio.file.Path;
 import java.util.Map;
 
 /**
  * 预览业务接口。
  * 定义文件预览的核心能力，包括图片、文本、音频预览。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -24,9 +26,9 @@ public interface PreviewBiz {
      * 获取原始图片。
      *
      * @param resourceId 资源ID
-     * @return 原始图片字节数据，如果不存在返回null
+     * @return 原始图片资源，如果不存在返回null
      */
-    byte[] getOriginalImage(Long resourceId);
+    Resource getOriginalImage(Long resourceId);
 
     /**
      * 获取图片EXIF信息。
@@ -77,6 +79,14 @@ public interface PreviewBiz {
      * @return 音频字节数据，如果不存在返回null
      */
     byte[] getAudioStream(Long resourceId);
+
+    /**
+     * 获取音频文件路径，用于流式传输。
+     *
+     * @param resourceId 资源ID
+     * @return 音频文件Path，如果不存在返回null
+     */
+    Path getAudioFilePath(Long resourceId);
 
     /**
      * 获取预览降级信息（当预览失败时返回结构化错误）。

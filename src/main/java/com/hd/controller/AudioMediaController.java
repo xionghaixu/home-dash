@@ -3,6 +3,7 @@ package com.hd.controller;
 import com.hd.biz.AudioMediaBiz;
 import com.hd.model.dto.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
 /**
  * 音频媒体控制器
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @RestController
@@ -21,7 +22,7 @@ public class AudioMediaController {
     private final AudioMediaBiz audioMediaBiz;
 
     @GetMapping("/audio")
-    public ResponseDto getAudioList(
+    public ResponseEntity<ResponseDTO> getAudioList(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "30") Integer pageSize,
             @RequestParam(defaultValue = "title") String sortBy,
@@ -29,91 +30,91 @@ public class AudioMediaController {
             @RequestParam(required = false) String album,
             @RequestParam(required = false) String artist,
             @RequestParam(required = false) String genre) {
-        PageResponseDto<AudioListDto> result = audioMediaBiz.getAudioList(page, pageSize, sortBy, sortOrder, album, artist, genre);
-        return ResponseDto.success(result);
+        PageResponseDTO<AudioListDTO> result = audioMediaBiz.getAudioList(page, pageSize, sortBy, sortOrder, album, artist, genre);
+        return ResponseEntity.ok(ResponseDTO.success(result));
     }
 
     @GetMapping("/audio/{fileId}")
-    public ResponseDto getAudioDetail(@PathVariable Long fileId) {
-        AudioDetailDto detail = audioMediaBiz.getAudioDetail(fileId);
-        return ResponseDto.success(detail);
+    public ResponseEntity<ResponseDTO> getAudioDetail(@PathVariable Long fileId) {
+        AudioDetailDTO detail = audioMediaBiz.getAudioDetail(fileId);
+        return ResponseEntity.ok(ResponseDTO.success(detail));
     }
 
     @GetMapping("/albums/audio")
-    public ResponseDto getAudioAlbumList() {
-        List<AudioAlbumDto> albums = audioMediaBiz.getAlbumList();
-        return ResponseDto.success(albums);
+    public ResponseEntity<ResponseDTO> getAudioAlbumList() {
+        List<AudioAlbumDTO> albums = audioMediaBiz.getAlbumList();
+        return ResponseEntity.ok(ResponseDTO.success(albums));
     }
 
     @GetMapping("/albums/audio/{album}/tracks")
-    public ResponseDto getAlbumTracks(@PathVariable String album) {
-        List<AudioListDto> tracks = audioMediaBiz.getAlbumTracks(album);
-        return ResponseDto.success(tracks);
+    public ResponseEntity<ResponseDTO> getAlbumTracks(@PathVariable String album) {
+        List<AudioListDTO> tracks = audioMediaBiz.getAlbumTracks(album);
+        return ResponseEntity.ok(ResponseDTO.success(tracks));
     }
 
     @GetMapping("/artists")
-    public ResponseDto getArtistList() {
-        List<AudioArtistDto> artists = audioMediaBiz.getArtistList();
-        return ResponseDto.success(artists);
+    public ResponseEntity<ResponseDTO> getArtistList() {
+        List<AudioArtistDTO> artists = audioMediaBiz.getArtistList();
+        return ResponseEntity.ok(ResponseDTO.success(artists));
     }
 
     @GetMapping("/artists/{artist}/tracks")
-    public ResponseDto getArtistTracks(@PathVariable String artist) {
-        List<AudioListDto> tracks = audioMediaBiz.getArtistTracks(artist);
-        return ResponseDto.success(tracks);
+    public ResponseEntity<ResponseDTO> getArtistTracks(@PathVariable String artist) {
+        List<AudioListDTO> tracks = audioMediaBiz.getArtistTracks(artist);
+        return ResponseEntity.ok(ResponseDTO.success(tracks));
     }
 
     @GetMapping("/playlists")
-    public ResponseDto getPlaylistList() {
-        List<AudioPlaylistDto> playlists = audioMediaBiz.getPlaylistList();
-        return ResponseDto.success(playlists);
+    public ResponseEntity<ResponseDTO> getPlaylistList() {
+        List<AudioPlaylistDTO> playlists = audioMediaBiz.getPlaylistList();
+        return ResponseEntity.ok(ResponseDTO.success(playlists));
     }
 
     @PostMapping("/playlists")
-    public ResponseDto createPlaylist(@RequestBody AudioPlaylistDto playlistDto) {
-        AudioPlaylistDto playlist = audioMediaBiz.createPlaylist(playlistDto.getPlaylistName(), playlistDto.getDescription());
-        return ResponseDto.success(playlist);
+    public ResponseEntity<ResponseDTO> createPlaylist(@RequestBody AudioPlaylistDTO playlistDto) {
+        AudioPlaylistDTO playlist = audioMediaBiz.createPlaylist(playlistDto.getPlaylistName(), playlistDto.getDescription());
+        return ResponseEntity.ok(ResponseDTO.success(playlist));
     }
 
-    @PutMapping("/playlists/{playlistId}")
-    public ResponseDto updatePlaylist(@PathVariable Long playlistId, @RequestBody AudioPlaylistDto playlistDto) {
+    @PostMapping("/playlists/{playlistId}/update")
+    public ResponseEntity<ResponseDTO> updatePlaylist(@PathVariable Long playlistId, @RequestBody AudioPlaylistDTO playlistDto) {
         audioMediaBiz.updatePlaylist(playlistId, playlistDto.getPlaylistName(), playlistDto.getDescription());
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
-    @DeleteMapping("/playlists/{playlistId}")
-    public ResponseDto deletePlaylist(@PathVariable Long playlistId) {
+    @PostMapping("/playlists/{playlistId}/delete")
+    public ResponseEntity<ResponseDTO> deletePlaylist(@PathVariable Long playlistId) {
         audioMediaBiz.deletePlaylist(playlistId);
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
     @PostMapping("/playlists/{playlistId}/tracks")
-    public ResponseDto addTrackToPlaylist(@PathVariable Long playlistId, @RequestParam Long fileId) {
+    public ResponseEntity<ResponseDTO> addTrackToPlaylist(@PathVariable Long playlistId, @RequestParam Long fileId) {
         audioMediaBiz.addTrackToPlaylist(playlistId, fileId);
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
-    @DeleteMapping("/playlists/{playlistId}/tracks/{fileId}")
-    public ResponseDto removeTrackFromPlaylist(@PathVariable Long playlistId, @PathVariable Long fileId) {
+    @PostMapping("/playlists/{playlistId}/tracks/{fileId}")
+    public ResponseEntity<ResponseDTO> removeTrackFromPlaylist(@PathVariable Long playlistId, @PathVariable Long fileId) {
         audioMediaBiz.removeTrackFromPlaylist(playlistId, fileId);
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
-    @PutMapping("/playlists/{playlistId}/tracks/reorder")
-    public ResponseDto reorderPlaylistTracks(@PathVariable Long playlistId, @RequestBody List<Long> fileIds) {
+    @PostMapping("/playlists/{playlistId}/tracks/reorder")
+    public ResponseEntity<ResponseDTO> reorderPlaylistTracks(@PathVariable Long playlistId, @RequestBody List<Long> fileIds) {
         audioMediaBiz.reorderPlaylistTracks(playlistId, fileIds);
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
     @GetMapping("/playlists/{playlistId}/tracks")
-    public ResponseDto getPlaylistTracks(@PathVariable Long playlistId) {
-        List<PlaylistItemDto> tracks = audioMediaBiz.getPlaylistTracks(playlistId);
-        return ResponseDto.success(tracks);
+    public ResponseEntity<ResponseDTO> getPlaylistTracks(@PathVariable Long playlistId) {
+        List<PlaylistItemDTO> tracks = audioMediaBiz.getPlaylistTracks(playlistId);
+        return ResponseEntity.ok(ResponseDTO.success(tracks));
     }
 
     @GetMapping("/audio/recent-plays")
-    public ResponseDto getRecentPlays(@RequestParam(defaultValue = "20") Integer limit) {
-        List<AudioListDto> tracks = audioMediaBiz.getRecentPlays(limit);
-        return ResponseDto.success(tracks);
+    public ResponseEntity<ResponseDTO> getRecentPlays(@RequestParam(defaultValue = "20") Integer limit) {
+        List<AudioListDTO> tracks = audioMediaBiz.getRecentPlays(limit);
+        return ResponseEntity.ok(ResponseDTO.success(tracks));
     }
 }

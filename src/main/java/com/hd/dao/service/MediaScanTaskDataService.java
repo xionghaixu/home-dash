@@ -6,7 +6,7 @@ import com.hd.dao.entity.MediaScanTask;
 /**
  * 媒体扫描任务数据服务
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface MediaScanTaskDataService extends IService<MediaScanTask> {

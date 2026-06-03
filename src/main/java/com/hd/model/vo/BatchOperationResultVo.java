@@ -7,7 +7,7 @@ import java.util.List;
  * 批量操作结果VO。
  * 返回批量操作的成功/失败统计。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BatchOperationResultVo {
+public class BatchOperationResultVO {
 
     /** 成功数量。 */
     private Integer successCount;

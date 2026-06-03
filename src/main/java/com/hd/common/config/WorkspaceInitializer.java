@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
-import com.hd.common.enums.FileType;
+import com.hd.common.enums.FileTypeEnum;
 import com.hd.dao.entity.File;
 import com.hd.dao.service.FileDataService;
 
@@ -46,7 +46,7 @@ public class WorkspaceInitializer {
             File folder = File.builder()
                     .parentId(File.ROOT_FILE.getId())
                     .fileName(folderName)
-                    .type(FileType.FOLDER.toString())
+                    .type(FileTypeEnum.FOLDER.toString())
                     .build();
             fileDataService.save(folder);
             log.info("已初始化默认目录 [folderName={}, folderId={}]", folderName, folder.getId());
@@ -57,7 +57,7 @@ public class WorkspaceInitializer {
 
     private void repairOrphanFiles() {
         List<Long> validFolderIds = fileDataService.lambdaQuery()
-                .eq(File::getType, FileType.FOLDER.toString())
+                .eq(File::getType, FileTypeEnum.FOLDER.toString())
                 .list().stream()
                 .map(File::getId)
                 .toList();

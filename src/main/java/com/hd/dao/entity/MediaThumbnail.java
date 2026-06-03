@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * 缩略图记录实体类
  * 存储图片多尺寸缩略图和视频封面
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

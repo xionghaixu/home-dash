@@ -12,14 +12,14 @@ import java.time.LocalDateTime;
 /**
  * 视频列表项DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VideoListDto {
+public class VideoListDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;
@@ -49,7 +49,7 @@ public class VideoListDto {
 
     private Boolean hasAudio;
 
-    private WatchProgressDto watchProgress;
+    private WatchProgressDTO watchProgress;
 
     private LocalDateTime lastWatchedAt;
 }

@@ -18,7 +18,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StorageAnalysisDto {
+public class StorageAnalysisDTO {
 
     /** 总已用空间（字节） */
     private Long totalSize;

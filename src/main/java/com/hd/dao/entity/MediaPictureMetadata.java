@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * 图片元数据实体类
  * 存储图片EXIF信息，包括拍摄时间、设备、地理位置等
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

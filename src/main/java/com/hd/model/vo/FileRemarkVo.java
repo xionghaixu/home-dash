@@ -7,7 +7,7 @@ import lombok.*;
 /**
  * 文件备注VO。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -16,7 +16,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FileRemarkVo {
+public class FileRemarkVO {
 
     /** 备注ID。 */
     @JsonSerialize(using = ToStringSerializer.class)

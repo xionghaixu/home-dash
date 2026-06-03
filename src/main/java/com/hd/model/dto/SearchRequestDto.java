@@ -10,7 +10,7 @@ import java.util.List;
  * 搜索请求DTO。
  * 用于文件搜索和筛选的请求参数。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -19,7 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SearchRequestDto {
+public class SearchRequestDTO {
 
     /** 搜索关键词。 */
     private String keyword;

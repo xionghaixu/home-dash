@@ -6,7 +6,7 @@ import com.hd.dao.entity.MediaThumbnail;
 /**
  * 缩略图记录数据服务
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface MediaThumbnailDataService extends IService<MediaThumbnail> {

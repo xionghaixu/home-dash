@@ -8,7 +8,7 @@ import lombok.*;
  * 筛选视图VO。
  * 用于返回用户保存的筛选视图配置。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -17,7 +17,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FilterViewVo {
+public class FilterViewVO {
 
     /** 视图ID。 */
     @JsonSerialize(using = ToStringSerializer.class)

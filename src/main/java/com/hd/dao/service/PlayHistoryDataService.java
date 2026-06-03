@@ -6,7 +6,7 @@ import com.hd.dao.entity.PlayHistory;
 /**
  * 播放历史数据服务
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface PlayHistoryDataService extends IService<PlayHistory> {

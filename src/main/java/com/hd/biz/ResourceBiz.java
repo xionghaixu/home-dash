@@ -1,8 +1,8 @@
 package com.hd.biz;
 
-import com.hd.dao.entity.ResourceChunk;
-import com.hd.model.dto.MergeFileDto;
-import com.hd.model.dto.ResponseDto;
+import com.hd.model.dto.ResourceChunkDTO;
+import com.hd.model.dto.MergeFileDTO;
+import com.hd.model.dto.ResponseDTO;
 
 import java.util.List;
 
@@ -15,13 +15,13 @@ import java.util.List;
  */
 public interface ResourceBiz {
 
-    boolean checkChunk(ResourceChunk chunk);
+    boolean checkChunk(ResourceChunkDTO chunk);
 
-    void saveChunk(ResourceChunk chunk);
+    void saveChunk(ResourceChunkDTO chunk);
 
-    void mergeChunk(MergeFileDto mergeFileDto);
+    void mergeChunk(MergeFileDTO mergeFileDto);
 
-    List<ResourceChunk> getUploadedChunks(String identifier);
+    List<ResourceChunkDTO> getUploadedChunks(String identifier);
 
     boolean verifyChunkIntegrity(String identifier, Integer chunkNumber, String expectedMd5);
 
@@ -29,7 +29,7 @@ public interface ResourceBiz {
 
     int cleanupTimeoutUploads(int timeoutMinutes);
 
-    ResponseDto transferTasks();
+    ResponseDTO transferTasks();
 
     int clearTransferTasks(String status);
 

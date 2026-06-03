@@ -45,7 +45,7 @@ import java.util.List;
  * </pre>
  */
 @Data
-public class MoveAndCopyFileDto {
+public class MoveAndCopyFileDTO {
 
     /** 移动操作类型 */
     public static final String MOVE_TYPE = "move";

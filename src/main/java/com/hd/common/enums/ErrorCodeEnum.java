@@ -1,21 +1,9 @@
 package com.hd.common.enums;
 
 /**
- * @author xhx
- * @version 1.0
- * @package com.hd.common.enums
- * @createTime 2026/04/23 23:34
- * @description 统一错误码枚举。定义系统中所有可能的错误码，便于统一管理和问题定位。
- *
- * <h3>错误码分类：</h3>
- * <ul>
- * <li>2xx：成功状态码</li>
- * <li>4xx：客户端错误（HTTP标准状态码）</li>
- * <li>5xx：业务错误（1001-1999）- 业务逻辑相关错误</li>
- * <li>6xx：系统错误（501-599）- 系统级别错误</li>
- * </ul>
+ * 统一错误码枚举。定义系统中所有可能的错误码，便于统一管理和问题定位。
  */
-public enum ErrorCode {
+public enum ErrorCodeEnum {
 
     // ========== 成功状态码 ==========
     SUCCESS(200, "操作成功"),
@@ -111,7 +99,7 @@ public enum ErrorCode {
     private final int code;
     private final String message;
 
-    ErrorCode(int code, String message) {
+    ErrorCodeEnum(int code, String message) {
         this.code = code;
         this.message = message;
     }

@@ -6,7 +6,7 @@ import com.hd.dao.entity.MediaAlbum;
 /**
  * 相册数据服务
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface MediaAlbumDataService extends IService<MediaAlbum> {

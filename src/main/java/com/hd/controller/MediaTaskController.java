@@ -1,13 +1,14 @@
 package com.hd.controller;
 
 import com.hd.biz.MediaTaskBiz;
-import com.hd.model.dto.BatchRetryDto;
-import com.hd.model.dto.ManualScanDto;
-import com.hd.model.dto.MediaTaskDto;
-import com.hd.model.dto.MediaTaskQueryDto;
-import com.hd.model.dto.PageResponseDto;
-import com.hd.model.dto.ResponseDto;
+import com.hd.model.dto.BatchRetryDTO;
+import com.hd.model.dto.ManualScanDTO;
+import com.hd.model.dto.MediaTaskDTO;
+import com.hd.model.dto.MediaTaskQueryDTO;
+import com.hd.model.dto.PageResponseDTO;
+import com.hd.model.dto.ResponseDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,7 +16,7 @@ import java.util.List;
 /**
  * 媒体任务控制器
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @RestController
@@ -26,38 +27,38 @@ public class MediaTaskController {
     private final MediaTaskBiz mediaTaskBiz;
 
     @GetMapping
-    public ResponseDto getTaskList(MediaTaskQueryDto queryDto) {
-        PageResponseDto<MediaTaskDto> result = mediaTaskBiz.getTaskList(queryDto);
-        return ResponseDto.success(result);
+    public ResponseEntity<ResponseDTO> getTaskList(MediaTaskQueryDTO queryDto) {
+        PageResponseDTO<MediaTaskDTO> result = mediaTaskBiz.getTaskList(queryDto);
+        return ResponseEntity.ok(ResponseDTO.success(result));
     }
 
     @GetMapping("/{taskId}")
-    public ResponseDto getTaskDetail(@PathVariable Long taskId) {
-        MediaTaskDto task = mediaTaskBiz.getTaskDetail(taskId);
-        return ResponseDto.success(task);
+    public ResponseEntity<ResponseDTO> getTaskDetail(@PathVariable Long taskId) {
+        MediaTaskDTO task = mediaTaskBiz.getTaskDetail(taskId);
+        return ResponseEntity.ok(ResponseDTO.success(task));
     }
 
     @PostMapping("/{taskId}/retry")
-    public ResponseDto retryTask(@PathVariable Long taskId) {
+    public ResponseEntity<ResponseDTO> retryTask(@PathVariable Long taskId) {
         mediaTaskBiz.retryTask(taskId);
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
     @PostMapping("/batch-retry")
-    public ResponseDto batchRetryTasks(@RequestBody BatchRetryDto batchRetryDto) {
+    public ResponseEntity<ResponseDTO> batchRetryTasks(@RequestBody BatchRetryDTO batchRetryDto) {
         mediaTaskBiz.batchRetryTasks(batchRetryDto.getTaskIds());
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
     @PostMapping("/scan")
-    public ResponseDto manualScan(@RequestBody ManualScanDto manualScanDto) {
+    public ResponseEntity<ResponseDTO> manualScan(@RequestBody ManualScanDTO manualScanDto) {
         mediaTaskBiz.manualScan(manualScanDto.getFileIds(), manualScanDto.getMediaType());
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
     @PostMapping("/batch-scan")
-    public ResponseDto batchScan(@RequestParam(required = false) String mediaType) {
+    public ResponseEntity<ResponseDTO> batchScan(@RequestParam(required = false) String mediaType) {
         mediaTaskBiz.batchScan(mediaType);
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 }

@@ -1,12 +1,12 @@
 package com.hd.biz.impl;
 
 import com.hd.biz.TagBiz;
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 import com.hd.common.exception.BusinessException;
 import com.hd.dao.entity.*;
 import com.hd.dao.service.FileTagDataService;
 import com.hd.dao.service.FileTagRelationDataService;
-import com.hd.model.dto.TagRequestDto;
+import com.hd.model.dto.TagRequestDTO;
 import com.hd.model.vo.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 /**
  * 标签业务实现类。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -33,7 +33,7 @@ public class TagBizImpl implements TagBiz {
 
     @Override
     @Transactional
-    public TagVo createTag(TagRequestDto dto) {
+    public TagVO createTag(TagRequestDTO dto) {
         log.info("创建标签 [tagName={}]", dto.getTagName());
 
         // 检查名称唯一性
@@ -41,7 +41,7 @@ public class TagBizImpl implements TagBiz {
                 .eq(FileTag::getTagName, dto.getTagName())
                 .count();
         if (count > 0) {
-            throw new BusinessException(ErrorCode.DATA_DUPLICATE, "标签名称已存在: " + dto.getTagName());
+            throw new BusinessException(ErrorCodeEnum.DATA_DUPLICATE, "标签名称已存在: " + dto.getTagName());
         }
 
         FileTag tag = FileTag.builder()
@@ -54,17 +54,17 @@ public class TagBizImpl implements TagBiz {
         fileTagDataService.save(tag);
         log.info("标签创建成功 [id={}, tagName={}]", tag.getId(), tag.getTagName());
 
-        return convertToTagVo(tag);
+        return convertToTagVO(tag);
     }
 
     @Override
     @Transactional
-    public TagVo updateTag(Long id, TagRequestDto dto) {
+    public TagVO updateTag(Long id, TagRequestDTO dto) {
         log.info("更新标签 [id={}]", id);
 
         FileTag tag = fileTagDataService.getById(id);
         if (tag == null) {
-            throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "标签不存在: " + id);
+            throw new BusinessException(ErrorCodeEnum.DATA_NOT_FOUND, "标签不存在: " + id);
         }
 
         // 检查名称唯一性（排除自己）
@@ -73,7 +73,7 @@ public class TagBizImpl implements TagBiz {
                     .eq(FileTag::getTagName, dto.getTagName())
                     .count();
             if (count > 0) {
-                throw new BusinessException(ErrorCode.DATA_DUPLICATE, "标签名称已存在: " + dto.getTagName());
+                throw new BusinessException(ErrorCodeEnum.DATA_DUPLICATE, "标签名称已存在: " + dto.getTagName());
             }
             tag.setTagName(dto.getTagName());
         }
@@ -86,7 +86,7 @@ public class TagBizImpl implements TagBiz {
         fileTagDataService.updateById(tag);
         log.info("标签更新成功 [id={}]", id);
 
-        return convertToTagVo(tag);
+        return convertToTagVO(tag);
     }
 
     @Override
@@ -107,43 +107,43 @@ public class TagBizImpl implements TagBiz {
     }
 
     @Override
-    public List<TagVo> getTagList() {
+    public List<TagVO> getTagList() {
         log.info("获取标签列表");
 
         List<FileTag> tags = fileTagDataService.list();
         return tags.stream()
-                .map(this::convertToTagVo)
+                .map(this::convertToTagVO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public TagVo getTagById(Long id) {
+    public TagVO getTagById(Long id) {
         log.info("获取标签详情 [id={}]", id);
 
         FileTag tag = fileTagDataService.getById(id);
-        return tag != null ? convertToTagVo(tag) : null;
+        return tag != null ? convertToTagVO(tag) : null;
     }
 
     @Override
     @Transactional
-    public BatchOperationResultVo assignTagsToFiles(List<Long> fileIds, List<Long> tagIds) {
+    public BatchOperationResultVO assignTagsToFiles(List<Long> fileIds, List<Long> tagIds) {
         return batchOperateTagsInternal(fileIds, tagIds, "ADD");
     }
 
     @Override
     @Transactional
-    public BatchOperationResultVo addTagsToFiles(List<Long> fileIds, List<Long> tagIds) {
+    public BatchOperationResultVO addTagsToFiles(List<Long> fileIds, List<Long> tagIds) {
         return batchOperateTagsInternal(fileIds, tagIds, "ADD");
     }
 
     @Override
     @Transactional
-    public BatchOperationResultVo removeTagsFromFiles(List<Long> fileIds, List<Long> tagIds) {
+    public BatchOperationResultVO removeTagsFromFiles(List<Long> fileIds, List<Long> tagIds) {
         return batchOperateTagsInternal(fileIds, tagIds, "REMOVE");
     }
 
     @Override
-    public List<TagVo> getTagsForFile(Long fileId) {
+    public List<TagVO> getTagsForFile(Long fileId) {
         log.info("获取文件标签 [fileId={}]", fileId);
 
         List<FileTagRelation> relations = fileTagRelationDataService.lambdaQuery()
@@ -160,17 +160,17 @@ public class TagBizImpl implements TagBiz {
 
         List<FileTag> tags = fileTagDataService.listByIds(tagIds);
         return tags.stream()
-                .map(this::convertToTagVo)
+                .map(this::convertToTagVO)
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public BatchOperationResultVo batchOperateTags(Long fileId, List<Long> tagIds, String action) {
+    public BatchOperationResultVO batchOperateTags(Long fileId, List<Long> tagIds, String action) {
         return batchOperateTagsInternal(Collections.singletonList(fileId), tagIds, action);
     }
 
-    private BatchOperationResultVo batchOperateTagsInternal(List<Long> fileIds, List<Long> tagIds, String action) {
+    private BatchOperationResultVO batchOperateTagsInternal(List<Long> fileIds, List<Long> tagIds, String action) {
         log.info("批量操作标签 [fileIds={}, tagIds={}, action={}]", fileIds, tagIds, action);
 
         List<String> errors = new ArrayList<>();
@@ -178,35 +178,41 @@ public class TagBizImpl implements TagBiz {
         int failCount = 0;
 
         for (Long fileId : fileIds) {
-            for (Long tagId : tagIds) {
-                try {
-                    switch (action.toUpperCase()) {
-                        case "ADD":
-                            successCount += addTagRelation(fileId, tagId) ? 1 : 0;
-                            break;
-                        case "REMOVE":
-                            successCount += removeTagRelation(fileId, tagId) ? 1 : 0;
-                            break;
-                        case "REPLACE":
-                            // 先删除所有标签，再添加新标签
-                            removeAllTagRelations(fileId);
-                            for (Long tid : tagIds) {
-                                addTagRelation(fileId, tid);
-                            }
-                            successCount++;
-                            break;
-                        default:
-                            failCount++;
-                            errors.add("未知操作: " + action);
+            try {
+                if ("REPLACE".equalsIgnoreCase(action)) {
+                    // 先删除所有标签，再添加新标签
+                    removeAllTagRelations(fileId);
+                    for (Long tagId : tagIds) {
+                        addTagRelation(fileId, tagId);
                     }
-                } catch (Exception e) {
-                    failCount++;
-                    errors.add("操作失败: fileId=" + fileId + ", tagId=" + tagId + ", error=" + e.getMessage());
+                    successCount++;
+                } else {
+                    for (Long tagId : tagIds) {
+                        try {
+                            switch (action.toUpperCase()) {
+                                case "ADD":
+                                    successCount += addTagRelation(fileId, tagId) ? 1 : 0;
+                                    break;
+                                case "REMOVE":
+                                    successCount += removeTagRelation(fileId, tagId) ? 1 : 0;
+                                    break;
+                                default:
+                                    failCount++;
+                                    errors.add("未知操作: " + action);
+                            }
+                        } catch (Exception e) {
+                            failCount++;
+                            errors.add("操作失败: fileId=" + fileId + ", tagId=" + tagId + ", error=" + e.getMessage());
+                        }
+                    }
                 }
+            } catch (Exception e) {
+                failCount++;
+                errors.add("操作失败: fileId=" + fileId + ", error=" + e.getMessage());
             }
         }
 
-        return BatchOperationResultVo.builder()
+        return BatchOperationResultVO.builder()
                 .successCount(successCount)
                 .failCount(failCount)
                 .errors(errors)
@@ -246,8 +252,8 @@ public class TagBizImpl implements TagBiz {
                 .remove();
     }
 
-    private TagVo convertToTagVo(FileTag tag) {
-        return TagVo.builder()
+    private TagVO convertToTagVO(FileTag tag) {
+        return TagVO.builder()
                 .id(tag.getId())
                 .tagName(tag.getTagName())
                 .tagColor(tag.getTagColor())

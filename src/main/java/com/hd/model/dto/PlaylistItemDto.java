@@ -10,14 +10,14 @@ import lombok.NoArgsConstructor;
 /**
  * 播放列表曲目DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlaylistItemDto {
+public class PlaylistItemDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;

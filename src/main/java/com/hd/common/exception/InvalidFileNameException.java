@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -22,7 +22,7 @@ public class InvalidFileNameException extends BusinessException {
      * 默认构造函数。
      */
     public InvalidFileNameException() {
-        super(ErrorCode.INVALID_FILE_NAME);
+        super(ErrorCodeEnum.INVALID_FILE_NAME);
     }
 
     /**
@@ -31,7 +31,7 @@ public class InvalidFileNameException extends BusinessException {
      * @param message 异常消息
      */
     public InvalidFileNameException(String message) {
-        super(ErrorCode.INVALID_FILE_NAME, message);
+        super(ErrorCodeEnum.INVALID_FILE_NAME, message);
     }
 
     /**
@@ -41,7 +41,7 @@ public class InvalidFileNameException extends BusinessException {
      * @param cause   异常原因
      */
     public InvalidFileNameException(String message, Throwable cause) {
-        super(ErrorCode.INVALID_FILE_NAME, message, cause);
+        super(ErrorCodeEnum.INVALID_FILE_NAME, message, cause);
     }
 
     /**
@@ -50,6 +50,6 @@ public class InvalidFileNameException extends BusinessException {
      * @param cause 异常原因
      */
     public InvalidFileNameException(Throwable cause) {
-        super(ErrorCode.INVALID_FILE_NAME, cause);
+        super(ErrorCodeEnum.INVALID_FILE_NAME, cause);
     }
 }

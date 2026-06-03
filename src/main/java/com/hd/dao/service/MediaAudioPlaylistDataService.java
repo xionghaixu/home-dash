@@ -6,7 +6,7 @@ import com.hd.dao.entity.MediaAudioPlaylist;
 /**
  * 音频播放列表数据服务
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface MediaAudioPlaylistDataService extends IService<MediaAudioPlaylist> {

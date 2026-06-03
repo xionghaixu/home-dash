@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FileCategorySummaryDto {
+public class FileCategorySummaryDTO {
 
     private String category;
     private String label;

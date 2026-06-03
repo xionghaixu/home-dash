@@ -3,7 +3,7 @@ package com.hd.biz.impl;
 import com.hd.biz.FilterViewBiz;
 import com.hd.dao.entity.FilterView;
 import com.hd.dao.service.FilterViewDataService;
-import com.hd.model.vo.FilterViewVo;
+import com.hd.model.vo.FilterViewVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 /**
  * 筛选视图业务实现类。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -94,7 +94,7 @@ public class FilterViewBizImpl implements FilterViewBiz {
     }
 
     @Override
-    public List<FilterViewVo> getAllFilterViews() {
+    public List<FilterViewVO> getAllFilterViews() {
         log.info("获取所有筛选视图");
 
         List<FilterView> views = filterViewDataService.lambdaQuery()
@@ -103,12 +103,12 @@ public class FilterViewBizImpl implements FilterViewBiz {
                 .list();
 
         return views.stream()
-                .map(this::convertToFilterViewVo)
+                .map(this::convertToFilterViewVO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public FilterViewVo getDefaultFilterView() {
+    public FilterViewVO getDefaultFilterView() {
         log.info("获取默认筛选视图");
 
         FilterView view = filterViewDataService.lambdaQuery()
@@ -116,7 +116,7 @@ public class FilterViewBizImpl implements FilterViewBiz {
                 .last("LIMIT 1")
                 .one();
 
-        return view != null ? convertToFilterViewVo(view) : null;
+        return view != null ? convertToFilterViewVO(view) : null;
     }
 
     @Override
@@ -152,8 +152,8 @@ public class FilterViewBizImpl implements FilterViewBiz {
         }
     }
 
-    private FilterViewVo convertToFilterViewVo(FilterView view) {
-        return FilterViewVo.builder()
+    private FilterViewVO convertToFilterViewVO(FilterView view) {
+        return FilterViewVO.builder()
                 .id(view.getId())
                 .viewName(view.getViewName())
                 .viewParams(view.getViewParams())

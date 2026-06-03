@@ -14,7 +14,7 @@ import lombok.Data;
  */
 @Data
 @AllArgsConstructor
-public class FolderPathDto {
+public class FolderPathDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;

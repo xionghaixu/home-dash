@@ -13,14 +13,14 @@ import java.time.LocalDateTime;
 /**
  * 相册DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AlbumDto {
+public class AlbumDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long albumId;

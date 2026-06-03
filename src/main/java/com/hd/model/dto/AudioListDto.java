@@ -10,14 +10,14 @@ import lombok.NoArgsConstructor;
 /**
  * 音频列表项DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AudioListDto {
+public class AudioListDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;

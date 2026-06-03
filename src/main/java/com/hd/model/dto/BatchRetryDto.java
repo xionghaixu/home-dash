@@ -10,11 +10,11 @@ import java.util.List;
 /**
  * 批量重试DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
-public class BatchRetryDto {
+public class BatchRetryDTO {
 
     @JsonSerialize(contentUsing = ToStringSerializer.class)
     private List<Long> taskIds;

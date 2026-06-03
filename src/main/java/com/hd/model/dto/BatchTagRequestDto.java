@@ -9,7 +9,7 @@ import lombok.*;
  * 批量标签请求DTO。
  * 用于批量添加、移除或替换文件标签。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -18,7 +18,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BatchTagRequestDto {
+public class BatchTagRequestDTO {
 
     /** 资源ID列表。 */
     @JsonSerialize(contentUsing = ToStringSerializer.class)

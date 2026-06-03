@@ -11,14 +11,14 @@ import lombok.NoArgsConstructor;
 /**
  * 时间线分组DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PictureTimelineGroupDto {
+public class PictureTimelineGroupDTO {
 
     private Integer year;
 

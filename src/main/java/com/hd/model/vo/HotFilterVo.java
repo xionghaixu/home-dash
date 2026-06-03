@@ -6,7 +6,7 @@ import lombok.*;
  * 热门筛选VO。
  * 用于返回热门筛选选项统计。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -15,7 +15,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class HotFilterVo {
+public class HotFilterVO {
 
     /** 筛选类型（如：type、tag、timeRange）。 */
     private String filterType;

@@ -12,7 +12,7 @@ import java.util.Date;
  * 文件备注实体类。
  * 存储用户对文件的备注或短描述信息。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */

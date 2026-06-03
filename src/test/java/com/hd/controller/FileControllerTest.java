@@ -4,7 +4,9 @@ import com.hd.biz.FileBiz;
 import com.hd.common.exception.DataFormatException;
 import com.hd.common.exception.DataNotFoundException;
 import com.hd.dao.entity.File;
-import com.hd.model.dto.ResponseDto;
+import com.hd.model.dto.CreateFileDTO;
+import com.hd.model.dto.RenameFileDTO;
+import com.hd.model.dto.ResponseDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -29,7 +31,7 @@ import static org.mockito.Mockito.*;
 /**
  * FileController 单元测试
  *
- * @author tester
+ * @author xhx
  * @version 1.0
  */
 @ExtendWith(MockitoExtension.class)
@@ -72,10 +74,10 @@ class FileControllerTest {
         @Test
         @DisplayName("应返回指定父目录的文件列表")
         void shouldReturnFileListByParentId() {
-            ResponseDto mockResponse = ResponseDto.success(List.of(testFile));
+            ResponseDTO mockResponse = ResponseDTO.success(List.of(testFile));
             when(fileBiz.findByParentId(eq(1L), anyString(), anyString())).thenReturn(mockResponse);
 
-            ResponseEntity<ResponseDto> response = fileController.getFiles(1L, "name", "asc");
+            ResponseEntity<ResponseDTO> response = fileController.getFiles(1L, "name", "asc");
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
             assertNotNull(response.getBody());
@@ -85,10 +87,10 @@ class FileControllerTest {
         @Test
         @DisplayName("应使用默认排序参数")
         void shouldUseDefaultSortParams() {
-            ResponseDto mockResponse = ResponseDto.success(List.of());
+            ResponseDTO mockResponse = ResponseDTO.success(List.of());
             when(fileBiz.findByParentId(eq(0L), eq("name"), eq("asc"))).thenReturn(mockResponse);
 
-            ResponseEntity<ResponseDto> response = fileController.getFiles(0L, "name", "asc");
+            ResponseEntity<ResponseDTO> response = fileController.getFiles(0L, "name", "asc");
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
         }
@@ -96,10 +98,10 @@ class FileControllerTest {
         @Test
         @DisplayName("应处理降序排序")
         void shouldHandleDescendingSort() {
-            ResponseDto mockResponse = ResponseDto.success(List.of(testFile));
+            ResponseDTO mockResponse = ResponseDTO.success(List.of(testFile));
             when(fileBiz.findByParentId(eq(1L), eq("size"), eq("desc"))).thenReturn(mockResponse);
 
-            ResponseEntity<ResponseDto> response = fileController.getFiles(1L, "size", "desc");
+            ResponseEntity<ResponseDTO> response = fileController.getFiles(1L, "size", "desc");
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
         }
@@ -112,10 +114,10 @@ class FileControllerTest {
         @Test
         @DisplayName("应返回最近上传的文件列表")
         void shouldReturnRecentFiles() {
-            ResponseDto mockResponse = ResponseDto.success(List.of(testFile));
+            ResponseDTO mockResponse = ResponseDTO.success(List.of(testFile));
             when(fileBiz.findRecentFiles(eq(10))).thenReturn(mockResponse);
 
-            ResponseEntity<ResponseDto> response = fileController.getRecentFiles(10);
+            ResponseEntity<ResponseDTO> response = fileController.getRecentFiles(10);
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
             assertNotNull(response.getBody());
@@ -124,10 +126,10 @@ class FileControllerTest {
         @Test
         @DisplayName("应处理limit为null的情况")
         void shouldHandleNullLimit() {
-            ResponseDto mockResponse = ResponseDto.success(List.of());
+            ResponseDTO mockResponse = ResponseDTO.success(List.of());
             when(fileBiz.findRecentFiles(isNull())).thenReturn(mockResponse);
 
-            ResponseEntity<ResponseDto> response = fileController.getRecentFiles(null);
+            ResponseEntity<ResponseDTO> response = fileController.getRecentFiles(null);
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
         }
@@ -140,10 +142,10 @@ class FileControllerTest {
         @Test
         @DisplayName("应返回上传摘要统计")
         void shouldReturnUploadSummary() {
-            ResponseDto mockResponse = ResponseDto.success(Map.of("count", 5));
+            ResponseDTO mockResponse = ResponseDTO.success(Map.of("count", 5));
             when(fileBiz.getRecentUploadSummary(eq(20))).thenReturn(mockResponse);
 
-            ResponseEntity<ResponseDto> response = fileController.getRecentUploadSummary(20);
+            ResponseEntity<ResponseDTO> response = fileController.getRecentUploadSummary(20);
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
             assertNotNull(response.getBody());
@@ -152,10 +154,10 @@ class FileControllerTest {
         @Test
         @DisplayName("应使用默认limit值")
         void shouldUseDefaultLimit() {
-            ResponseDto mockResponse = ResponseDto.success(Map.of("count", 0));
+            ResponseDTO mockResponse = ResponseDTO.success(Map.of("count", 0));
             when(fileBiz.getRecentUploadSummary(any())).thenReturn(mockResponse);
 
-            ResponseEntity<ResponseDto> response = fileController.getRecentUploadSummary(null);
+            ResponseEntity<ResponseDTO> response = fileController.getRecentUploadSummary(null);
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
         }
@@ -168,10 +170,10 @@ class FileControllerTest {
         @Test
         @DisplayName("应返回文件详情")
         void shouldReturnFileDetail() {
-            ResponseDto mockResponse = ResponseDto.success(testFile);
+            ResponseDTO mockResponse = ResponseDTO.success(testFile);
             when(fileBiz.findByFileId(eq(2L))).thenReturn(mockResponse);
 
-            ResponseEntity<ResponseDto> response = fileController.getFile(2L);
+            ResponseEntity<ResponseDTO> response = fileController.getFile(2L);
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
             assertNotNull(response.getBody());
@@ -195,10 +197,10 @@ class FileControllerTest {
         @Test
         @DisplayName("应返回指定分类的文件列表")
         void shouldReturnFilesByCategory() {
-            ResponseDto mockResponse = ResponseDto.success(List.of(testFile));
+            ResponseDTO mockResponse = ResponseDTO.success(List.of(testFile));
             when(fileBiz.findFilesByCategory(eq("picture"), anyString(), anyString())).thenReturn(mockResponse);
 
-            ResponseEntity<ResponseDto> response = fileController.getFilesByCategory("picture", "name", "asc");
+            ResponseEntity<ResponseDTO> response = fileController.getFilesByCategory("picture", "name", "asc");
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
         }
@@ -222,10 +224,10 @@ class FileControllerTest {
         @Test
         @DisplayName("应返回分类摘要")
         void shouldReturnCategorySummary() {
-            ResponseDto mockResponse = ResponseDto.success(List.of());
+            ResponseDTO mockResponse = ResponseDTO.success(List.of());
             when(fileBiz.categorySummary()).thenReturn(mockResponse);
 
-            ResponseEntity<ResponseDto> response = fileController.getCategorySummary();
+            ResponseEntity<ResponseDTO> response = fileController.getCategorySummary();
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
         }
@@ -238,10 +240,10 @@ class FileControllerTest {
         @Test
         @DisplayName("应返回MD5检查结果")
         void shouldReturnMD5CheckResult() {
-            ResponseDto mockResponse = ResponseDto.success(Map.of("exists", true));
+            ResponseDTO mockResponse = ResponseDTO.success(Map.of("exists", true));
             when(fileBiz.checkFileByMD5(eq("abc123"))).thenReturn(mockResponse);
 
-            ResponseEntity<ResponseDto> response = fileController.checkFileByMd5("abc123");
+            ResponseEntity<ResponseDTO> response = fileController.checkFileByMd5("abc123");
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
         }
@@ -264,16 +266,15 @@ class FileControllerTest {
         @Test
         @DisplayName("应成功创建文件")
         void shouldCreateFileSuccessfully() {
-            File newFile = File.builder()
-                    .fileName("newFile.txt")
-                    .type("TXT")
-                    .parentId(1L)
-                    .build();
+            CreateFileDTO newFile = new CreateFileDTO();
+            newFile.setFileName("newFile.txt");
+            newFile.setType("TXT");
+            newFile.setParentId(1L);
             BindingResult bindingResult = new BeanPropertyBindingResult(newFile, "file");
 
-            doNothing().when(fileBiz).createFile(any(File.class));
+            doNothing().when(fileBiz).createFile(any(CreateFileDTO.class));
 
-            ResponseEntity<ResponseDto> response = fileController.createFile(newFile, bindingResult);
+            ResponseEntity<ResponseDTO> response = fileController.createFile(newFile, bindingResult);
 
             assertEquals(HttpStatus.CREATED, response.getStatusCode());
             assertNotNull(response.getBody());
@@ -287,13 +288,12 @@ class FileControllerTest {
         @Test
         @DisplayName("应成功重命名文件")
         void shouldRenameFileSuccessfully() {
-            File fileWithNewName = File.builder()
-                    .fileName("renamed.txt")
-                    .build();
+            RenameFileDTO fileWithNewName = new RenameFileDTO();
+            fileWithNewName.setFileName("renamed.txt");
 
             doNothing().when(fileBiz).renameFile(anyString(), eq(2L));
 
-            ResponseEntity<ResponseDto> response = fileController.renameFile(2L, fileWithNewName);
+            ResponseEntity<ResponseDTO> response = fileController.renameFile(2L, fileWithNewName);
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
             verify(fileBiz).renameFile("renamed.txt", 2L);
@@ -302,9 +302,8 @@ class FileControllerTest {
         @Test
         @DisplayName("应抛出异常当文件名为空")
         void shouldThrowExceptionWhenFileNameEmpty() {
-            File emptyNameFile = File.builder()
-                    .fileName("")
-                    .build();
+            RenameFileDTO emptyNameFile = new RenameFileDTO();
+            emptyNameFile.setFileName("");
 
             assertThrows(DataFormatException.class, () ->
                 fileController.renameFile(2L, emptyNameFile)
@@ -323,7 +322,7 @@ class FileControllerTest {
 
             doNothing().when(fileBiz).deleteFiles(anyList());
 
-            ResponseEntity<ResponseDto> response = fileController.deleteFiles(fileIds);
+            ResponseEntity<ResponseDTO> response = fileController.deleteFiles(fileIds);
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
             verify(fileBiz).deleteFiles(fileIds);

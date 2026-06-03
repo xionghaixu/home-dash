@@ -12,7 +12,7 @@ import java.util.Date;
  * 收藏实体类。
  * 记录用户收藏的文件信息。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */

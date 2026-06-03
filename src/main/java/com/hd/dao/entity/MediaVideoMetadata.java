@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * 视频元数据实体类
  * 存储视频时长、分辨率、编码信息等
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

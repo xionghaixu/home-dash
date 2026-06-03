@@ -3,8 +3,8 @@ package com.hd.biz.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hd.biz.PictureMediaBiz;
-import com.hd.common.enums.ErrorCode;
-import com.hd.common.enums.FileType;
+import com.hd.common.enums.ErrorCodeEnum;
+import com.hd.common.enums.FileTypeEnum;
 import com.hd.common.exception.BusinessException;
 import com.hd.common.exception.DataNotFoundException;
 import com.hd.dao.entity.*;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 /**
  * 图片媒体业务实现类
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Slf4j
@@ -37,7 +37,7 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
     private final MediaAlbumItemDataService albumItemDataService;
 
     @Override
-    public PageResponseDto<PictureListDto> getPictureList(Integer page, Integer pageSize, String sortBy, String sortOrder,
+    public PageResponseDTO<PictureListDTO> getPictureList(Integer page, Integer pageSize, String sortBy, String sortOrder,
                                                            Integer year, Integer month, Long albumId, String directory) {
         int current = page != null && page > 0 ? page : 1;
         int size = pageSize != null && pageSize > 0 ? pageSize : 40;
@@ -46,16 +46,17 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
         applyPictureSort(wrapper, sortBy, sortOrder);
 
         Page<File> pageResult = fileDataService.page(new Page<>(current, size), wrapper);
-        List<PictureListDto> list = pageResult.getRecords().stream()
-                .map(this::convertToPictureListDto)
+        Map<Long, MediaPictureMetadata> metadataMap = batchLoadPictureMetadata(pageResult.getRecords());
+        List<PictureListDTO> list = pageResult.getRecords().stream()
+                .map(f -> convertToPictureListDTO(f, metadataMap))
                 .collect(Collectors.toList());
-        return PageResponseDto.of(list, pageResult.getTotal(), current, size);
+        return PageResponseDTO.of(list, pageResult.getTotal(), current, size);
     }
 
     @Override
-    public PictureDetailDto getPictureDetail(Long fileId) {
+    public PictureDetailDTO getPictureDetail(Long fileId) {
         File file = fileDataService.getById(fileId);
-        if (file == null || !FileType.PICTURE.toString().equals(file.getType())) {
+        if (file == null || !FileTypeEnum.PICTURE.toString().equals(file.getType())) {
             throw new DataNotFoundException(String.format("图片不存在 [fileId=%d]", fileId));
         }
 
@@ -63,7 +64,7 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
                 .eq(MediaPictureMetadata::getFileId, fileId)
                 .one();
 
-        PictureDetailDto.PictureDetailDtoBuilder builder = PictureDetailDto.builder()
+        PictureDetailDTO.PictureDetailDTOBuilder builder = PictureDetailDTO.builder()
                 .fileId(fileId)
                 .fileName(file.getFileName())
                 .size(file.getSize())
@@ -92,7 +93,7 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
     }
 
     @Override
-    public List<PictureTimelineGroupDto> getPictureTimeline(String groupBy) {
+    public List<PictureTimelineGroupDTO> getPictureTimeline(String groupBy) {
         String normalizedGroupBy = groupBy != null ? groupBy.toLowerCase() : "month";
         List<MediaPictureMetadata> metadataList = pictureMetadataDataService.lambdaQuery()
                 .isNotNull(MediaPictureMetadata::getTakenAt)
@@ -112,7 +113,7 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
         return groups.entrySet().stream().map(entry -> {
             List<MediaPictureMetadata> list = entry.getValue();
             MediaPictureMetadata first = list.get(0);
-            return PictureTimelineGroupDto.builder()
+            return PictureTimelineGroupDTO.builder()
                     .year(first.getTakenAt().getYear())
                     .month("month".equals(normalizedGroupBy) || "day".equals(normalizedGroupBy) ? first.getTakenAt().getMonthValue() : null)
                     .day("day".equals(normalizedGroupBy) ? first.getTakenAt().getDayOfMonth() : null)
@@ -124,17 +125,17 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
     }
 
     @Override
-    public List<AlbumDto> getAlbumList(String albumType) {
+    public List<AlbumDTO> getAlbumList(String albumType) {
         LambdaQueryWrapper<MediaAlbum> wrapper = new LambdaQueryWrapper<>();
         if (albumType != null && !albumType.isEmpty()) {
             wrapper.eq(MediaAlbum::getAlbumType, albumType.toUpperCase());
         }
-        return albumDataService.list(wrapper).stream().map(this::convertToAlbumDto).collect(Collectors.toList());
+        return albumDataService.list(wrapper).stream().map(this::convertToAlbumDTO).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public AlbumDto createAlbum(String albumName, String description, Long coverFileId) {
+    public AlbumDTO createAlbum(String albumName, String description, Long coverFileId) {
         MediaAlbum album = new MediaAlbum();
         album.setAlbumName(albumName);
         album.setDescription(description);
@@ -142,7 +143,7 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
         album.setAlbumType("MANUAL");
         album.setPhotoCount(0);
         albumDataService.save(album);
-        return convertToAlbumDto(album);
+        return convertToAlbumDTO(album);
     }
 
     @Override
@@ -150,7 +151,7 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
     public void updateAlbum(Long albumId, String albumName, String description, Long coverFileId) {
         MediaAlbum album = albumDataService.getById(albumId);
         if (album == null) {
-            throw new BusinessException(ErrorCode.ALBUM_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.ALBUM_NOT_FOUND);
         }
         album.setAlbumName(albumName);
         album.setDescription(description);
@@ -163,7 +164,7 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
     public void deleteAlbum(Long albumId) {
         MediaAlbum album = albumDataService.getById(albumId);
         if (album == null) {
-            throw new BusinessException(ErrorCode.ALBUM_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.ALBUM_NOT_FOUND);
         }
         albumItemDataService.lambdaUpdate().eq(MediaAlbumItem::getAlbumId, albumId).remove();
         albumDataService.removeById(albumId);
@@ -174,7 +175,7 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
     public void addPictureToAlbum(Long albumId, Long fileId) {
         MediaAlbum album = albumDataService.getById(albumId);
         if (album == null) {
-            throw new BusinessException(ErrorCode.ALBUM_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.ALBUM_NOT_FOUND);
         }
 
         long count = albumItemDataService.lambdaQuery()
@@ -191,51 +192,75 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
         item.setAddedAt(LocalDateTime.now());
         albumItemDataService.save(item);
 
-        album.setPhotoCount(album.getPhotoCount() + 1);
-        albumDataService.updateById(album);
+        albumDataService.lambdaUpdate()
+                .eq(MediaAlbum::getId, albumId)
+                .setSql("photo_count = COALESCE(photo_count, 0) + 1")
+                .update();
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void removePictureFromAlbum(Long albumId, Long fileId) {
-        albumItemDataService.lambdaUpdate()
+        boolean removed = albumItemDataService.lambdaUpdate()
                 .eq(MediaAlbumItem::getAlbumId, albumId)
                 .eq(MediaAlbumItem::getFileId, fileId)
                 .remove();
 
-        MediaAlbum album = albumDataService.getById(albumId);
-        if (album != null && album.getPhotoCount() > 0) {
-            album.setPhotoCount(album.getPhotoCount() - 1);
-            albumDataService.updateById(album);
+        if (removed) {
+            albumDataService.lambdaUpdate()
+                    .eq(MediaAlbum::getId, albumId)
+                    .setSql("photo_count = GREATEST(COALESCE(photo_count, 0) - 1, 0)")
+                    .update();
         }
     }
 
     @Override
-    public PageResponseDto<PictureListDto> getAlbumPictures(Long albumId, Integer page, Integer pageSize) {
+    public PageResponseDTO<PictureListDTO> getAlbumPictures(Long albumId, Integer page, Integer pageSize) {
         int current = page != null && page > 0 ? page : 1;
         int size = pageSize != null && pageSize > 0 ? pageSize : 40;
 
-        List<Long> fileIds = albumItemDataService.lambdaQuery()
+        long total = albumItemDataService.lambdaQuery()
                 .eq(MediaAlbumItem::getAlbumId, albumId)
-                .list().stream()
+                .count();
+
+        if (total == 0) {
+            return PageResponseDTO.of(new ArrayList<>(), 0L, current, size);
+        }
+
+        Page<MediaAlbumItem> itemPage = albumItemDataService.lambdaQuery()
+                .eq(MediaAlbumItem::getAlbumId, albumId)
+                .orderByAsc(MediaAlbumItem::getAddedAt)
+                .page(new Page<>(current, size));
+
+        List<Long> fileIds = itemPage.getRecords().stream()
                 .map(MediaAlbumItem::getFileId)
                 .collect(Collectors.toList());
 
-        if (fileIds.isEmpty()) {
-            return PageResponseDto.of(new ArrayList<>(), 0L, current, size);
-        }
-
         List<File> files = fileDataService.listByIds(fileIds);
-        List<PictureListDto> list = files.stream().map(this::convertToPictureListDto).collect(Collectors.toList());
-        return PageResponseDto.of(list, (long) files.size(), current, size);
+        Map<Long, MediaPictureMetadata> metadataMap = batchLoadPictureMetadata(files);
+        List<PictureListDTO> list = files.stream().map(f -> convertToPictureListDTO(f, metadataMap)).collect(Collectors.toList());
+        return PageResponseDTO.of(list, total, current, size);
     }
 
-    private PictureListDto convertToPictureListDto(File file) {
-        MediaPictureMetadata metadata = pictureMetadataDataService.lambdaQuery()
-                .eq(MediaPictureMetadata::getFileId, file.getId())
-                .one();
+    private Map<Long, MediaPictureMetadata> batchLoadPictureMetadata(List<File> files) {
+        List<Long> fileIds = files.stream()
+                .map(File::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        if (fileIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return pictureMetadataDataService.lambdaQuery()
+                .in(MediaPictureMetadata::getFileId, fileIds)
+                .list().stream()
+                .collect(Collectors.toMap(MediaPictureMetadata::getFileId, m -> m, (a, b) -> a));
+    }
 
-        PictureListDto.PictureListDtoBuilder builder = PictureListDto.builder()
+    private PictureListDTO convertToPictureListDTO(File file, Map<Long, MediaPictureMetadata> metadataMap) {
+        MediaPictureMetadata metadata = metadataMap.get(file.getId());
+
+        PictureListDTO.PictureListDTOBuilder builder = PictureListDTO.builder()
                 .fileId(file.getId())
                 .resourceId(file.getResourceId())
                 .fileName(file.getFileName())
@@ -253,9 +278,9 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
         return builder.build();
     }
 
-    private AlbumDto convertToAlbumDto(MediaAlbum album) {
+    private AlbumDTO convertToAlbumDTO(MediaAlbum album) {
         File coverFile = album.getCoverFileId() != null ? fileDataService.getById(album.getCoverFileId()) : null;
-        return AlbumDto.builder()
+        return AlbumDTO.builder()
                 .albumId(album.getId())
                 .albumName(album.getAlbumName())
                 .albumType(album.getAlbumType())
@@ -278,7 +303,7 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
 
     private LambdaQueryWrapper<File> buildPictureQuery(Integer year, Integer month, Long albumId, String directory) {
         LambdaQueryWrapper<File> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(File::getType, FileType.PICTURE.toString());
+        wrapper.eq(File::getType, FileTypeEnum.PICTURE.toString());
 
         if (albumId != null) {
             List<Long> albumFileIds = albumItemDataService.lambdaQuery()
@@ -321,11 +346,22 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
     }
 
     private List<Long> resolvePictureIdsByTakenAt(Integer year, Integer month) {
-        return pictureMetadataDataService.lambdaQuery()
-                .isNotNull(MediaPictureMetadata::getTakenAt)
-                .list().stream()
-                .filter(metadata -> year == null || metadata.getTakenAt().getYear() == year)
-                .filter(metadata -> month == null || metadata.getTakenAt().getMonthValue() == month)
+        LambdaQueryWrapper<MediaPictureMetadata> query = new LambdaQueryWrapper<>();
+        query.isNotNull(MediaPictureMetadata::getTakenAt);
+
+        if (year != null && month != null) {
+            LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0, 0);
+            LocalDateTime end = start.plusMonths(1);
+            query.ge(MediaPictureMetadata::getTakenAt, start)
+                    .lt(MediaPictureMetadata::getTakenAt, end);
+        } else if (year != null) {
+            LocalDateTime start = LocalDateTime.of(year, 1, 1, 0, 0, 0);
+            LocalDateTime end = LocalDateTime.of(year + 1, 1, 1, 0, 0, 0);
+            query.ge(MediaPictureMetadata::getTakenAt, start)
+                    .lt(MediaPictureMetadata::getTakenAt, end);
+        }
+
+        return pictureMetadataDataService.list(query).stream()
                 .map(MediaPictureMetadata::getFileId)
                 .distinct()
                 .collect(Collectors.toList());
@@ -333,7 +369,7 @@ public class PictureMediaBizImpl implements PictureMediaBiz {
 
     private Long resolveDirectoryFolderId(String directory) {
         File folder = fileDataService.lambdaQuery()
-                .eq(File::getType, FileType.FOLDER.toString())
+                .eq(File::getType, FileTypeEnum.FOLDER.toString())
                 .eq(File::getFileName, directory.trim())
                 .last("LIMIT 1")
                 .one();

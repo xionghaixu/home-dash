@@ -12,14 +12,14 @@ import java.time.LocalDateTime;
 /**
  * 视频系列DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VideoSeriesDto {
+public class VideoSeriesDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long seriesId;

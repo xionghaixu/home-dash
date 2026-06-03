@@ -1,6 +1,7 @@
 package com.hd.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
@@ -14,7 +15,7 @@ import java.util.Date;
 @AllArgsConstructor
 @TableName("duplicate_record")
 public class DuplicateRecord {
-    @TableId
+    @TableId(type = IdType.AUTO)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
     

@@ -5,11 +5,11 @@ import lombok.Data;
 /**
  * 统一分页请求DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
-public class PageRequestDto {
+public class PageRequestDTO {
 
     private Integer page = 1;
 

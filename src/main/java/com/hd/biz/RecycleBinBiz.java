@@ -1,16 +1,16 @@
 package com.hd.biz;
 
-import com.hd.model.dto.ResponseDto;
+import com.hd.model.dto.ResponseDTO;
 
 import java.util.List;
 
 public interface RecycleBinBiz {
     
-    ResponseDto softDelete(List<Long> fileIds);
+    ResponseDTO softDelete(List<Long> fileIds);
     
-    ResponseDto list();
+    ResponseDTO list();
     
-    ResponseDto restore(List<Long> fileIds);
+    ResponseDTO restore(List<Long> fileIds);
     
-    ResponseDto empty();
+    ResponseDTO empty();
 }

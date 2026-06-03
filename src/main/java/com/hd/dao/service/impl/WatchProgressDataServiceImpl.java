@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 /**
  * 视频观看进度数据服务实现
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Service

@@ -1,8 +1,9 @@
 package com.hd.model.dto;
 
+import com.hd.common.enums.ErrorCodeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -17,7 +18,7 @@ import java.util.Collections;
  */
 @Data
 @AllArgsConstructor
-public class ResponseDto {
+public class ResponseDTO {
 
     private int code;
     private String msg;
@@ -32,7 +33,7 @@ public class ResponseDto {
      *
      * @return 成功响应对象
      */
-    public static ResponseDto success() {
+    public static ResponseDTO success() {
         return success(Collections.EMPTY_LIST);
     }
 
@@ -42,7 +43,7 @@ public class ResponseDto {
      * @param data 响应数据
      * @return 成功响应对象
      */
-    public static ResponseDto success(Object data) {
+    public static ResponseDTO success(Object data) {
         return success(data, Collections.EMPTY_LIST);
     }
 
@@ -53,8 +54,8 @@ public class ResponseDto {
      * @param extra 额外信息
      * @return 成功响应对象
      */
-    public static ResponseDto success(Object data, Object extra) {
-        return new ResponseDto(ErrorCode.SUCCESS.getCode(), "success", data, extra, getTimestamp());
+    public static ResponseDTO success(Object data, Object extra) {
+        return new ResponseDTO(ErrorCodeEnum.SUCCESS.getCode(), "success", data, extra, getTimestamp());
     }
 
     /**
@@ -63,29 +64,29 @@ public class ResponseDto {
      * @param msg 错误消息
      * @return 失败响应对象
      */
-    public static ResponseDto fail(String msg) {
-        return fail(ErrorCode.BAD_REQUEST.getCode(), msg, Collections.EMPTY_LIST);
+    public static ResponseDTO fail(String msg) {
+        return fail(ErrorCodeEnum.BAD_REQUEST.getCode(), msg, Collections.EMPTY_LIST);
     }
 
     /**
      * 创建失败响应对象，包含错误码和消息。
      *
-     * @param errorCode 错误码枚举
+     * @param ErrorCodeEnum 错误码枚举
      * @return 失败响应对象
      */
-    public static ResponseDto fail(ErrorCode errorCode) {
-        return fail(errorCode.getCode(), errorCode.getMessage(), Collections.EMPTY_LIST);
+    public static ResponseDTO fail(ErrorCodeEnum ErrorCodeEnum) {
+        return fail(ErrorCodeEnum.getCode(), ErrorCodeEnum.getMessage(), Collections.EMPTY_LIST);
     }
 
     /**
      * 创建失败响应对象，包含错误码和自定义消息。
      *
-     * @param errorCode 错误码枚举
+     * @param ErrorCodeEnum 错误码枚举
      * @param message   自定义错误消息
      * @return 失败响应对象
      */
-    public static ResponseDto fail(ErrorCode errorCode, String message) {
-        return fail(errorCode.getCode(), message, Collections.EMPTY_LIST);
+    public static ResponseDTO fail(ErrorCodeEnum ErrorCodeEnum, String message) {
+        return fail(ErrorCodeEnum.getCode(), message, Collections.EMPTY_LIST);
     }
 
     /**
@@ -94,8 +95,8 @@ public class ResponseDto {
      * @param data 响应数据
      * @return 失败响应对象
      */
-    public static ResponseDto fail(Object data) {
-        return fail(ErrorCode.BAD_REQUEST.getCode(), "fail", data);
+    public static ResponseDTO fail(Object data) {
+        return fail(ErrorCodeEnum.BAD_REQUEST.getCode(), "fail", data);
     }
 
     /**
@@ -105,8 +106,8 @@ public class ResponseDto {
      * @param data 响应数据
      * @return 失败响应对象
      */
-    public static ResponseDto fail(String msg, Object data) {
-        return fail(ErrorCode.BAD_REQUEST.getCode(), msg, data);
+    public static ResponseDTO fail(String msg, Object data) {
+        return fail(ErrorCodeEnum.BAD_REQUEST.getCode(), msg, data);
     }
 
     /**
@@ -117,7 +118,7 @@ public class ResponseDto {
      * @param data 响应数据
      * @return 失败响应对象
      */
-    public static ResponseDto fail(int code, String msg, Object data) {
+    public static ResponseDTO fail(int code, String msg, Object data) {
         return fail(code, msg, data, Collections.EMPTY_LIST);
     }
 
@@ -130,8 +131,8 @@ public class ResponseDto {
      * @param extra 额外信息
      * @return 失败响应对象
      */
-    public static ResponseDto fail(int code, String msg, Object data, Object extra) {
-        return new ResponseDto(code, msg, data, extra, getTimestamp());
+    public static ResponseDTO fail(int code, String msg, Object data, Object extra) {
+        return new ResponseDTO(code, msg, data, extra, getTimestamp());
     }
 
     /**

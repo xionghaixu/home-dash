@@ -10,11 +10,11 @@ import java.util.List;
 /**
  * 手动扫描DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
-public class ManualScanDto {
+public class ManualScanDTO {
 
     @JsonSerialize(contentUsing = ToStringSerializer.class)
     private List<Long> fileIds;

@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * 视频观看进度实体类
  * 支持继续播放功能
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

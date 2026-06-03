@@ -14,35 +14,35 @@ import java.util.Map;
 /**
  * 首页媒体聚合响应DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class HomeMediaSummaryDto {
+public class HomeMediaSummaryDTO {
 
     private RecentUploads recentUploads;
 
     private RecentPlays recentPlays;
 
-    private List<MediaItemDto> imageReview;
+    private List<MediaItemDTO> imageReview;
 
     private MediaStats mediaStats;
 
     private RecentUploads favoriteSummary;
 
-    private List<MediaTaskDto> pendingTasks;
+    private List<MediaTaskDTO> pendingTasks;
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class RecentUploads {
-        private List<MediaItemDto> images;
-        private List<MediaItemDto> videos;
-        private List<MediaItemDto> audio;
+        private List<MediaItemDTO> images;
+        private List<MediaItemDTO> videos;
+        private List<MediaItemDTO> audio;
     }
 
     @Data

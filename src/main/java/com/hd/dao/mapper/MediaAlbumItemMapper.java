@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 /**
  * 相册图片关联数据访问接口
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Mapper

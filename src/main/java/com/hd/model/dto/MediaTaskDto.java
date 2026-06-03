@@ -12,14 +12,14 @@ import java.time.LocalDateTime;
 /**
  * 媒体任务DTO
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MediaTaskDto {
+public class MediaTaskDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long taskId;

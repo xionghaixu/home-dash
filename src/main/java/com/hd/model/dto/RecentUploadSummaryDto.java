@@ -39,7 +39,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RecentUploadSummaryDto {
+public class RecentUploadSummaryDTO {
 
     /**
      * 最近上传文件列表。

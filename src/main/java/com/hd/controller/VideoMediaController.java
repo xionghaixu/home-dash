@@ -3,6 +3,7 @@ package com.hd.controller;
 import com.hd.biz.VideoMediaBiz;
 import com.hd.model.dto.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
 /**
  * 视频媒体控制器
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @RestController
@@ -21,7 +22,7 @@ public class VideoMediaController {
     private final VideoMediaBiz videoMediaBiz;
 
     @GetMapping("/videos")
-    public ResponseDto getVideoList(
+    public ResponseEntity<ResponseDTO> getVideoList(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer pageSize,
             @RequestParam(defaultValue = "createTime") String sortBy,
@@ -29,73 +30,73 @@ public class VideoMediaController {
             @RequestParam(required = false) Long seriesId,
             @RequestParam(required = false) Boolean hasSubtitle,
             @RequestParam(required = false) String resolution) {
-        PageResponseDto<VideoListDto> result = videoMediaBiz.getVideoList(page, pageSize, sortBy, sortOrder, seriesId, hasSubtitle, resolution);
-        return ResponseDto.success(result);
+        PageResponseDTO<VideoListDTO> result = videoMediaBiz.getVideoList(page, pageSize, sortBy, sortOrder, seriesId, hasSubtitle, resolution);
+        return ResponseEntity.ok(ResponseDTO.success(result));
     }
 
     @GetMapping("/videos/{fileId}")
-    public ResponseDto getVideoDetail(@PathVariable Long fileId) {
-        VideoDetailDto detail = videoMediaBiz.getVideoDetail(fileId);
-        return ResponseDto.success(detail);
+    public ResponseEntity<ResponseDTO> getVideoDetail(@PathVariable Long fileId) {
+        VideoDetailDTO detail = videoMediaBiz.getVideoDetail(fileId);
+        return ResponseEntity.ok(ResponseDTO.success(detail));
     }
 
     @GetMapping("/videos/{fileId}/progress")
-    public ResponseDto getWatchProgress(@PathVariable Long fileId) {
-        WatchProgressDto progress = videoMediaBiz.getWatchProgress(fileId);
-        return ResponseDto.success(progress);
+    public ResponseEntity<ResponseDTO> getWatchProgress(@PathVariable Long fileId) {
+        WatchProgressDTO progress = videoMediaBiz.getWatchProgress(fileId);
+        return ResponseEntity.ok(ResponseDTO.success(progress));
     }
 
     @PostMapping("/videos/{fileId}/progress")
-    public ResponseDto updateWatchProgress(@PathVariable Long fileId, @RequestBody UpdateProgressDto progressDto) {
+    public ResponseEntity<ResponseDTO> updateWatchProgress(@PathVariable Long fileId, @RequestBody UpdateProgressDTO progressDto) {
         videoMediaBiz.updateWatchProgress(fileId, progressDto.getCurrentPosition(), progressDto.getDuration());
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
     @GetMapping("/videos/{fileId}/subtitles")
-    public ResponseDto getSubtitleList(@PathVariable Long fileId) {
-        List<SubtitleDto> subtitles = videoMediaBiz.getSubtitleList(fileId);
-        return ResponseDto.success(subtitles);
+    public ResponseEntity<ResponseDTO> getSubtitleList(@PathVariable Long fileId) {
+        List<SubtitleDTO> subtitles = videoMediaBiz.getSubtitleList(fileId);
+        return ResponseEntity.ok(ResponseDTO.success(subtitles));
     }
 
     @GetMapping("/series")
-    public ResponseDto getSeriesList() {
-        List<VideoSeriesDto> series = videoMediaBiz.getSeriesList();
-        return ResponseDto.success(series);
+    public ResponseEntity<ResponseDTO> getSeriesList() {
+        List<VideoSeriesDTO> series = videoMediaBiz.getSeriesList();
+        return ResponseEntity.ok(ResponseDTO.success(series));
     }
 
     @PostMapping("/series")
-    public ResponseDto createSeries(@RequestBody VideoSeriesDto seriesDto) {
-        VideoSeriesDto series = videoMediaBiz.createSeries(seriesDto.getSeriesName(), seriesDto.getDescription());
-        return ResponseDto.success(series);
+    public ResponseEntity<ResponseDTO> createSeries(@RequestBody VideoSeriesDTO seriesDto) {
+        VideoSeriesDTO series = videoMediaBiz.createSeries(seriesDto.getSeriesName(), seriesDto.getDescription());
+        return ResponseEntity.ok(ResponseDTO.success(series));
     }
 
-    @PutMapping("/series/{seriesId}")
-    public ResponseDto updateSeries(@PathVariable Long seriesId, @RequestBody VideoSeriesDto seriesDto) {
+    @PostMapping("/series/{seriesId}/update")
+    public ResponseEntity<ResponseDTO> updateSeries(@PathVariable Long seriesId, @RequestBody VideoSeriesDTO seriesDto) {
         videoMediaBiz.updateSeries(seriesId, seriesDto.getSeriesName(), seriesDto.getDescription());
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
-    @DeleteMapping("/series/{seriesId}")
-    public ResponseDto deleteSeries(@PathVariable Long seriesId) {
+    @PostMapping("/series/{seriesId}/delete")
+    public ResponseEntity<ResponseDTO> deleteSeries(@PathVariable Long seriesId) {
         videoMediaBiz.deleteSeries(seriesId);
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
     @PostMapping("/series/{seriesId}/episodes")
-    public ResponseDto addEpisodeToSeries(@PathVariable Long seriesId, @RequestBody VideoEpisodeDto episodeDto) {
+    public ResponseEntity<ResponseDTO> addEpisodeToSeries(@PathVariable Long seriesId, @RequestBody VideoEpisodeDTO episodeDto) {
         videoMediaBiz.addEpisodeToSeries(seriesId, episodeDto.getFileId(), episodeDto.getEpisodeNumber(), episodeDto.getSeasonNumber(), episodeDto.getEpisodeTitle());
-        return ResponseDto.success();
+        return ResponseEntity.ok(ResponseDTO.success());
     }
 
     @GetMapping("/series/{seriesId}/videos")
-    public ResponseDto getSeriesEpisodes(@PathVariable Long seriesId) {
-        List<VideoEpisodeDto> episodes = videoMediaBiz.getSeriesEpisodes(seriesId);
-        return ResponseDto.success(episodes);
+    public ResponseEntity<ResponseDTO> getSeriesEpisodes(@PathVariable Long seriesId) {
+        List<VideoEpisodeDTO> episodes = videoMediaBiz.getSeriesEpisodes(seriesId);
+        return ResponseEntity.ok(ResponseDTO.success(episodes));
     }
 
     @GetMapping("/videos/continue-watch")
-    public ResponseDto getContinueWatchList(@RequestParam(defaultValue = "10") Integer limit) {
-        List<VideoListDto> videos = videoMediaBiz.getContinueWatchList(limit);
-        return ResponseDto.success(videos);
+    public ResponseEntity<ResponseDTO> getContinueWatchList(@RequestParam(defaultValue = "10") Integer limit) {
+        List<VideoListDTO> videos = videoMediaBiz.getContinueWatchList(limit);
+        return ResponseEntity.ok(ResponseDTO.success(videos));
     }
 }

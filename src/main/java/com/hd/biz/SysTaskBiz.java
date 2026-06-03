@@ -1,25 +1,25 @@
 package com.hd.biz;
 
-import com.hd.model.dto.PageResponseDto;
-import com.hd.model.dto.ResponseDto;
-import com.hd.model.dto.TaskQueryDto;
-import com.hd.model.dto.UnifiedTaskDto;
+import com.hd.model.dto.PageResponseDTO;
+import com.hd.model.dto.ResponseDTO;
+import com.hd.model.dto.TaskQueryDTO;
+import com.hd.model.dto.UnifiedTaskDTO;
 
 import java.util.List;
 
 public interface SysTaskBiz {
 
-    ResponseDto queryTasks();
+    ResponseDTO queryTasks();
 
     /**
      * 统一任务查询（合并 SysTask + MediaScanTask）
      */
-    PageResponseDto<UnifiedTaskDto> queryUnifiedTasks(TaskQueryDto queryDto);
+    PageResponseDTO<UnifiedTaskDTO> queryUnifiedTasks(TaskQueryDTO queryDto);
 
     /**
      * 获取任务详情
      */
-    UnifiedTaskDto getTaskDetail(Long taskId, String source);
+    UnifiedTaskDTO getTaskDetail(Long taskId, String source);
 
     /**
      * 重试任务

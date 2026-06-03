@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -12,16 +12,22 @@ import com.hd.common.enums.ErrorCode;
 public class BusinessException extends HomeDashException {
     private static final long serialVersionUID = -455084301379506106L;
 
-    private final ErrorCode errorCode;
+    /**
+     * 构造函数，指定异常信息。错误码默认为 INTERNAL_SERVER_ERROR。
+     *
+     * @param message 异常信息
+     */
+    public BusinessException(String message) {
+        super(message);
+    }
 
     /**
      * 构造函数，指定错误码。
      *
      * @param errorCode 错误码枚举
      */
-    public BusinessException(ErrorCode errorCode) {
-        super(errorCode.getMessage());
-        this.errorCode = errorCode;
+    public BusinessException(ErrorCodeEnum errorCode) {
+        super(errorCode);
     }
 
     /**
@@ -30,9 +36,8 @@ public class BusinessException extends HomeDashException {
      * @param errorCode 错误码枚举
      * @param message   自定义错误消息
      */
-    public BusinessException(ErrorCode errorCode, String message) {
-        super(message);
-        this.errorCode = errorCode;
+    public BusinessException(ErrorCodeEnum errorCode, String message) {
+        super(errorCode, message);
     }
 
     /**
@@ -42,9 +47,8 @@ public class BusinessException extends HomeDashException {
      * @param message   错误消息
      * @param cause     异常原因
      */
-    public BusinessException(ErrorCode errorCode, String message, Throwable cause) {
-        super(message, cause);
-        this.errorCode = errorCode;
+    public BusinessException(ErrorCodeEnum errorCode, String message, Throwable cause) {
+        super(errorCode, message, cause);
     }
 
     /**
@@ -53,23 +57,8 @@ public class BusinessException extends HomeDashException {
      * @param errorCode 错误码枚举
      * @param cause     异常原因
      */
-    public BusinessException(ErrorCode errorCode, Throwable cause) {
-        super(errorCode.getMessage(), cause);
-        this.errorCode = errorCode;
-    }
-
-    /**
-     * 获取错误码。
-     */
-    public ErrorCode getErrorCode() {
-        return errorCode;
-    }
-
-    /**
-     * 获取错误码数值。
-     */
-    public int getCode() {
-        return errorCode.getCode();
+    public BusinessException(ErrorCodeEnum errorCode, Throwable cause) {
+        super(errorCode, cause);
     }
 }
 

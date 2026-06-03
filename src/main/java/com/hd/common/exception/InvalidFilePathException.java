@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -22,7 +22,7 @@ public class InvalidFilePathException extends BusinessException {
      * 默认构造函数。
      */
     public InvalidFilePathException() {
-        super(ErrorCode.INVALID_FILE_PATH);
+        super(ErrorCodeEnum.INVALID_FILE_PATH);
     }
 
     /**
@@ -31,7 +31,7 @@ public class InvalidFilePathException extends BusinessException {
      * @param message 异常消息
      */
     public InvalidFilePathException(String message) {
-        super(ErrorCode.INVALID_FILE_PATH, message);
+        super(ErrorCodeEnum.INVALID_FILE_PATH, message);
     }
 
     /**
@@ -41,7 +41,7 @@ public class InvalidFilePathException extends BusinessException {
      * @param cause   异常原因
      */
     public InvalidFilePathException(String message, Throwable cause) {
-        super(ErrorCode.INVALID_FILE_PATH, message, cause);
+        super(ErrorCodeEnum.INVALID_FILE_PATH, message, cause);
     }
 
     /**
@@ -50,6 +50,6 @@ public class InvalidFilePathException extends BusinessException {
      * @param cause 异常原因
      */
     public InvalidFilePathException(Throwable cause) {
-        super(ErrorCode.INVALID_FILE_PATH, cause);
+        super(ErrorCodeEnum.INVALID_FILE_PATH, cause);
     }
 }

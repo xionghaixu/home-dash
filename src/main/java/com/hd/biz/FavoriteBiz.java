@@ -8,7 +8,7 @@ import java.util.List;
  * 收藏业务接口。
  * 定义文件收藏的相关操作。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -36,7 +36,7 @@ public interface FavoriteBiz {
      * @param resourceIds 资源ID列表
      * @return 批量操作结果
      */
-    BatchOperationResultVo batchAddFavorite(List<Long> resourceIds);
+    BatchOperationResultVO batchAddFavorite(List<Long> resourceIds);
 
     /**
      * 批量取消收藏。
@@ -44,7 +44,7 @@ public interface FavoriteBiz {
      * @param resourceIds 资源ID列表
      * @return 批量操作结果
      */
-    BatchOperationResultVo batchRemoveFavorite(List<Long> resourceIds);
+    BatchOperationResultVO batchRemoveFavorite(List<Long> resourceIds);
 
     /**
      * 检查收藏状态。
@@ -61,7 +61,7 @@ public interface FavoriteBiz {
      * @param pageSize 每页数量
      * @return 分页收藏文件列表
      */
-    IPage<FileDetailVo> getFavoriteList(Integer page, Integer pageSize);
+    IPage<FileDetailVO> getFavoriteList(Integer page, Integer pageSize);
 
     /**
      * 获取收藏数量。

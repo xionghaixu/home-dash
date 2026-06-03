@@ -9,7 +9,7 @@ import java.util.List;
  * 文件详情VO。
  * 包含文件的完整详情及关联信息。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
@@ -18,7 +18,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FileDetailVo {
+public class FileDetailVO {
 
     /** 资源ID。 */
     @JsonSerialize(using = ToStringSerializer.class)
@@ -55,7 +55,7 @@ public class FileDetailVo {
 
     /** 标签列表。 */
     @JsonSerialize(contentUsing = ToStringSerializer.class)
-    private List<TagVo> tags;
+    private List<TagVO> tags;
 
     /** 是否收藏。 */
     private Boolean isFavorite;
@@ -67,7 +67,7 @@ public class FileDetailVo {
     private String thumbnailUrl;
 
     /** 预览状态信息。 */
-    private PreviewStatusVo previewStatus;
+    private PreviewStatusVO previewStatus;
 
     /** 同目录文件数量。 */
     private Integer sameDirCount;

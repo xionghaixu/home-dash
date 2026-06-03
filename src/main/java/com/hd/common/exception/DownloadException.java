@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -22,7 +22,7 @@ public class DownloadException extends BusinessException {
      * 默认构造函数。
      */
     public DownloadException() {
-        super(ErrorCode.DOWNLOAD_FAILED);
+        super(ErrorCodeEnum.DOWNLOAD_FAILED);
     }
 
     /**
@@ -31,7 +31,7 @@ public class DownloadException extends BusinessException {
      * @param message 异常消息
      */
     public DownloadException(String message) {
-        super(ErrorCode.DOWNLOAD_FAILED, message);
+        super(ErrorCodeEnum.DOWNLOAD_FAILED, message);
     }
 
     /**
@@ -41,7 +41,7 @@ public class DownloadException extends BusinessException {
      * @param cause   异常原因
      */
     public DownloadException(String message, Throwable cause) {
-        super(ErrorCode.DOWNLOAD_FAILED, message, cause);
+        super(ErrorCodeEnum.DOWNLOAD_FAILED, message, cause);
     }
 
     /**
@@ -50,6 +50,6 @@ public class DownloadException extends BusinessException {
      * @param cause 异常原因
      */
     public DownloadException(Throwable cause) {
-        super(ErrorCode.DOWNLOAD_FAILED, cause);
+        super(ErrorCodeEnum.DOWNLOAD_FAILED, cause);
     }
 }

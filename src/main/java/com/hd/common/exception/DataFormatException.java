@@ -1,6 +1,6 @@
 package com.hd.common.exception;
 
-import com.hd.common.enums.ErrorCode;
+import com.hd.common.enums.ErrorCodeEnum;
 
 /**
  * @author xhx
@@ -16,7 +16,7 @@ public class DataFormatException extends BusinessException {
      * 默认构造函数。
      */
     public DataFormatException() {
-        super(ErrorCode.DATA_FORMAT_ERROR);
+        super(ErrorCodeEnum.DATA_FORMAT_ERROR);
     }
 
     /**
@@ -25,7 +25,7 @@ public class DataFormatException extends BusinessException {
      * @param message 异常消息
      */
     public DataFormatException(String message) {
-        super(ErrorCode.DATA_FORMAT_ERROR, message);
+        super(ErrorCodeEnum.DATA_FORMAT_ERROR, message);
     }
 
     /**
@@ -35,7 +35,7 @@ public class DataFormatException extends BusinessException {
      * @param cause   异常原因
      */
     public DataFormatException(String message, Throwable cause) {
-        super(ErrorCode.DATA_FORMAT_ERROR, message, cause);
+        super(ErrorCodeEnum.DATA_FORMAT_ERROR, message, cause);
     }
 
     /**
@@ -44,6 +44,6 @@ public class DataFormatException extends BusinessException {
      * @param cause 异常原因
      */
     public DataFormatException(Throwable cause) {
-        super(ErrorCode.DATA_FORMAT_ERROR, cause);
+        super(ErrorCodeEnum.DATA_FORMAT_ERROR, cause);
     }
 }

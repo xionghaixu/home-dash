@@ -1,7 +1,8 @@
 package com.hd.biz.impl;
 
+import com.hd.biz.RecycleBinBiz;
 import com.hd.common.config.HomeDashProperties;
-import com.hd.common.enums.FileType;
+import com.hd.common.enums.FileTypeEnum;
 import com.hd.common.exception.DataFormatException;
 import com.hd.common.exception.DataNotFoundException;
 import com.hd.common.exception.FileAlreadyExistsException;
@@ -31,7 +32,7 @@ import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapp
 /**
  * FileBizImpl 单元测试
  *
- * @author tester
+ * @author xhx
  * @version 1.0
  */
 @ExtendWith(MockitoExtension.class)
@@ -48,6 +49,9 @@ class FileBizImplTest {
     @Mock
     private HomeDashProperties homeDashProperties;
 
+    @Mock
+    private RecycleBinBiz recycleBinBiz;
+
     @InjectMocks
     private FileBizImpl fileBiz;
 
@@ -57,10 +61,11 @@ class FileBizImplTest {
 
     @BeforeEach
     void setUp() {
+        org.springframework.test.util.ReflectionTestUtils.setField(fileBiz, "recycleBinBiz", recycleBinBiz);
         testFolder = File.builder()
                 .id(1L)
                 .fileName("testFolder")
-                .type(FileType.FOLDER.toString())
+                .type(FileTypeEnum.FOLDER.toString())
                 .parentId(0L)
                 .createTime(new Date())
                 .updateTime(new Date())
@@ -69,7 +74,7 @@ class FileBizImplTest {
         testFile = File.builder()
                 .id(2L)
                 .fileName("test.txt")
-                .type(FileType.TXT.toString())
+                .type(FileTypeEnum.TXT.toString())
                 .parentId(1L)
                 .size(1024L)
                 .resourceId(1L)
@@ -96,7 +101,7 @@ class FileBizImplTest {
             when(fileDataService.getById(2L)).thenReturn(testFile);
             when(fileDataService.getById(1L)).thenReturn(testFolder);
 
-            ResponseDto result = fileBiz.findByFileId(2L);
+            ResponseDTO result = fileBiz.findByFileId(2L);
 
             assertNotNull(result);
             assertEquals(200, result.getCode());
@@ -123,11 +128,10 @@ class FileBizImplTest {
             when(fileDataService.getById(1L)).thenReturn(testFolder);
             when(fileDataService.count(any())).thenReturn(0L);
 
-            File newFile = File.builder()
-                    .fileName("newFile.txt")
-                    .type(FileType.TXT.toString())
-                    .parentId(1L)
-                    .build();
+            CreateFileDTO newFile = new CreateFileDTO();
+            newFile.setFileName("newFile.txt");
+            newFile.setType(FileTypeEnum.TXT.toString());
+            newFile.setParentId(1L);
 
             assertDoesNotThrow(() -> fileBiz.createFile(newFile));
             verify(fileDataService).save(any(File.class));
@@ -138,11 +142,10 @@ class FileBizImplTest {
         void shouldThrowExceptionWhenParentNotFound() {
             when(fileDataService.getById(999L)).thenReturn(null);
 
-            File newFile = File.builder()
-                    .fileName("newFile.txt")
-                    .type(FileType.TXT.toString())
-                    .parentId(999L)
-                    .build();
+            CreateFileDTO newFile = new CreateFileDTO();
+            newFile.setFileName("newFile.txt");
+            newFile.setType(FileTypeEnum.TXT.toString());
+            newFile.setParentId(999L);
 
             assertThrows(DataFormatException.class, () ->
                 fileBiz.createFile(newFile)
@@ -154,11 +157,10 @@ class FileBizImplTest {
         void shouldThrowExceptionWhenParentIsNotFolder() {
             when(fileDataService.getById(2L)).thenReturn(testFile);
 
-            File newFile = File.builder()
-                    .fileName("newFile.txt")
-                    .type(FileType.TXT.toString())
-                    .parentId(2L)
-                    .build();
+            CreateFileDTO newFile = new CreateFileDTO();
+            newFile.setFileName("newFile.txt");
+            newFile.setType(FileTypeEnum.TXT.toString());
+            newFile.setParentId(2L);
 
             assertThrows(DataFormatException.class, () ->
                 fileBiz.createFile(newFile)
@@ -171,11 +173,10 @@ class FileBizImplTest {
             when(fileDataService.getById(1L)).thenReturn(testFolder);
             when(fileDataService.count(any())).thenReturn(1L);
 
-            File newFile = File.builder()
-                    .fileName("test.txt")
-                    .type(FileType.TXT.toString())
-                    .parentId(1L)
-                    .build();
+            CreateFileDTO newFile = new CreateFileDTO();
+            newFile.setFileName("test.txt");
+            newFile.setType(FileTypeEnum.TXT.toString());
+            newFile.setParentId(1L);
 
             assertThrows(FileAlreadyExistsException.class, () ->
                 fileBiz.createFile(newFile)
@@ -275,7 +276,7 @@ class FileBizImplTest {
             LambdaQueryChainWrapper<Resource> wrapper = mockLambdaQuery();
             when(wrapper.one()).thenReturn(testResource);
 
-            ResponseDto result = fileBiz.checkFileByMD5("abc123");
+            ResponseDTO result = fileBiz.checkFileByMD5("abc123");
 
             assertNotNull(result);
             assertEquals(200, result.getCode());
@@ -287,7 +288,7 @@ class FileBizImplTest {
             LambdaQueryChainWrapper<Resource> wrapper = mockLambdaQuery();
             when(wrapper.one()).thenReturn(null);
 
-            ResponseDto result = fileBiz.checkFileByMD5("notexist");
+            ResponseDTO result = fileBiz.checkFileByMD5("notexist");
 
             assertNotNull(result);
             assertEquals(200, result.getCode());
@@ -315,7 +316,7 @@ class FileBizImplTest {
             LambdaQueryChainWrapper<Resource> wrapper = mockLambdaQuery();
             when(wrapper.one()).thenReturn(null);
 
-            ResponseDto result = fileBiz.checkFileByMD5("ABC123");
+            ResponseDTO result = fileBiz.checkFileByMD5("ABC123");
 
             assertNotNull(result);
         }
@@ -330,7 +331,7 @@ class FileBizImplTest {
         void shouldReturnCategorySummary() {
             when(fileDataService.count(any())).thenReturn(1L);
 
-            ResponseDto result = fileBiz.categorySummary();
+            ResponseDTO result = fileBiz.categorySummary();
 
             assertNotNull(result);
             assertEquals(200, result.getCode());
@@ -341,11 +342,11 @@ class FileBizImplTest {
         void shouldCountEachCategory() {
             when(fileDataService.count(any())).thenReturn(5L);
 
-            ResponseDto result = fileBiz.categorySummary();
+            ResponseDTO result = fileBiz.categorySummary();
 
             assertNotNull(result);
-            List<FileCategorySummaryDto> list = (List<FileCategorySummaryDto>) result.getData();
-            for (FileCategorySummaryDto dto : list) {
+            List<FileCategorySummaryDTO> list = (List<FileCategorySummaryDTO>) result.getData();
+            for (FileCategorySummaryDTO dto : list) {
                 assertEquals(5, dto.getCount());
             }
         }
@@ -355,11 +356,11 @@ class FileBizImplTest {
         void shouldHandleEmptyCounts() {
             when(fileDataService.count(any())).thenReturn(0L);
 
-            ResponseDto result = fileBiz.categorySummary();
+            ResponseDTO result = fileBiz.categorySummary();
 
             assertNotNull(result);
-            List<FileCategorySummaryDto> list = (List<FileCategorySummaryDto>) result.getData();
-            for (FileCategorySummaryDto dto : list) {
+            List<FileCategorySummaryDTO> list = (List<FileCategorySummaryDTO>) result.getData();
+            for (FileCategorySummaryDTO dto : list) {
                 assertEquals(0, dto.getCount());
             }
         }
@@ -385,7 +386,7 @@ class FileBizImplTest {
             File fileWithoutResource = File.builder()
                     .id(3L)
                     .fileName("empty.txt")
-                    .type(FileType.TXT.toString())
+                    .type(FileTypeEnum.TXT.toString())
                     .parentId(0L)
                     .resourceId(null)
                     .build();

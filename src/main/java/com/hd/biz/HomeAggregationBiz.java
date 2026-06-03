@@ -1,11 +1,11 @@
 package com.hd.biz;
 
-import com.hd.model.dto.HomeMediaSummaryDto;
+import com.hd.model.dto.HomeMediaSummaryDTO;
 
 /**
  * 首页媒体聚合业务接口
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface HomeAggregationBiz {
@@ -15,5 +15,5 @@ public interface HomeAggregationBiz {
      *
      * @return 首页媒体聚合响应
      */
-    HomeMediaSummaryDto getHomeSummary();
+    HomeMediaSummaryDTO getHomeSummary();
 }

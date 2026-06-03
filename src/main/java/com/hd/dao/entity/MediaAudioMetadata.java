@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * 音频元数据实体类
  * 存储音频标题、专辑、歌手、时长等信息
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

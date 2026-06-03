@@ -7,24 +7,24 @@ import java.util.List;
 /**
  * 视频媒体业务接口
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 public interface VideoMediaBiz {
 
-    PageResponseDto<VideoListDto> getVideoList(Integer page, Integer pageSize, String sortBy, String sortOrder, Long seriesId, Boolean hasSubtitle, String resolution);
+    PageResponseDTO<VideoListDTO> getVideoList(Integer page, Integer pageSize, String sortBy, String sortOrder, Long seriesId, Boolean hasSubtitle, String resolution);
 
-    VideoDetailDto getVideoDetail(Long fileId);
+    VideoDetailDTO getVideoDetail(Long fileId);
 
-    WatchProgressDto getWatchProgress(Long fileId);
+    WatchProgressDTO getWatchProgress(Long fileId);
 
     void updateWatchProgress(Long fileId, Long currentPosition, Long duration);
 
-    List<SubtitleDto> getSubtitleList(Long fileId);
+    List<SubtitleDTO> getSubtitleList(Long fileId);
 
-    List<VideoSeriesDto> getSeriesList();
+    List<VideoSeriesDTO> getSeriesList();
 
-    VideoSeriesDto createSeries(String seriesName, String description);
+    VideoSeriesDTO createSeries(String seriesName, String description);
 
     void updateSeries(Long seriesId, String seriesName, String description);
 
@@ -32,7 +32,7 @@ public interface VideoMediaBiz {
 
     void addEpisodeToSeries(Long seriesId, Long fileId, Integer episodeNumber, Integer seasonNumber, String episodeTitle);
 
-    List<VideoEpisodeDto> getSeriesEpisodes(Long seriesId);
+    List<VideoEpisodeDTO> getSeriesEpisodes(Long seriesId);
 
-    List<VideoListDto> getContinueWatchList(Integer limit);
+    List<VideoListDTO> getContinueWatchList(Integer limit);
 }

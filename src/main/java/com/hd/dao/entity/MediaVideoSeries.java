@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * 视频系列实体类
  * 存储电视剧、综艺等视频系列信息
  *
- * @author system
+ * @author xhx
  * @since 2026-04-26
  */
 @Data

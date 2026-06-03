@@ -12,7 +12,7 @@ import java.util.Date;
  * 搜索历史实体类。
  * 记录用户的搜索关键词和搜索参数，用于搜索历史展示和热门搜索统计。
  *
- * @author team-lead
+ * @author xhx
  * @version 1.0
  * @createTime 2026/04/25
  */
