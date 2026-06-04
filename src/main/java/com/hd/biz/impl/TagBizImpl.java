@@ -1,4 +1,5 @@
 package com.hd.biz.impl;
+import java.time.LocalDateTime;
 
 import com.hd.biz.TagBiz;
 import com.hd.common.enums.ErrorCodeEnum;
@@ -47,8 +48,8 @@ public class TagBizImpl implements TagBiz {
         FileTag tag = FileTag.builder()
                 .tagName(dto.getTagName())
                 .tagColor(dto.getTagColor() != null ? dto.getTagColor() : "#409EFF")
-                .createdAt(new Date())
-                .updatedAt(new Date())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         fileTagDataService.save(tag);
@@ -81,7 +82,7 @@ public class TagBizImpl implements TagBiz {
         if (dto.getTagColor() != null) {
             tag.setTagColor(dto.getTagColor());
         }
-        tag.setUpdatedAt(new Date());
+        tag.setUpdatedAt(LocalDateTime.now());
 
         fileTagDataService.updateById(tag);
         log.info("标签更新成功 [id={}]", id);
@@ -233,7 +234,7 @@ public class TagBizImpl implements TagBiz {
         FileTagRelation relation = FileTagRelation.builder()
                 .fileId(fileId)
                 .tagId(tagId)
-                .createdAt(new Date())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         return fileTagRelationDataService.save(relation);
@@ -260,3 +261,6 @@ public class TagBizImpl implements TagBiz {
                 .build();
     }
 }
+
+
+

@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,8 +40,8 @@ public class FilterViewBizImpl implements FilterViewBiz {
                 .viewName(viewName)
                 .viewParams(viewParams)
                 .isDefault(isDefault != null ? isDefault : false)
-                .createdAt(new Date())
-                .updatedAt(new Date())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         filterViewDataService.save(filterView);
@@ -74,7 +74,7 @@ public class FilterViewBizImpl implements FilterViewBiz {
         if (isDefault != null) {
             filterView.setIsDefault(isDefault);
         }
-        filterView.setUpdatedAt(new Date());
+        filterView.setUpdatedAt(LocalDateTime.now());
 
         filterViewDataService.updateById(filterView);
         log.info("筛选视图已更新 [id={}]", id);
@@ -133,7 +133,7 @@ public class FilterViewBizImpl implements FilterViewBiz {
         clearDefaultFlag();
 
         view.setIsDefault(true);
-        view.setUpdatedAt(new Date());
+        view.setUpdatedAt(LocalDateTime.now());
         filterViewDataService.updateById(view);
 
         log.info("默认视图已设置 [id={}]", id);
@@ -147,7 +147,7 @@ public class FilterViewBizImpl implements FilterViewBiz {
 
         for (FilterView v : defaultViews) {
             v.setIsDefault(false);
-            v.setUpdatedAt(new Date());
+            v.setUpdatedAt(LocalDateTime.now());
             filterViewDataService.updateById(v);
         }
     }
@@ -161,3 +161,4 @@ public class FilterViewBizImpl implements FilterViewBiz {
                 .build();
     }
 }
+

@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.ArrayList;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,9 +56,9 @@ public class RecycleBinBizImpl implements RecycleBinBiz {
                         .fileId(fileId)
                         .originalParentId(file.getParentId())
                         .originalPath(file.getFileName()) // store name or path
-                        .deleteTime(new Date())
+                        .deleteTime(LocalDateTime.now())
                         // set expire time to 30 days from now
-                        .expireTime(new Date(System.currentTimeMillis() + 30L * 24 * 3600 * 1000))
+                        .expireTime(LocalDateTime.now().plusDays(30))
                         .build();
                 recycleBinDataService.save(recycleBin);
             }
@@ -228,7 +228,7 @@ public class RecycleBinBizImpl implements RecycleBinBiz {
     @Transactional(rollbackFor = Exception.class)
     public void cleanupExpiredEntries() {
         List<RecycleBin> expired = recycleBinDataService.lambdaQuery()
-                .le(RecycleBin::getExpireTime, new Date())
+                .le(RecycleBin::getExpireTime, LocalDateTime.now())
                 .list();
         if (expired.isEmpty()) return;
 
@@ -245,3 +245,6 @@ public class RecycleBinBizImpl implements RecycleBinBiz {
                 .remove();
     }
 }
+
+
+

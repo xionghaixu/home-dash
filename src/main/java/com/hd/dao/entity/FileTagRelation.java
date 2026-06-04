@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * 文件-标签关联实体类。
@@ -37,5 +37,5 @@ public class FileTagRelation implements Serializable {
     private Long tagId;
 
     /** 创建时间。 */
-    private Date createdAt;
+    private LocalDateTime createdAt;
 }

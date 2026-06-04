@@ -193,12 +193,8 @@ public class SysTaskBizImpl implements SysTaskBiz {
     }
 
     private UnifiedTaskDTO convertSysTask(SysTask task) {
-        LocalDateTime createTime = task.getCreateTime() != null
-                ? task.getCreateTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
-                : null;
-        LocalDateTime endTime = task.getEndTime() != null
-                ? task.getEndTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
-                : null;
+        LocalDateTime createTime = task.getCreateTime();
+        LocalDateTime endTime = task.getEndTime();
 
         return UnifiedTaskDTO.builder()
                 .id(task.getId())
@@ -239,3 +235,5 @@ public class SysTaskBizImpl implements SysTaskBiz {
         return TaskTypeEnum.getNameByCode(taskType);
     }
 }
+
+

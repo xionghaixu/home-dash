@@ -12,7 +12,7 @@ import com.hd.common.enums.FileTypeEnum;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * @author xhx
@@ -71,14 +71,15 @@ public class File {
 
     /** 文件创建时间。 */
     @Builder.Default
-    private Date createTime = new Date();
+    private LocalDateTime createTime = LocalDateTime.now();
 
     /** 文件最后更新时间。 */
     @Builder.Default
-    private Date updateTime = new Date();
+    private LocalDateTime updateTime = LocalDateTime.now();
 
     /** 逻辑删除标志 (0:未删除, 1:已删除) */
     @TableLogic
     @Builder.Default
     private Integer isDeleted = 0;
 }
+

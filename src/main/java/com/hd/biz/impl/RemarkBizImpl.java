@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -52,13 +52,13 @@ public class RemarkBizImpl implements RemarkBiz {
             remark = FileRemark.builder()
                     .resourceId(resourceId)
                     .remarkContent(remarkContent)
-                    .createdAt(new Date())
-                    .updatedAt(new Date())
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
                     .build();
             fileRemarkDataService.save(remark);
         } else {
             remark.setRemarkContent(remarkContent);
-            remark.setUpdatedAt(new Date());
+            remark.setUpdatedAt(LocalDateTime.now());
             fileRemarkDataService.updateById(remark);
         }
 
@@ -122,3 +122,4 @@ public class RemarkBizImpl implements RemarkBiz {
                 .build();
     }
 }
+

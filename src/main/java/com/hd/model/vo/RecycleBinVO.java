@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -28,9 +28,10 @@ public class RecycleBinVO {
     
     private String originalPath;
     
-    private Date deleteTime;
+    private LocalDateTime deleteTime;
     
-    private Date deletedAt; // 匹配前端 prop="deletedAt"
+    private LocalDateTime deletedAt; // 匹配前端 prop="deletedAt"
     
-    private Date expireTime;
+    private LocalDateTime expireTime;
 }
+

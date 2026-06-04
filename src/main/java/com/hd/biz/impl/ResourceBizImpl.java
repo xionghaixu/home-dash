@@ -13,10 +13,14 @@ import com.hd.model.dto.MergeFileDTO;
 import com.hd.model.dto.ResourceChunkDTO;
 import com.hd.model.dto.ResponseDTO;
 import com.hd.model.dto.TransferTaskDTO;
+import java.time.LocalDateTime;
 import com.hd.dao.entity.Resource;
 import com.hd.dao.entity.ResourceChunk;
+import com.hd.dao.entity.TransferRecord;
 import com.hd.dao.service.FileDataService;
 import com.hd.dao.service.ResourceChunkDataService;
+import com.hd.dao.service.ResourceDataService;
+import com.hd.dao.service.TransferRecordDataService;
 import com.hd.dao.service.ResourceDataService;
 import com.hd.common.exception.UploadException;
 import com.hd.biz.ResourceBiz;
@@ -57,8 +61,8 @@ public class ResourceBizImpl implements ResourceBiz {
         private Long fileId;
         private Integer totalChunks;
         private Integer uploadedChunks;
-        private Date createTime;
-        private Date updateTime;
+        private LocalDateTime createTime;
+        private LocalDateTime updateTime;
     }
 
         private static class MergeResult {
@@ -94,15 +98,18 @@ public class ResourceBizImpl implements ResourceBiz {
     private final ResourceChunkDataService resourceChunkDataService;
     private final ResourceDataService resourceDataService;
     private final FileDataService fileDataService;
+    private final TransferRecordDataService transferRecordDataService;
 
         @Autowired
     public ResourceBizImpl(ResourceChunkDataService resourceChunkDataService,
             HomeDashProperties homeDashProperties,
-            ResourceDataService resourceDataService, FileDataService fileDataService) {
+            ResourceDataService resourceDataService, FileDataService fileDataService,
+            TransferRecordDataService transferRecordDataService) {
         this.resourceChunkDataService = resourceChunkDataService;
         this.homeDashProperties = homeDashProperties;
         this.resourceDataService = resourceDataService;
         this.fileDataService = fileDataService;
+        this.transferRecordDataService = transferRecordDataService;
     }
 
     @Override
@@ -316,7 +323,7 @@ public class ResourceBizImpl implements ResourceBiz {
             throw new UploadException("文件名不能为空");
         }
         if (Objects.isNull(mergeFileDto.getCreateTime())) {
-            mergeFileDto.setCreateTime(new Date());
+            mergeFileDto.setCreateTime(LocalDateTime.now());
             log.debug("合并文件创建时间为空，使用当前时间 [identifier={}]", mergeFileDto.getIdentifier());
         }
 
@@ -823,7 +830,7 @@ public class ResourceBizImpl implements ResourceBiz {
                 if (currentTime - lastActivityTime > timeoutMillis) {
                     timeoutIdentifiers.add(identifier);
                     log.debug("发现超时任务 [identifier={}, lastActivityTime={}, timeoutMinutes={}]",
-                            identifier, new Date(lastActivityTime), finalTimeoutMinutes);
+                            identifier, LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(lastActivityTime), java.time.ZoneId.systemDefault()), finalTimeoutMinutes);
                 }
             });
 
@@ -849,11 +856,22 @@ public class ResourceBizImpl implements ResourceBiz {
 
     @Override
     public ResponseDTO transferTasks() {
-        List<TransferTaskDTO> tasks = transferTaskCache.values().stream()
+        List<TransferTaskDTO> activeTasks = transferTaskCache.values().stream()
                 .map(this::toTransferTaskDTO)
-                .sorted(Comparator.comparing(TransferTaskDTO::getUpdateTime,
-                        Comparator.nullsLast(Date::compareTo)).reversed())
                 .toList();
+
+        List<TransferTaskDTO> historicalTasks = transferRecordDataService.list().stream()
+                .filter(record -> !transferTaskCache.containsKey(record.getIdentifier()))
+                .map(this::fromTransferRecord)
+                .map(this::toTransferTaskDTO)
+                .toList();
+
+        List<TransferTaskDTO> tasks = new ArrayList<>();
+        tasks.addAll(activeTasks);
+        tasks.addAll(historicalTasks);
+        
+        tasks.sort(Comparator.comparing(TransferTaskDTO::getUpdateTime,
+                Comparator.nullsLast(LocalDateTime::compareTo)).reversed());
 
         Map<String, Long> summary = tasks.stream().collect(Collectors.groupingBy(
                 task -> task.getStatus() == null ? "unknown" : task.getStatus(),
@@ -877,7 +895,17 @@ public class ResourceBizImpl implements ResourceBiz {
                 .toList();
 
         identifiers.forEach(transferTaskCache::remove);
-        return identifiers.size();
+        
+        int dbDeleted = 0;
+        if (!clearableStatuses.isEmpty()) {
+            long count = transferRecordDataService.lambdaQuery().in(TransferRecord::getStatus, clearableStatuses).count();
+            if (count > 0) {
+                transferRecordDataService.lambdaUpdate().in(TransferRecord::getStatus, clearableStatuses).remove();
+            }
+            dbDeleted = (int) count;
+        }
+
+        return identifiers.size() + dbDeleted;
     }
 
     @Override
@@ -885,9 +913,12 @@ public class ResourceBizImpl implements ResourceBiz {
         if (identifier == null || identifier.trim().isEmpty()) {
             return false;
         }
-        TransferTaskState removed = transferTaskCache.remove(identifier);
-        if (removed != null) {
-            log.info("传输任务记录已清除 [identifier={}, fileName={}]", identifier, removed.fileName);
+        boolean removedFromMemory = transferTaskCache.remove(identifier) != null;
+        boolean removedFromDb = transferRecordDataService.lambdaUpdate()
+                .eq(TransferRecord::getIdentifier, identifier)
+                .remove();
+        if (removedFromMemory || removedFromDb) {
+            log.info("传输任务记录已清除 [identifier={}]", identifier);
             return true;
         }
         log.debug("传输任务记录不存在 [identifier={}]", identifier);
@@ -895,7 +926,7 @@ public class ResourceBizImpl implements ResourceBiz {
     }
 
     private void markUploading(ResourceChunkDTO chunk) {
-        TransferTaskState state = transferTaskCache.computeIfAbsent(chunk.getIdentifier(), this::newTransferTaskState);
+        TransferTaskState state = getOrCreateTaskState(chunk.getIdentifier());
         state.fileName = chunk.getFilename();
         state.operationType = "upload";
         state.totalSize = chunk.getTotalSize();
@@ -904,9 +935,9 @@ public class ResourceBizImpl implements ResourceBiz {
                 .eq(ResourceChunk::getIdentifier, chunk.getIdentifier())
                 .count()
                 .intValue();
-        state.updateTime = new Date();
+        state.updateTime = LocalDateTime.now();
         if (state.createTime == null) {
-            state.createTime = new Date();
+            state.createTime = LocalDateTime.now();
         }
         // 如果状态是 paused 或 cancelled，仅更新进度计数，不覆盖状态
         if (HomeDashConstants.TransferStatus.PAUSED.equalsIgnoreCase(state.status) ||
@@ -919,7 +950,7 @@ public class ResourceBizImpl implements ResourceBiz {
     }
 
     private void markCompleted(MergeFileDTO fileDto, Long fileId) {
-        TransferTaskState state = transferTaskCache.computeIfAbsent(fileDto.getIdentifier(), this::newTransferTaskState);
+        TransferTaskState state = getOrCreateTaskState(fileDto.getIdentifier());
         state.fileName = fileDto.getFileName();
         state.status = HomeDashConstants.TransferStatus.COMPLETED;
         state.errorMessage = null;
@@ -927,50 +958,116 @@ public class ResourceBizImpl implements ResourceBiz {
         state.parentId = fileDto.getParentId();
         state.fileId = fileId;
         state.uploadedChunks = state.totalChunks;
-        state.updateTime = new Date();
+        state.updateTime = LocalDateTime.now();
         if (state.createTime == null) {
-            state.createTime = new Date();
+            state.createTime = LocalDateTime.now();
         }
         uploadActivityCache.remove(fileDto.getIdentifier());
+        persistToDBAndRemoveFromCache(fileDto.getIdentifier());
     }
 
     private void markFailed(String identifier, String fileName, String errorMessage) {
-        TransferTaskState state = transferTaskCache.get(identifier);
-        if (state != null && (
-                HomeDashConstants.TransferStatus.PAUSED.equalsIgnoreCase(state.status) ||
-                HomeDashConstants.TransferStatus.CANCELLED.equalsIgnoreCase(state.status)
-        )) {
+        TransferTaskState state = getOrCreateTaskState(identifier);
+        if (HomeDashConstants.TransferStatus.PAUSED.equalsIgnoreCase(state.status) ||
+                HomeDashConstants.TransferStatus.CANCELLED.equalsIgnoreCase(state.status)) {
             log.info("任务已暂停或取消，忽略分块上传失败标志 [identifier={}]", identifier);
             return;
-        }
-        if (state == null) {
-            state = newTransferTaskState(identifier);
-            transferTaskCache.put(identifier, state);
         }
         state.fileName = fileName;
         state.status = HomeDashConstants.TransferStatus.FAILED;
         state.errorMessage = errorMessage;
-        state.updateTime = new Date();
+        state.updateTime = LocalDateTime.now();
         if (state.createTime == null) {
-            state.createTime = new Date();
+            state.createTime = LocalDateTime.now();
         }
+        persistToDBAndRemoveFromCache(identifier);
     }
 
     private void markCancelled(String identifier, String message) {
-        TransferTaskState state = transferTaskCache.computeIfAbsent(identifier, this::newTransferTaskState);
+        TransferTaskState state = getOrCreateTaskState(identifier);
         state.status = HomeDashConstants.TransferStatus.CANCELLED;
         state.errorMessage = message;
-        state.updateTime = new Date();
+        state.updateTime = LocalDateTime.now();
         if (state.createTime == null) {
-            state.createTime = new Date();
+            state.createTime = LocalDateTime.now();
         }
+        persistToDBAndRemoveFromCache(identifier);
+    }
+
+    private TransferRecord toTransferRecord(TransferTaskState state) {
+        return TransferRecord.builder()
+                .identifier(state.identifier)
+                .fileName(state.fileName)
+                .fileType(state.fileType)
+                .operationType(state.operationType)
+                .status(state.status)
+                .errorMessage(state.errorMessage)
+                .totalSize(state.totalSize)
+                .parentId(state.parentId)
+                .fileId(state.fileId)
+                .totalChunks(state.totalChunks)
+                .uploadedChunks(state.uploadedChunks)
+                .createTime(state.createTime)
+                .updateTime(state.updateTime)
+                .build();
+    }
+
+    private TransferTaskState fromTransferRecord(TransferRecord record) {
+        TransferTaskState state = new TransferTaskState();
+        state.identifier = record.getIdentifier();
+        state.fileName = record.getFileName();
+        state.fileType = record.getFileType();
+        state.operationType = record.getOperationType();
+        state.status = record.getStatus();
+        state.errorMessage = record.getErrorMessage();
+        state.totalSize = record.getTotalSize();
+        state.parentId = record.getParentId();
+        state.fileId = record.getFileId();
+        state.totalChunks = record.getTotalChunks();
+        state.uploadedChunks = record.getUploadedChunks();
+        state.createTime = record.getCreateTime();
+        state.updateTime = record.getUpdateTime();
+        return state;
+    }
+
+    private void persistToDBAndRemoveFromCache(String identifier) {
+        TransferTaskState state = transferTaskCache.remove(identifier);
+        if (state != null) {
+            TransferRecord existing = transferRecordDataService.lambdaQuery()
+                    .eq(TransferRecord::getIdentifier, identifier)
+                    .one();
+            TransferRecord record = toTransferRecord(state);
+            if (existing != null) {
+                record.setId(existing.getId());
+                transferRecordDataService.updateById(record);
+            } else {
+                transferRecordDataService.save(record);
+            }
+        }
+    }
+
+    private TransferTaskState getOrCreateTaskState(String identifier) {
+        TransferTaskState state = transferTaskCache.get(identifier);
+        if (state == null) {
+            TransferRecord record = transferRecordDataService.lambdaQuery()
+                    .eq(TransferRecord::getIdentifier, identifier)
+                    .one();
+            if (record != null) {
+                state = fromTransferRecord(record);
+                transferTaskCache.put(identifier, state);
+            } else {
+                state = newTransferTaskState(identifier);
+                transferTaskCache.put(identifier, state);
+            }
+        }
+        return state;
     }
 
     private TransferTaskState newTransferTaskState(String identifier) {
         TransferTaskState state = new TransferTaskState();
         state.identifier = identifier;
-        state.createTime = new Date();
-        state.updateTime = new Date();
+        state.createTime = LocalDateTime.now();
+        state.updateTime = LocalDateTime.now();
         state.uploadedChunks = 0;
         state.totalChunks = 0;
         return state;
@@ -1119,7 +1216,7 @@ public class ResourceBizImpl implements ResourceBiz {
         if (identifier == null || identifier.trim().isEmpty()) {
             return;
         }
-        TransferTaskState state = transferTaskCache.computeIfAbsent(identifier, this::newTransferTaskState);
+        TransferTaskState state = getOrCreateTaskState(identifier);
         if (fileName != null) {
             state.fileName = fileName;
         }
@@ -1136,7 +1233,15 @@ public class ResourceBizImpl implements ResourceBiz {
         if (parentId != null) {
             state.parentId = parentId;
         }
-        state.updateTime = new Date();
+        state.updateTime = LocalDateTime.now();
+        
+        // 如果状态变更为终结状态，则持久化到数据库并从内存中移除
+        if (HomeDashConstants.TransferStatus.COMPLETED.equalsIgnoreCase(status) ||
+            HomeDashConstants.TransferStatus.FAILED.equalsIgnoreCase(status) ||
+            HomeDashConstants.TransferStatus.CANCELLED.equalsIgnoreCase(status)) {
+            persistToDBAndRemoveFromCache(identifier);
+        }
     }
 }
+
 

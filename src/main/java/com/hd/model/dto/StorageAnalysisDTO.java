@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -85,7 +85,7 @@ public class StorageAnalysisDTO {
         private String fileName;
         private Long size;
         private String type;
-        private Date updateTime;
+        private LocalDateTime updateTime;
     }
 
     /**
@@ -123,3 +123,4 @@ public class StorageAnalysisDTO {
         private String actionPath;
     }
 }
+

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 import org.apache.ibatis.type.Alias;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * 软删除回收站记录
@@ -34,8 +34,9 @@ public class RecycleBin {
     private String originalPath;
 
     @Builder.Default
-    private Date deleteTime = new Date();
+    private LocalDateTime deleteTime = LocalDateTime.now();
 
     /** 预计自动过期被彻底清理的时间 */
-    private Date expireTime;
+    private LocalDateTime expireTime;
 }
+

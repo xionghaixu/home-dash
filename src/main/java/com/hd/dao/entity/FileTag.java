@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * 文件标签实体类。
@@ -37,8 +37,8 @@ public class FileTag implements Serializable {
     private String tagColor;
 
     /** 创建时间。 */
-    private Date createdAt;
+    private LocalDateTime createdAt;
 
     /** 最后更新时间。 */
-    private Date updatedAt;
+    private LocalDateTime updatedAt;
 }

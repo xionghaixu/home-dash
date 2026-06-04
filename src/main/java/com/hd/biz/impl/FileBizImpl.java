@@ -358,7 +358,7 @@ public class FileBizImpl implements FileBiz {
         ensureUniqueFileName(existingFile.getParentId(), fileName, id);
 
         File updateFile = File.builder()
-                .id(id).fileName(fileName).updateTime(new Date())
+                .id(id).fileName(fileName).updateTime(LocalDateTime.now())
                 .build();
         fileDataService.updateById(updateFile);
 
@@ -412,7 +412,7 @@ public class FileBizImpl implements FileBiz {
         fileDataService.lambdaUpdate()
                 .in(File::getId, ids)
                 .set(File::getParentId, targetId)
-                .set(File::getUpdateTime, new Date())
+                .set(File::getUpdateTime, LocalDateTime.now())
                 .update();
 
         log.info("文件移动成功 [fileIds={}, targetId={}, count={}, 总耗时={}ms]",

@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * @author xhx
@@ -109,7 +109,7 @@ public class OperationLogDTO {
     /**
      * 操作时间。
      */
-    private Date operationTime;
+    private LocalDateTime operationTime;
 
     /**
      * 操作耗时（毫秒）。

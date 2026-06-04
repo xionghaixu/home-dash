@@ -1,4 +1,5 @@
 package com.hd.biz.impl;
+import java.time.LocalDateTime;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.hd.biz.PreviewBiz;
@@ -598,7 +599,7 @@ public class PreviewBizImpl implements PreviewBiz {
         RecentUse recentUse = RecentUse.builder()
                 .resourceId(resourceId)
                 .useType(useType != null ? useType : "PREVIEW")
-                .usedAt(new Date())
+                .usedAt(LocalDateTime.now())
                 .build();
 
         recentUseDataService.save(recentUse);
@@ -629,7 +630,7 @@ public class PreviewBizImpl implements PreviewBiz {
                             cameraInfo.put("model", description);
                         } else if (tagName.contains("Software")) {
                             cameraInfo.put("software", description);
-                        } else if (tagName.contains("Date/Time")) {
+                        } else if (tagName.contains("LocalDateTime/Time")) {
                             basicInfo.put("dateTime", description);
                         }
                     } else if (directory instanceof ExifSubIFDDirectory) {
@@ -907,3 +908,6 @@ public class PreviewBizImpl implements PreviewBiz {
         }
     }
 }
+
+
+

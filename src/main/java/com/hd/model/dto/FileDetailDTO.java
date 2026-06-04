@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -35,7 +35,8 @@ public class FileDetailDTO {
     private String folderPath;
     private Boolean downloadable;
     private Boolean playable;
-    private Date createTime;
-    private Date updateTime;
+    private LocalDateTime createTime;
+    private LocalDateTime updateTime;
     private List<FolderPathDTO> navigation;
 }
+

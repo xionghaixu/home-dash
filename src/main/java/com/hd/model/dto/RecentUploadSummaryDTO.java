@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -120,7 +120,7 @@ public class RecentUploadSummaryDTO {
         /**
          * 创建时间。
          */
-        private Date createTime;
+        private LocalDateTime createTime;
 
         /**
          * 父目录ID。

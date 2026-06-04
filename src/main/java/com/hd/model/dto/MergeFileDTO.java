@@ -9,7 +9,7 @@ import lombok.Data;
 import com.hd.dao.entity.File;
 import lombok.EqualsAndHashCode;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * @author xhx
@@ -73,7 +73,7 @@ public class MergeFileDTO extends File {
      * 创建时间。
      * 用于确定文件的存储路径（按年月组织）。
      */
-    private Date createTime;
+    private LocalDateTime createTime;
 
     /**
      * 资源ID（合并成功后由服务端填充）。
@@ -86,3 +86,4 @@ public class MergeFileDTO extends File {
      */
     private boolean instantUpload;
 }
+

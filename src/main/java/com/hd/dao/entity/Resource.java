@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 import org.apache.ibatis.type.Alias;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * @author xhx
@@ -51,9 +51,10 @@ public class Resource {
 
     /** 资源创建时间。 */
     @Builder.Default
-    private Date createTime = new Date();
+    private LocalDateTime createTime = LocalDateTime.now();
 
     /** 资源最后更新时间。 */
     @Builder.Default
-    private Date updateTime = new Date();
+    private LocalDateTime updateTime = LocalDateTime.now();
 }
+

@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * 收藏实体类。
@@ -34,5 +34,5 @@ public class Favorite implements Serializable {
     private Long resourceId;
 
     /** 收藏时间。 */
-    private Date createdAt;
+    private LocalDateTime createdAt;
 }

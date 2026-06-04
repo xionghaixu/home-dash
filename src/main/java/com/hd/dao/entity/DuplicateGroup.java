@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -31,8 +31,9 @@ public class DuplicateGroup {
     private List<DuplicateRecord> files;
     
     @Builder.Default
-    private Date createTime = new Date();
+    private LocalDateTime createTime = LocalDateTime.now();
     
     @Builder.Default
-    private Date updateTime = new Date();
+    private LocalDateTime updateTime = LocalDateTime.now();
 }
+

@@ -1,8 +1,8 @@
 package com.hd.common.util;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -94,9 +94,9 @@ public class Utils {
      * @param format 日期格式字符串，如"yyyy-MM-dd"
      * @return 格式化后的日期字符串
      */
-    public static String formatDate(Date date, String format) {
-        SimpleDateFormat dateFormat = new SimpleDateFormat(format);
-        return dateFormat.format(date);
+    public static String formatDate(LocalDateTime date, String format) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+        return date.format(formatter);
     }
 
     /**
@@ -112,3 +112,4 @@ public class Utils {
     private Utils() {
     }
 }
+

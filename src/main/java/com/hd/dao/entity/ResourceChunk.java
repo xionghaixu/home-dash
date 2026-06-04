@@ -6,7 +6,7 @@ import lombok.*;
 import org.apache.ibatis.type.Alias;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * @author xhx
@@ -65,11 +65,11 @@ public class ResourceChunk {
 
     /** 分块创建时间。 */
     @Builder.Default
-    private Date createTime = new Date();
+    private LocalDateTime createTime = LocalDateTime.now();
 
     /** 分块最后更新时间。 */
     @Builder.Default
-    private Date updateTime = new Date();
+    private LocalDateTime updateTime = LocalDateTime.now();
 
     /**
      * 分块数据的MD5校验值。
@@ -78,3 +78,4 @@ public class ResourceChunk {
      */
     private String md5;
 }
+

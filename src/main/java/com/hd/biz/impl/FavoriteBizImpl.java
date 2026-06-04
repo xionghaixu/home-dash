@@ -1,4 +1,5 @@
 package com.hd.biz.impl;
+import java.time.LocalDateTime;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -42,7 +43,7 @@ public class FavoriteBizImpl implements FavoriteBiz {
 
         Favorite favorite = Favorite.builder()
                 .resourceId(resourceId)
-                .createdAt(new Date())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         boolean result = favoriteDataService.save(favorite);
@@ -202,3 +203,5 @@ public class FavoriteBizImpl implements FavoriteBiz {
                 .build();
     }
 }
+
+

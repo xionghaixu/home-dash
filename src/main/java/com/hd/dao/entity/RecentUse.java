@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * 最近使用记录实体类。
@@ -37,5 +37,5 @@ public class RecentUse implements Serializable {
     private String useType;
 
     /** 使用时间。 */
-    private Date usedAt;
+    private LocalDateTime usedAt;
 }

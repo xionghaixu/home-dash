@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 import org.apache.ibatis.type.Alias;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * 全局后台任务
@@ -37,7 +37,8 @@ public class SysTask {
     private String errorMsg;
 
     @Builder.Default
-    private Date createTime = new Date();
+    private LocalDateTime createTime = LocalDateTime.now();
 
-    private Date endTime;
+    private LocalDateTime endTime;
 }
+

@@ -1,4 +1,5 @@
 package com.hd.biz.impl;
+import java.time.LocalDateTime;
 
 import com.hd.biz.HomeAggregationBiz;
 import com.hd.common.enums.FileTypeEnum;
@@ -245,7 +246,7 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
                 .fileName(file.getFileName())
                 .size(file.getSize())
                 .type(file.getType())
-                .createTime(file.getCreateTime() != null ? file.getCreateTime().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime() : null)
+                .createTime(file.getCreateTime())
                 .thumbnailUrl(thumbnailUrl)
                 .coverUrl(coverUrl)
                 .build();
@@ -300,3 +301,5 @@ public class HomeAggregationBizImpl implements HomeAggregationBiz {
         }
     }
 }
+
+

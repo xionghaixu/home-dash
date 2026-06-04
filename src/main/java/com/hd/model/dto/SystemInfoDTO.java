@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * @author xhx
@@ -141,5 +141,6 @@ public class SystemInfoDTO {
     /**
      * 最后检查时间。
      */
-    private Date lastCheckTime;
+    private LocalDateTime lastCheckTime;
 }
+

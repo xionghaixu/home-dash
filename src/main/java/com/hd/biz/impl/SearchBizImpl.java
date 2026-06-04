@@ -1,4 +1,5 @@
 package com.hd.biz.impl;
+import java.time.LocalDateTime;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -376,7 +377,7 @@ public class SearchBizImpl implements SearchBiz {
                 .count();
         if (recent7Count > 0) {
             hotFilters.add(HotFilterVO.builder()
-                    .filterType("date")
+                    .filterType("LocalDateTime")
                     .filterValue("recent7")
                     .displayName("最近7天")
                     .count(recent7Count)
@@ -390,7 +391,7 @@ public class SearchBizImpl implements SearchBiz {
                 .count();
         if (recent30Count > 0) {
             hotFilters.add(HotFilterVO.builder()
-                    .filterType("date")
+                    .filterType("LocalDateTime")
                     .filterValue("recent30")
                     .displayName("最近30天")
                     .count(recent30Count)
@@ -510,7 +511,7 @@ public class SearchBizImpl implements SearchBiz {
                 .one();
 
         if (existing != null) {
-            existing.setSearchedAt(new Date());
+            existing.setSearchedAt(LocalDateTime.now());
             if (searchType != null) {
                 existing.setSearchType(searchType);
             }
@@ -524,7 +525,7 @@ public class SearchBizImpl implements SearchBiz {
                     .keyword(trimmedKeyword)
                     .searchType(searchType != null ? searchType : "FILE")
                     .searchParams(params)
-                    .searchedAt(new Date())
+                    .searchedAt(LocalDateTime.now())
                     .build();
             searchHistoryDataService.save(history);
             log.debug("保存搜索历史 [keyword={}]", trimmedKeyword);
@@ -1063,3 +1064,6 @@ public class SearchBizImpl implements SearchBiz {
                 .build();
     }
 }
+
+
+

@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * 搜索历史实体类。
@@ -40,7 +40,7 @@ public class SearchHistory implements Serializable {
     private String searchParams;
 
     /** 搜索时间。 */
-    private Date searchedAt;
+    private LocalDateTime searchedAt;
 
     /** 用户ID（多用户场景隔离）。 */
     private Long userId;
