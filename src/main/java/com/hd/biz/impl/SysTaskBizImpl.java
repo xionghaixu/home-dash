@@ -31,13 +31,10 @@ public class SysTaskBizImpl implements SysTaskBiz {
     private final MediaScanTaskDataService scanTaskDataService;
     private final MediaTaskBiz mediaTaskBiz;
 
-
-
     @Override
     public ResponseDTO queryTasks() {
         List<SysTask> tasks = sysTaskDataService.list(
-                new LambdaQueryWrapper<SysTask>().orderByDesc(SysTask::getCreateTime)
-        );
+                new LambdaQueryWrapper<SysTask>().orderByDesc(SysTask::getCreateTime));
         return ResponseDTO.success(tasks);
     }
 
@@ -52,40 +49,58 @@ public class SysTaskBizImpl implements SysTaskBiz {
         long sysCount = 0;
         long mediaCount = 0;
 
-        LambdaQueryWrapper<SysTask> sysWrapper = new LambdaQueryWrapper<>();
+        // Build count wrappers (separate from list wrappers to avoid "last()" leakage)
+        LambdaQueryWrapper<SysTask> sysCountWrapper = new LambdaQueryWrapper<>();
         if (status != null && !status.isEmpty()) {
-            sysWrapper.eq(SysTask::getStatus, status);
+            sysCountWrapper.eq(SysTask::getStatus, status);
         }
         if (taskType != null && !taskType.isEmpty()) {
-            sysWrapper.eq(SysTask::getTaskType, taskType);
+            sysCountWrapper.eq(SysTask::getTaskType, taskType);
         }
-        sysWrapper.orderByDesc(SysTask::getCreateTime);
 
-        LambdaQueryWrapper<MediaScanTask> mediaWrapper = new LambdaQueryWrapper<>();
+        LambdaQueryWrapper<MediaScanTask> mediaCountWrapper = new LambdaQueryWrapper<>();
         if (status != null && !status.isEmpty()) {
-            mediaWrapper.eq(MediaScanTask::getStatus, status);
+            mediaCountWrapper.eq(MediaScanTask::getStatus, status);
         }
         if (taskType != null && !taskType.isEmpty()) {
-            mediaWrapper.eq(MediaScanTask::getTaskType, taskType);
+            mediaCountWrapper.eq(MediaScanTask::getTaskType, taskType);
         }
-        mediaWrapper.orderByDesc(MediaScanTask::getCreateTime);
+
+        // Build list wrappers (do not reuse wrappers - create fresh ones for list
+        // queries)
+        LambdaQueryWrapper<SysTask> sysListWrapper = new LambdaQueryWrapper<>();
+        if (status != null && !status.isEmpty()) {
+            sysListWrapper.eq(SysTask::getStatus, status);
+        }
+        if (taskType != null && !taskType.isEmpty()) {
+            sysListWrapper.eq(SysTask::getTaskType, taskType);
+        }
+        sysListWrapper.orderByDesc(SysTask::getCreateTime);
+        sysListWrapper.last("LIMIT " + (page * pageSize));
+
+        LambdaQueryWrapper<MediaScanTask> mediaListWrapper = new LambdaQueryWrapper<>();
+        if (status != null && !status.isEmpty()) {
+            mediaListWrapper.eq(MediaScanTask::getStatus, status);
+        }
+        if (taskType != null && !taskType.isEmpty()) {
+            mediaListWrapper.eq(MediaScanTask::getTaskType, taskType);
+        }
+        mediaListWrapper.orderByDesc(MediaScanTask::getCreateTime);
+        mediaListWrapper.last("LIMIT " + (page * pageSize));
 
         List<UnifiedTaskDTO> allTasks = new ArrayList<>();
-        int limitAmount = page * pageSize;
 
         // Query sys tasks with database-level limit
         if (source == null || source.isEmpty() || "sys".equals(source)) {
-            sysCount = sysTaskDataService.count(sysWrapper);
-            sysWrapper.last("LIMIT " + limitAmount);
-            List<SysTask> sysTasks = sysTaskDataService.list(sysWrapper);
+            sysCount = sysTaskDataService.count(sysCountWrapper);
+            List<SysTask> sysTasks = sysTaskDataService.list(sysListWrapper);
             allTasks.addAll(sysTasks.stream().map(this::convertSysTask).toList());
         }
 
         // Query media tasks with database-level limit
         if (source == null || source.isEmpty() || "media".equals(source)) {
-            mediaCount = scanTaskDataService.count(mediaWrapper);
-            mediaWrapper.last("LIMIT " + limitAmount);
-            List<MediaScanTask> mediaTasks = scanTaskDataService.list(mediaWrapper);
+            mediaCount = scanTaskDataService.count(mediaCountWrapper);
+            List<MediaScanTask> mediaTasks = scanTaskDataService.list(mediaListWrapper);
             allTasks.addAll(mediaTasks.stream().map(this::convertMediaTask).toList());
         }
 
@@ -93,9 +108,12 @@ public class SysTaskBizImpl implements SysTaskBiz {
         allTasks.sort((a, b) -> {
             LocalDateTime timeA = a.getCreateTime();
             LocalDateTime timeB = b.getCreateTime();
-            if (timeA == null && timeB == null) return 0;
-            if (timeA == null) return 1;
-            if (timeB == null) return -1;
+            if (timeA == null && timeB == null)
+                return 0;
+            if (timeA == null)
+                return 1;
+            if (timeB == null)
+                return -1;
             return timeB.compareTo(timeA);
         });
 
@@ -204,7 +222,8 @@ public class SysTaskBizImpl implements SysTaskBiz {
                 .taskName(getTaskTypeName(task.getTaskType()))
                 .taskType(task.getTaskType())
                 .status(task.getStatus())
-                .progressPercent(TaskStatusEnum.SUCCESS.getCode().equals(task.getStatus()) ? 100 : (TaskStatusEnum.RUNNING.getCode().equals(task.getStatus()) ? 50 : 0))
+                .progressPercent(TaskStatusEnum.SUCCESS.getCode().equals(task.getStatus()) ? 100
+                        : (TaskStatusEnum.RUNNING.getCode().equals(task.getStatus()) ? 50 : 0))
                 .errorMsg(task.getErrorMessage())
                 .retryCount(task.getRetryCount())
                 .maxRetries(task.getMaxRetries())
